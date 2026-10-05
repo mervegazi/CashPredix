@@ -52,25 +52,25 @@ export default function LandingPage() {
               </linearGradient>
             </defs>
             
-            {/* Center Area Chart */}
-            <g transform="translate(150, 60) scale(0.8)">
+            {/* Center Area Chart (Scaled Down) */}
+            <g transform="translate(350, 180) scale(0.45)">
               <path d="M0 500 Q 150 450 300 480 T 600 350 T 900 200 T 1200 100 L 1200 600 L 0 600 Z" fill="url(#chart-gradient)" opacity="0.4" />
               <path d="M0 500 Q 150 450 300 480 T 600 350 T 900 200 T 1200 100" stroke="currentColor" strokeWidth="4" fill="none" strokeLinecap="round" />
-              <circle cx="300" cy="480" r="6" fill="currentColor" />
-              <circle cx="600" cy="350" r="6" fill="currentColor" />
-              <circle cx="900" cy="200" r="6" fill="currentColor" />
-              <g fill="currentColor" stroke="currentColor" strokeWidth="2" opacity="0.8">
-                <line x1="100" y1="400" x2="100" y2="480" /><rect x="94" y="420" width="12" height="40" />
-                <line x1="200" y1="460" x2="200" y2="520" /><rect x="194" y="470" width="12" height="25" />
-                <line x1="450" y1="360" x2="450" y2="440" /><rect x="444" y="380" width="12" height="35" />
-                <line x1="750" y1="220" x2="750" y2="300" /><rect x="744" y="240" width="12" height="45" />
-                <line x1="1050" y1="100" x2="1050" y2="180" /><rect x="1044" y="110" width="12" height="30" />
+              <circle cx="300" cy="480" r="8" fill="currentColor" />
+              <circle cx="600" cy="350" r="8" fill="currentColor" />
+              <circle cx="900" cy="200" r="8" fill="currentColor" />
+              <g fill="currentColor" stroke="currentColor" strokeWidth="3" opacity="0.8">
+                <line x1="100" y1="400" x2="100" y2="480" /><rect x="92" y="420" width="16" height="40" />
+                <line x1="200" y1="460" x2="200" y2="520" /><rect x="192" y="470" width="16" height="25" />
+                <line x1="450" y1="360" x2="450" y2="440" /><rect x="442" y="380" width="16" height="35" />
+                <line x1="750" y1="220" x2="750" y2="300" /><rect x="742" y="240" width="16" height="45" />
+                <line x1="1050" y1="100" x2="1050" y2="180" /><rect x="1042" y="110" width="16" height="30" />
               </g>
-              <g fill="currentColor" fontFamily="monospace" fontSize="22" fontWeight="bold" opacity="0.9">
-                <text x="250" y="450">$45,230</text><text x="250" y="475" fontSize="16" opacity="0.7">+1.2%</text>
-                <text x="550" y="310">$89,400</text><text x="550" y="335" fontSize="16" opacity="0.7">+5.8%</text>
-                <text x="850" y="160">$124,800</text><text x="850" y="185" fontSize="16" opacity="0.7">+12.4%</text>
-                <text x="1080" y="80">$156,000</text><text x="1080" y="105" fontSize="16" opacity="0.7">+8.1%</text>
+              <g fill="currentColor" fontFamily="monospace" fontSize="28" fontWeight="bold" opacity="0.9">
+                <text x="250" y="430">$45,230</text><text x="250" y="460" fontSize="20" opacity="0.7">+1.2%</text>
+                <text x="550" y="290">$89,400</text><text x="550" y="320" fontSize="20" opacity="0.7">+5.8%</text>
+                <text x="850" y="140">$124,800</text><text x="850" y="170" fontSize="20" opacity="0.7">+12.4%</text>
+                <text x="1080" y="60">$156,000</text><text x="1080" y="90" fontSize="20" opacity="0.7">+8.1%</text>
               </g>
             </g>
 
@@ -88,7 +88,7 @@ export default function LandingPage() {
             </g>
 
             {/* Bottom-Left Animated Bar Chart */}
-            <g transform="translate(150, 380)">
+            <g transform="translate(100, 400) scale(0.9)">
               <text x="0" y="-20" fill="currentColor" fontSize="18" fontFamily="monospace" opacity="0.6">MONTHLY CASH FLOW (NET)</text>
               <line x1="0" y1="150" x2="300" y2="150" stroke="currentColor" strokeWidth="2" opacity="0.5" />
               <g fill="currentColor" opacity="0.8">
@@ -101,16 +101,56 @@ export default function LandingPage() {
               </g>
             </g>
 
-            {/* Top-Left Radar Tech Element */}
-            <g transform="translate(250, 150)">
-              <circle cx="0" cy="0" r="80" stroke="currentColor" strokeWidth="1" opacity="0.3" fill="none" />
-              <circle cx="0" cy="0" r="50" stroke="currentColor" strokeWidth="1" opacity="0.3" fill="none" />
-              <circle cx="0" cy="0" r="20" stroke="currentColor" strokeWidth="1" opacity="0.3" fill="none" />
-              <line x1="-80" y1="0" x2="80" y2="0" stroke="currentColor" strokeWidth="1" opacity="0.3" />
-              <line x1="0" y1="-80" x2="0" y2="80" stroke="currentColor" strokeWidth="1" opacity="0.3" />
-              <line x1="-56" y1="-56" x2="56" y2="56" stroke="currentColor" strokeWidth="1" opacity="0.3" />
-              <line x1="-56" y1="56" x2="56" y2="-56" stroke="currentColor" strokeWidth="1" opacity="0.3" />
-              <polygon points="0,-70 40,-20 60,30 10,50 -30,40 -60,-10" fill="currentColor" opacity="0.2" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" className="animate-float" />
+            {/* Top-Left Horizontal Vendor Scores */}
+            <g transform="translate(100, 120)">
+              <text x="0" y="-10" fill="currentColor" fontSize="16" fontFamily="monospace" opacity="0.6">TOP VENDOR SCORES</text>
+              <g className="animate-float">
+                {/* Vendor 1 */}
+                <text x="0" y="20" fill="currentColor" fontSize="14" opacity="0.8">GlobalTech</text>
+                <rect x="100" y="8" width="180" height="12" fill="currentColor" opacity="0.2" rx="6" />
+                <rect x="100" y="8" width="165" height="12" fill="currentColor" opacity="0.8" rx="6" />
+                <text x="290" y="20" fill="currentColor" fontSize="14" fontWeight="bold">92</text>
+                
+                {/* Vendor 2 */}
+                <text x="0" y="50" fill="currentColor" fontSize="14" opacity="0.8">Nexus Corp</text>
+                <rect x="100" y="38" width="180" height="12" fill="currentColor" opacity="0.2" rx="6" />
+                <rect x="100" y="38" width="150" height="12" fill="currentColor" opacity="0.6" rx="6" />
+                <text x="290" y="50" fill="currentColor" fontSize="14" fontWeight="bold">85</text>
+                
+                {/* Vendor 3 */}
+                <text x="0" y="80" fill="currentColor" fontSize="14" opacity="0.8">Alpha Inc.</text>
+                <rect x="100" y="68" width="180" height="12" fill="currentColor" opacity="0.2" rx="6" />
+                <rect x="100" y="68" width="120" height="12" fill="currentColor" opacity="0.4" rx="6" />
+                <text x="290" y="80" fill="currentColor" fontSize="14" fontWeight="bold">68</text>
+              </g>
+            </g>
+
+            {/* Bottom-Right Scatter/Matrix Node */}
+            <g transform="translate(850, 420)">
+              <text x="0" y="-15" fill="currentColor" fontSize="16" fontFamily="monospace" opacity="0.6">ANOMALY DETECTION</text>
+              <g stroke="currentColor" strokeWidth="1" opacity="0.3">
+                <line x1="0" y1="0" x2="250" y2="0" />
+                <line x1="0" y1="30" x2="250" y2="30" />
+                <line x1="0" y1="60" x2="250" y2="60" />
+                <line x1="0" y1="90" x2="250" y2="90" />
+                <line x1="0" y1="120" x2="250" y2="120" />
+                <line x1="0" y1="0" x2="0" y2="120" />
+                <line x1="50" y1="0" x2="50" y2="120" />
+                <line x1="100" y1="0" x2="100" y2="120" />
+                <line x1="150" y1="0" x2="150" y2="120" />
+                <line x1="200" y1="0" x2="200" y2="120" />
+                <line x1="250" y1="0" x2="250" y2="120" />
+              </g>
+              <g fill="currentColor" opacity="0.8">
+                <circle cx="50" cy="90" r="4" className="animate-pulse" />
+                <circle cx="100" cy="60" r="5" />
+                <circle cx="150" cy="30" r="3" />
+                <circle cx="200" cy="120" r="8" opacity="0.4" className="animate-pulse" />
+                <circle cx="200" cy="120" r="3" />
+                <text x="215" y="125" fontSize="12" fontWeight="bold" className="animate-pulse">RISK</text>
+                <circle cx="250" cy="60" r="4" />
+              </g>
+              <path d="M50 90 L100 60 L150 30 L200 120 L250 60" stroke="currentColor" strokeWidth="2" fill="none" opacity="0.5" strokeDasharray="4 4" />
             </g>
 
             {/* Background watermark large text */}
