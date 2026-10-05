@@ -31,7 +31,7 @@ export default function LandingPage() {
         </div>
 
         {/* Financial Watermark Graphics */}
-        <div className="absolute inset-0 -z-10 flex items-center justify-center overflow-hidden opacity-[0.05] pointer-events-none animate-float-delayed" aria-hidden="true">
+        <div className="absolute inset-0 -z-10 flex items-center justify-center overflow-hidden opacity-[0.06] pointer-events-none animate-float-delayed" aria-hidden="true">
           <svg className="w-full h-full min-w-[1200px]" viewBox="0 0 1200 600" fill="none" xmlns="http://www.w3.org/2000/svg">
             <g stroke="currentColor" strokeWidth="1" strokeDasharray="4 8" opacity="0.3">
               <path d="M0 100 L1200 100" />
@@ -51,26 +51,72 @@ export default function LandingPage() {
                 <stop offset="100%" stopColor="currentColor" stopOpacity="0.0"/>
               </linearGradient>
             </defs>
-            <path d="M0 500 Q 150 450 300 480 T 600 350 T 900 200 T 1200 100 L 1200 600 L 0 600 Z" fill="url(#chart-gradient)" opacity="0.4" />
-            <path d="M0 500 Q 150 450 300 480 T 600 350 T 900 200 T 1200 100" stroke="currentColor" strokeWidth="4" fill="none" strokeLinecap="round" />
-            <circle cx="300" cy="480" r="6" fill="currentColor" />
-            <circle cx="600" cy="350" r="6" fill="currentColor" />
-            <circle cx="900" cy="200" r="6" fill="currentColor" />
-            <g fill="currentColor" stroke="currentColor" strokeWidth="2" opacity="0.8">
-              <line x1="100" y1="400" x2="100" y2="480" /><rect x="94" y="420" width="12" height="40" />
-              <line x1="200" y1="460" x2="200" y2="520" /><rect x="194" y="470" width="12" height="25" />
-              <line x1="450" y1="360" x2="450" y2="440" /><rect x="444" y="380" width="12" height="35" />
-              <line x1="750" y1="220" x2="750" y2="300" /><rect x="744" y="240" width="12" height="45" />
-              <line x1="1050" y1="100" x2="1050" y2="180" /><rect x="1044" y="110" width="12" height="30" />
+            
+            {/* Center Area Chart */}
+            <g transform="translate(150, 60) scale(0.8)">
+              <path d="M0 500 Q 150 450 300 480 T 600 350 T 900 200 T 1200 100 L 1200 600 L 0 600 Z" fill="url(#chart-gradient)" opacity="0.4" />
+              <path d="M0 500 Q 150 450 300 480 T 600 350 T 900 200 T 1200 100" stroke="currentColor" strokeWidth="4" fill="none" strokeLinecap="round" />
+              <circle cx="300" cy="480" r="6" fill="currentColor" />
+              <circle cx="600" cy="350" r="6" fill="currentColor" />
+              <circle cx="900" cy="200" r="6" fill="currentColor" />
+              <g fill="currentColor" stroke="currentColor" strokeWidth="2" opacity="0.8">
+                <line x1="100" y1="400" x2="100" y2="480" /><rect x="94" y="420" width="12" height="40" />
+                <line x1="200" y1="460" x2="200" y2="520" /><rect x="194" y="470" width="12" height="25" />
+                <line x1="450" y1="360" x2="450" y2="440" /><rect x="444" y="380" width="12" height="35" />
+                <line x1="750" y1="220" x2="750" y2="300" /><rect x="744" y="240" width="12" height="45" />
+                <line x1="1050" y1="100" x2="1050" y2="180" /><rect x="1044" y="110" width="12" height="30" />
+              </g>
+              <g fill="currentColor" fontFamily="monospace" fontSize="22" fontWeight="bold" opacity="0.9">
+                <text x="250" y="450">$45,230</text><text x="250" y="475" fontSize="16" opacity="0.7">+1.2%</text>
+                <text x="550" y="310">$89,400</text><text x="550" y="335" fontSize="16" opacity="0.7">+5.8%</text>
+                <text x="850" y="160">$124,800</text><text x="850" y="185" fontSize="16" opacity="0.7">+12.4%</text>
+                <text x="1080" y="80">$156,000</text><text x="1080" y="105" fontSize="16" opacity="0.7">+8.1%</text>
+              </g>
             </g>
-            <g fill="currentColor" fontFamily="monospace" fontSize="22" fontWeight="bold" opacity="0.9">
-              <text x="250" y="450">$45,230</text><text x="250" y="475" fontSize="16" opacity="0.7">+1.2%</text>
-              <text x="550" y="310">$89,400</text><text x="550" y="335" fontSize="16" opacity="0.7">+5.8%</text>
-              <text x="850" y="160">$124,800</text><text x="850" y="185" fontSize="16" opacity="0.7">+12.4%</text>
-              <text x="1080" y="80">$156,000</text><text x="1080" y="105" fontSize="16" opacity="0.7">+8.1%</text>
-              <text x="40" y="80" fontSize="36" opacity="0.3">LIQUIDITY PREDICTION</text>
-              <text x="800" y="550" fontSize="36" opacity="0.3">VENDOR SCORE: 98/100</text>
-              <text x="400" y="550" fontSize="24" opacity="0.3">Q4 CASHFLOW FORECAST</text>
+
+            {/* Top-Right Donut Chart */}
+            <g transform="translate(1000, 200)">
+              <g className="animate-spin-slow">
+                <circle cx="0" cy="0" r="100" stroke="currentColor" strokeWidth="2" strokeDasharray="10 20" opacity="0.4" fill="none" />
+                <circle cx="0" cy="0" r="115" stroke="currentColor" strokeWidth="1" strokeDasharray="5 5" opacity="0.2" fill="none" />
+              </g>
+              <circle cx="0" cy="0" r="70" stroke="currentColor" strokeWidth="20" strokeDasharray="300 440" opacity="0.7" strokeLinecap="round" transform="rotate(-90)" fill="none" />
+              <circle cx="0" cy="0" r="70" stroke="currentColor" strokeWidth="20" strokeDasharray="100 440" opacity="0.4" strokeLinecap="round" transform="rotate(130)" fill="none" />
+              <circle cx="0" cy="0" r="70" stroke="currentColor" strokeWidth="20" strokeDasharray="40 440" opacity="0.2" strokeLinecap="round" transform="rotate(250)" fill="none" />
+              <text x="0" y="-5" fill="currentColor" fontSize="28" fontFamily="monospace" fontWeight="bold" textAnchor="middle">98%</text>
+              <text x="0" y="20" fill="currentColor" fontSize="14" fontFamily="monospace" opacity="0.7" textAnchor="middle">SCORE</text>
+            </g>
+
+            {/* Bottom-Left Animated Bar Chart */}
+            <g transform="translate(150, 380)">
+              <text x="0" y="-20" fill="currentColor" fontSize="18" fontFamily="monospace" opacity="0.6">MONTHLY CASH FLOW (NET)</text>
+              <line x1="0" y1="150" x2="300" y2="150" stroke="currentColor" strokeWidth="2" opacity="0.5" />
+              <g fill="currentColor" opacity="0.8">
+                <rect x="20" y="80" width="25" height="70" className="animate-bar-1" />
+                <rect x="65" y="50" width="25" height="100" className="animate-bar-2" />
+                <rect x="110" y="100" width="25" height="50" className="animate-bar-3" />
+                <rect x="155" y="20" width="25" height="130" className="animate-bar-4" />
+                <rect x="200" y="60" width="25" height="90" className="animate-bar-5" />
+                <rect x="245" y="10" width="25" height="140" className="animate-bar-1" />
+              </g>
+            </g>
+
+            {/* Top-Left Radar Tech Element */}
+            <g transform="translate(250, 150)">
+              <circle cx="0" cy="0" r="80" stroke="currentColor" strokeWidth="1" opacity="0.3" fill="none" />
+              <circle cx="0" cy="0" r="50" stroke="currentColor" strokeWidth="1" opacity="0.3" fill="none" />
+              <circle cx="0" cy="0" r="20" stroke="currentColor" strokeWidth="1" opacity="0.3" fill="none" />
+              <line x1="-80" y1="0" x2="80" y2="0" stroke="currentColor" strokeWidth="1" opacity="0.3" />
+              <line x1="0" y1="-80" x2="0" y2="80" stroke="currentColor" strokeWidth="1" opacity="0.3" />
+              <line x1="-56" y1="-56" x2="56" y2="56" stroke="currentColor" strokeWidth="1" opacity="0.3" />
+              <line x1="-56" y1="56" x2="56" y2="-56" stroke="currentColor" strokeWidth="1" opacity="0.3" />
+              <polygon points="0,-70 40,-20 60,30 10,50 -30,40 -60,-10" fill="currentColor" opacity="0.2" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" className="animate-float" />
+            </g>
+
+            {/* Background watermark large text */}
+            <g fill="currentColor" fontFamily="monospace" fontWeight="bold">
+              <text x="40" y="80" fontSize="36" opacity="0.3">LIQUIDITY PREDICTION ENGINE</text>
+              <text x="650" y="550" fontSize="36" opacity="0.3">AI VENDOR BEHAVIOR ANALYSIS</text>
             </g>
           </svg>
         </div>

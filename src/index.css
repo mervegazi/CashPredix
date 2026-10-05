@@ -57,3 +57,25 @@ body {
 .animate-float-delayed {
   animation: float-delayed 8s ease-in-out infinite;
 }
+
+@keyframes spin-slow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.animate-spin-slow {
+  animation: spin-slow 20s linear infinite;
+  transform-origin: center;
+}
+
+@keyframes bar-pulse {
+  0% { transform: scaleY(1); opacity: 0.8; }
+  50% { transform: scaleY(0.7); opacity: 0.4; }
+  100% { transform: scaleY(1); opacity: 0.8; }
+}
+
+.animate-bar-1 { animation: bar-pulse 3s ease-in-out infinite; transform-origin: bottom; }
+.animate-bar-2 { animation: bar-pulse 4s ease-in-out infinite; transform-origin: bottom; }
+.animate-bar-3 { animation: bar-pulse 2.5s ease-in-out infinite; transform-origin: bottom; }
+.animate-bar-4 { animation: bar-pulse 3.5s ease-in-out infinite; transform-origin: bottom; }
+.animate-bar-5 { animation: bar-pulse 4.5s ease-in-out infinite; transform-origin: bottom; }
