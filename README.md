@@ -3,6 +3,7 @@
 **Autonomous Liquidity Prediction and Behavioral Scoring Web Platform**
 
 🔗 **Live Website:** [https://mervegazi.github.io/CashPredix](https://mervegazi.github.io/CashPredix)
+📄 **Project Document:** [Google Doc](https://docs.google.com/document/d/12zZ7CwuSc9LT1miTMwkaNCyaasFeuesjaXJgL3taLSc/edit?tab=t.0#heading=h.egvdssihcvzi)
 
 ---
 
