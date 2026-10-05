@@ -74,8 +74,8 @@ body {
   100% { transform: scaleY(1); opacity: 0.8; }
 }
 
-.animate-bar-1 { animation: bar-pulse 3s ease-in-out infinite; transform-origin: bottom; }
-.animate-bar-2 { animation: bar-pulse 4s ease-in-out infinite; transform-origin: bottom; }
-.animate-bar-3 { animation: bar-pulse 2.5s ease-in-out infinite; transform-origin: bottom; }
-.animate-bar-4 { animation: bar-pulse 3.5s ease-in-out infinite; transform-origin: bottom; }
-.animate-bar-5 { animation: bar-pulse 4.5s ease-in-out infinite; transform-origin: bottom; }
+.animate-bar-1 { animation: bar-pulse 6s ease-in-out infinite; transform-origin: bottom; }
+.animate-bar-2 { animation: bar-pulse 7s ease-in-out infinite; transform-origin: bottom; }
+.animate-bar-3 { animation: bar-pulse 5.5s ease-in-out infinite; transform-origin: bottom; }
+.animate-bar-4 { animation: bar-pulse 6.5s ease-in-out infinite; transform-origin: bottom; }
+.animate-bar-5 { animation: bar-pulse 8s ease-in-out infinite; transform-origin: bottom; }

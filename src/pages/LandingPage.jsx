@@ -103,8 +103,8 @@ export default function LandingPage() {
 
             {/* Top-Left Horizontal Vendor Scores */}
             <g transform="translate(100, 120)">
-              <text x="0" y="-10" fill="currentColor" fontSize="16" fontFamily="monospace" opacity="0.6">TOP VENDOR SCORES</text>
               <g className="animate-float">
+                <text x="0" y="-10" fill="currentColor" fontSize="16" fontFamily="monospace" opacity="0.6">TOP VENDOR SCORES</text>
                 {/* Vendor 1 */}
                 <text x="0" y="20" fill="currentColor" fontSize="14" opacity="0.8">GlobalTech</text>
                 <rect x="100" y="8" width="180" height="12" fill="currentColor" opacity="0.2" rx="6" />
@@ -155,8 +155,8 @@ export default function LandingPage() {
 
             {/* Background watermark large text */}
             <g fill="currentColor" fontFamily="monospace" fontWeight="bold">
-              <text x="40" y="80" fontSize="36" opacity="0.3">LIQUIDITY PREDICTION ENGINE</text>
-              <text x="650" y="550" fontSize="36" opacity="0.3">AI VENDOR BEHAVIOR ANALYSIS</text>
+              <text x="40" y="60" fontSize="36" opacity="0.3">LIQUIDITY PREDICTION ENGINE</text>
+              <text x="650" y="580" fontSize="36" opacity="0.3">AI VENDOR BEHAVIOR ANALYSIS</text>
             </g>
           </svg>
         </div>
