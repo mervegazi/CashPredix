@@ -175,15 +175,15 @@ export default function LandingPage() {
             >
               Get started
             </Link>
-            <a href="#features" className="rounded-md border border-gray-600 px-5 py-3 text-sm font-semibold text-white hover:bg-gray-800 transition-colors">
+            <a href="#overview" className="rounded-md border border-gray-600 px-5 py-3 text-sm font-semibold text-white hover:bg-gray-800 transition-colors">
               Learn more <span aria-hidden="true">→</span>
             </a>
           </div>
         </div>
       </div>
 
-      {/* Features Section */}
-      <div id="features" className="py-24 sm:py-32 bg-gray-800">
+      {/* Overview Section */}
+      <div id="overview" className="py-24 sm:py-32 bg-gray-800">
         <div className="mx-auto max-w-7xl px-6 lg:px-8">
           <div className="mx-auto max-w-2xl lg:text-center">
             <h2 className="text-base font-semibold leading-7 text-blue-400">Deploy faster</h2>
