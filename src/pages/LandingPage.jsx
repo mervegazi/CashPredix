@@ -10,20 +10,28 @@ export default function LandingPage() {
             <span className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-emerald-400">CashPredix</span>
           </a>
         </div>
-        <div className="flex flex-1 justify-end gap-x-4">
-          <Link to="/login" className="text-sm font-semibold leading-6 text-white hover:text-blue-400">
+        <div className="flex flex-1 justify-end items-center gap-x-4">
+          <Link to="/login" className="text-sm font-semibold leading-6 text-gray-300 px-4 py-2 rounded-md border border-gray-600 hover:bg-gray-800 hover:text-white transition-colors">
             Log in
           </Link>
-          <Link to="/signup" className="text-sm font-semibold leading-6 bg-blue-600 px-4 py-2 rounded-md hover:bg-blue-500 transition-colors">
+          <Link to="/signup" className="text-sm font-semibold leading-6 bg-blue-600 px-4 py-2 rounded-md hover:bg-blue-500 text-white transition-colors">
             Sign up
           </Link>
         </div>
       </nav>
 
       {/* Hero Section */}
-      <div className="relative isolate px-6 pt-14 lg:px-8">
+      <div className="relative isolate px-6 pt-14 lg:px-8 overflow-hidden">
+        {/* Animated Background Orbs */}
+        <div className="absolute inset-x-0 -top-40 -z-10 transform-gpu overflow-hidden blur-3xl sm:-top-80 pointer-events-none" aria-hidden="true">
+          <div className="relative left-[calc(50%-11rem)] aspect-[1155/678] w-[36.125rem] -translate-x-1/2 rotate-[30deg] bg-gradient-to-tr from-[#3b82f6] to-[#10b981] opacity-20 sm:left-[calc(50%-30rem)] sm:w-[72.1875rem] animate-float"></div>
+        </div>
+        <div className="absolute inset-x-0 top-[calc(100%-13rem)] -z-10 transform-gpu overflow-hidden blur-3xl sm:top-[calc(100%-30rem)] pointer-events-none" aria-hidden="true">
+          <div className="relative left-[calc(50%+3rem)] aspect-[1155/678] w-[36.125rem] -translate-x-1/2 bg-gradient-to-tr from-[#10b981] to-[#3b82f6] opacity-20 sm:left-[calc(50%+36rem)] sm:w-[72.1875rem] animate-float-delayed"></div>
+        </div>
+        
         <div className="mx-auto max-w-2xl py-32 sm:py-48 lg:py-56 text-center">
-          <h1 className="text-4xl font-bold tracking-tight text-white sm:text-6xl mb-6">
+          <h1 className="text-4xl font-bold tracking-tight text-white sm:text-6xl mb-6 drop-shadow-md">
             Autonomous Liquidity Prediction & Behavioral Scoring
           </h1>
           <p className="mt-6 text-lg leading-8 text-gray-300">
@@ -32,11 +40,11 @@ export default function LandingPage() {
           <div className="mt-10 flex items-center justify-center gap-x-6">
             <Link
               to="/signup"
-              className="rounded-md bg-blue-600 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
+              className="rounded-md bg-blue-600 px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 transition-colors"
             >
               Get started
             </Link>
-            <a href="#features" className="text-sm font-semibold leading-6 text-white hover:text-gray-300">
+            <a href="#features" className="rounded-md border border-gray-600 px-5 py-3 text-sm font-semibold text-white hover:bg-gray-800 transition-colors">
               Learn more <span aria-hidden="true">→</span>
             </a>
           </div>
