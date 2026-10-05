@@ -2,7 +2,7 @@
 
 **Autonomous Liquidity Prediction and Behavioral Scoring Web Platform**
 
-🔗 **Live Website:** [https://cashpredix.vercel.app](https://cashpredix.vercel.app)
+🔗 **Live Website:** [https://mervegazi.github.io/CashPredix](https://mervegazi.github.io/CashPredix)
 
 ---
 
@@ -28,7 +28,7 @@ CashPredix is a machine learning-driven web application focusing on **Autonomous
 | Database    | Supabase (PostgreSQL) |
 | Auth        | Supabase Auth     |
 | ML          | Python (scikit-learn / TensorFlow) |
-| Hosting     | Vercel / GitHub Pages |
+| Hosting     | GitHub Pages      |
 | Project Mgmt| GitHub Projects (Kanban) |
 
 ## Getting Started
