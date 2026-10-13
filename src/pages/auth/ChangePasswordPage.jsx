@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth, formatAuthError } from '../../contexts/AuthContext';
 import { toast } from 'react-hot-toast';
@@ -22,6 +22,72 @@ export default function ChangePasswordPage() {
 
   const { updatePassword, user, loading } = useAuth();
   const navigate = useNavigate();
+
+  // Multi-tab synchronization: redirect if password was already changed in another tab
+  useEffect(() => {
+    let isMounted = true;
+
+    const handleRemotePasswordUpdate = () => {
+      if (!isMounted) return;
+      toast.success('Password was updated in another window. Redirecting to dashboard...', {
+        id: 'cross-tab-pw-update',
+      });
+      navigate('/dashboard', { replace: true });
+    };
+
+    // 1. Cross-tab storage listener (fires in all other tabs when localStorage is set)
+    const onStorage = (e) => {
+      if (e.key === 'cashpredix_password_updated_event' && e.newValue) {
+        handleRemotePasswordUpdate();
+      }
+    };
+    window.addEventListener('storage', onStorage);
+
+    // 2. BroadcastChannel for instant inter-tab communication
+    let channel;
+    if (typeof BroadcastChannel !== 'undefined') {
+      try {
+        channel = new BroadcastChannel('cashpredix_auth_channel');
+        channel.onmessage = (event) => {
+          if (event.data?.type === 'PASSWORD_UPDATED') {
+            handleRemotePasswordUpdate();
+          }
+        };
+      } catch (err) {
+        console.warn('BroadcastChannel error:', err);
+      }
+    }
+
+    // 3. Tab visibility check: if tab is brought to foreground after password was changed
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        const lastUpdated = localStorage.getItem('cashpredix_password_updated_event');
+        if (lastUpdated && Date.now() - Number(lastUpdated) < 1000 * 60 * 10) {
+          handleRemotePasswordUpdate();
+        }
+      }
+    };
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    window.addEventListener('focus', onVisibilityChange);
+
+    // 4. Mount-time check: if password was updated very recently (< 120s), redirect immediately
+    const initialCheck = localStorage.getItem('cashpredix_password_updated_event');
+    if (initialCheck && Date.now() - Number(initialCheck) < 1000 * 120) {
+      handleRemotePasswordUpdate();
+    }
+
+    return () => {
+      isMounted = false;
+      window.removeEventListener('storage', onStorage);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+      window.removeEventListener('focus', onVisibilityChange);
+      if (channel) {
+        try {
+          channel.close();
+        } catch {}
+      }
+    };
+  }, [navigate]);
 
   const validate = () => {
     const errs = {};
@@ -54,6 +120,8 @@ export default function ChangePasswordPage() {
       toast.success('Password updated successfully! Redirecting to dashboard...');
       setNewPassword('');
       setConfirmPassword('');
+      // Clean token hash from URL
+      window.history.replaceState(null, '', window.location.pathname);
       setTimeout(() => {
         navigate('/dashboard', { replace: true });
       }, 1000);

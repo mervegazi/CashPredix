@@ -211,12 +211,37 @@ export function AuthProvider({ children }) {
   const updatePassword = async (newPassword) => {
     // If running in local demo mode, simulate success
     if (localStorage.getItem('cashpredix_demo_session')) {
+      const timestamp = Date.now().toString();
+      localStorage.setItem('cashpredix_password_updated_event', timestamp);
+      if (typeof BroadcastChannel !== 'undefined') {
+        try {
+          const ch = new BroadcastChannel('cashpredix_auth_channel');
+          ch.postMessage({ type: 'PASSWORD_UPDATED', timestamp });
+          ch.close();
+        } catch (e) {
+          console.warn('BroadcastChannel error:', e);
+        }
+      }
       return { user };
     }
     const { data, error } = await supabase.auth.updateUser({
       password: newPassword,
     });
     if (error) throw error;
+
+    // Cross-tab broadcast notification
+    const timestamp = Date.now().toString();
+    localStorage.setItem('cashpredix_password_updated_event', timestamp);
+    if (typeof BroadcastChannel !== 'undefined') {
+      try {
+        const ch = new BroadcastChannel('cashpredix_auth_channel');
+        ch.postMessage({ type: 'PASSWORD_UPDATED', timestamp });
+        ch.close();
+      } catch (e) {
+        console.warn('BroadcastChannel error:', e);
+      }
+    }
+
     return data;
   };
 
