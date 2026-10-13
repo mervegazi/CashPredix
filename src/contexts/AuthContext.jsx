@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
+import { toast } from 'react-hot-toast';
 
 const AuthContext = createContext();
 
@@ -33,6 +34,22 @@ export function AuthProvider({ children }) {
   const [supabaseStatus, setSupabaseStatus] = useState('checking'); // 'connected' | 'paused' | 'error'
 
   useEffect(() => {
+    // Check for auth error parameters in URL hash
+    if (window.location.hash.includes('error=')) {
+      try {
+        const hashParams = new URLSearchParams(window.location.hash.substring(1));
+        const errorDesc = hashParams.get('error_description') || hashParams.get('error');
+        if (errorDesc) {
+          toast.error(`Auth Notice: ${decodeURIComponent(errorDesc.replace(/\+/g, ' '))}`, {
+            duration: 6000,
+          });
+        }
+        window.history.replaceState(null, '', window.location.pathname);
+      } catch (e) {
+        console.warn('Could not parse hash error:', e);
+      }
+    }
+
     // Check Supabase session with safety timeout
     let isMounted = true;
     const sessionPromise = supabase.auth.getSession();
@@ -106,6 +123,7 @@ export function AuthProvider({ children }) {
 
   const signUp = async (email, password, fullName) => {
     try {
+      const redirectUrl = `${window.location.origin}${import.meta.env.BASE_URL}dashboard`;
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -113,6 +131,7 @@ export function AuthProvider({ children }) {
           data: {
             full_name: fullName,
           },
+          emailRedirectTo: redirectUrl,
         },
       });
       if (error) throw error;
@@ -150,8 +169,9 @@ export function AuthProvider({ children }) {
   };
 
   const resetPassword = async (email) => {
+    const redirectUrl = `${window.location.origin}${import.meta.env.BASE_URL}change-password`;
     const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/CashPredix/change-password`,
+      redirectTo: redirectUrl,
     });
     if (error) throw error;
     return data;
