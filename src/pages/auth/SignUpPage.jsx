@@ -172,7 +172,7 @@ export default function SignUpPage() {
                     setFullName(e.target.value);
                     if (errors.fullName) setErrors((prev) => ({ ...prev, fullName: null }));
                   }}
-                  placeholder="e.g. Merve Gazi"
+                  placeholder="e.g. Sarah Jenkins"
                   className={`block w-full pl-10 pr-3.5 py-2.5 bg-slate-50 dark:bg-gray-950/60 border rounded-xl text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-gray-500 focus:bg-white dark:focus:bg-gray-950 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm transition-all ${
                     errors.fullName ? 'border-red-500/80 ring-1 ring-red-500/50' : 'border-slate-300 dark:border-gray-800 hover:border-slate-400 dark:hover:border-gray-700'
                   }`}
