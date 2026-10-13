@@ -34,15 +34,15 @@ export default function LoginPage() {
   const validate = () => {
     const errs = {};
     if (!email.trim()) {
-      errs.email = 'E-posta adresi zorunludur.';
+      errs.email = 'Email address is required.';
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      errs.email = 'Lütfen geçerli bir e-posta adresi giriniz.';
+      errs.email = 'Please enter a valid email address.';
     }
 
     if (!password) {
-      errs.password = 'Şifre zorunludur.';
+      errs.password = 'Password is required.';
     } else if (password.length < 6) {
-      errs.password = 'Şifre en az 6 karakter olmalıdır.';
+      errs.password = 'Password must be at least 6 characters.';
     }
 
     setErrors(errs);
@@ -52,14 +52,14 @@ export default function LoginPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validate()) {
-      toast.error('Lütfen formdaki hataları kontrol ediniz.');
+      toast.error('Please resolve the errors in the form.');
       return;
     }
 
     setIsSubmitting(true);
     try {
       await signIn(email, password);
-      toast.success('Başarıyla giriş yapıldı! Hoş geldiniz.');
+      toast.success('Successfully signed in! Welcome back.');
       const destination = location.state?.from?.pathname || '/dashboard';
       navigate(destination, { replace: true });
     } catch (err) {
@@ -76,7 +76,7 @@ export default function LoginPage() {
     setIsSubmitting(true);
     try {
       await signInDemo();
-      toast.success('Demo Executive hesabı ile giriş yapıldı!');
+      toast.success('Signed in with Demo Executive account!');
       navigate('/dashboard', { replace: true });
     } catch (err) {
       console.error('Demo login error:', err);
@@ -89,15 +89,15 @@ export default function LoginPage() {
 
   const handleForgotPassword = async () => {
     if (!email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      toast.error('Lütfen şifre sıfırlama linki almak için yukarıya e-posta adresinizi yazınız.');
-      setErrors((prev) => ({ ...prev, email: 'Şifrenizi sıfırlamak için buraya e-posta adresinizi giriniz.' }));
+      toast.error('Please enter your email address in the field above to receive a reset link.');
+      setErrors((prev) => ({ ...prev, email: 'Enter your email here to receive a password reset link.' }));
       return;
     }
 
     setIsResetting(true);
     try {
       await resetPassword(email);
-      toast.success('Şifre sıfırlama bağlantısı e-posta adresinize gönderildi!');
+      toast.success('Password reset link sent to your email address!');
     } catch (err) {
       const friendlyMsg = formatAuthError(err);
       toast.error(friendlyMsg);
@@ -122,7 +122,7 @@ export default function LoginPage() {
           className="inline-flex items-center gap-2 text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-200/60 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-800/60 py-2 px-3 rounded-lg border border-transparent hover:border-slate-300 dark:hover:border-gray-700/50 transition-colors"
         >
           <ChevronLeft className="w-4 h-4" />
-          <span>Ana Sayfaya Dön</span>
+          <span>Back to Home</span>
         </Link>
 
         <button
@@ -147,10 +147,10 @@ export default function LoginPage() {
             </span>
           </Link>
           <h2 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
-            Hesabınıza Giriş Yapın
+            Sign in to your account
           </h2>
           <p className="mt-2 text-sm text-slate-500 dark:text-gray-400">
-            Yapay zeka destekli nakit akış tahminleri ve tedarikçi risk skorlama
+            AI-driven cashflow forecasting and vendor behavioral risk scoring
           </p>
         </div>
 
@@ -158,7 +158,7 @@ export default function LoginPage() {
         <div className="bg-white/90 dark:bg-gray-900/80 backdrop-blur-xl border border-slate-200 dark:border-gray-800/80 shadow-xl dark:shadow-2xl rounded-2xl p-6 sm:p-8 transition-colors">
           {errors.form && (
             <div className="mb-5 p-3.5 rounded-xl bg-red-50 border border-red-200 text-red-700 dark:bg-red-950/50 dark:border-red-500/40 dark:text-red-300 text-sm flex items-start gap-2">
-              <span className="font-semibold">Uyarı:</span> {errors.form}
+              <span className="font-semibold">Notice:</span> {errors.form}
             </div>
           )}
 
@@ -169,7 +169,7 @@ export default function LoginPage() {
                 htmlFor="login-email" 
                 className="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-gray-300 mb-1.5"
               >
-                E-posta Adresi
+                Email Address
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 dark:text-gray-400">
@@ -185,7 +185,7 @@ export default function LoginPage() {
                     setEmail(e.target.value);
                     if (errors.email) setErrors((prev) => ({ ...prev, email: null }));
                   }}
-                  placeholder="adiniz@sirket.com"
+                  placeholder="name@company.com"
                   className={`block w-full pl-10 pr-3.5 py-2.5 bg-slate-50 dark:bg-gray-950/60 border rounded-xl text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-gray-500 focus:bg-white dark:focus:bg-gray-950 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm transition-all ${
                     errors.email ? 'border-red-500/80 ring-1 ring-red-500/50' : 'border-slate-300 dark:border-gray-800 hover:border-slate-400 dark:hover:border-gray-700'
                   }`}
@@ -205,7 +205,7 @@ export default function LoginPage() {
                   htmlFor="login-password" 
                   className="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-gray-300"
                 >
-                  Şifre
+                  Password
                 </label>
                 <button
                   type="button"
@@ -214,7 +214,7 @@ export default function LoginPage() {
                   disabled={isResetting}
                   className="text-xs font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300 hover:underline transition-colors"
                 >
-                  {isResetting ? 'Gönderiliyor...' : 'Şifremi unuttum'}
+                  {isResetting ? 'Sending link...' : 'Forgot password?'}
                 </button>
               </div>
               <div className="relative">
@@ -263,7 +263,7 @@ export default function LoginPage() {
                   onChange={(e) => setRememberMe(e.target.checked)}
                   className="w-4 h-4 rounded bg-white dark:bg-gray-950 border-slate-300 dark:border-gray-700 text-blue-600 focus:ring-blue-500/40"
                 />
-                <span>Bu cihazda beni hatırla</span>
+                <span>Remember me on this device</span>
               </label>
             </div>
 
@@ -277,11 +277,11 @@ export default function LoginPage() {
               {isSubmitting ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Giriş yapılıyor...</span>
+                  <span>Signing in...</span>
                 </>
               ) : (
                 <>
-                  <span>Panele Giriş Yap</span>
+                  <span>Sign In to Dashboard</span>
                   <ArrowRight className="w-4 h-4" />
                 </>
               )}
@@ -294,7 +294,7 @@ export default function LoginPage() {
               <div className="w-full border-t border-slate-200 dark:border-gray-800" />
             </div>
             <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-white dark:bg-gray-900 px-3 text-slate-500 dark:text-gray-400 font-medium">veya anında deneyin</span>
+              <span className="bg-white dark:bg-gray-900 px-3 text-slate-500 dark:text-gray-400 font-medium">Or explore instantly</span>
             </div>
           </div>
 
@@ -307,18 +307,18 @@ export default function LoginPage() {
             className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-sm font-semibold text-emerald-800 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 border border-emerald-300 dark:border-emerald-500/30 transition-all"
           >
             <Sparkles className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-            <span>Hızlı Demo Executive Girişi</span>
+            <span>Quick Demo Executive Sign In</span>
           </button>
 
           {/* Sign Up Link */}
           <div className="mt-6 text-center text-sm text-slate-600 dark:text-gray-400">
-            CashPredix hesabınız yok mu?{' '}
+            Don't have a CashPredix account?{' '}
             <Link 
               to="/signup" 
               id="goto-signup-link" 
               className="font-semibold text-blue-600 dark:text-blue-400 hover:underline"
             >
-              Hesap oluşturun
+              Create an account
             </Link>
           </div>
         </div>

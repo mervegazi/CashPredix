@@ -3,38 +3,39 @@ import { supabase } from '../lib/supabaseClient';
 import { toast } from 'react-hot-toast';
 
 export function formatAuthError(err) {
-  if (!err) return 'Bir hata oluştu. Lütfen tekrar deneyiniz.';
+  if (!err) return 'An unexpected error occurred. Please try again.';
   const msg = (err.message || String(err)).toLowerCase();
 
   if (msg.includes('invalid login credentials') || msg.includes('invalid_grant')) {
-    return 'E-posta veya şifre hatalı, lütfen kontrol ediniz.';
+    return 'Invalid email or password. Please check your credentials and try again.';
   }
   if (msg.includes('user already registered') || msg.includes('already exists')) {
-    return 'Bu e-posta adresiyle kayıtlı bir kullanıcı zaten mevcut. Lütfen giriş yapınız.';
+    return 'An account with this email address already exists. Please sign in.';
   }
   if (msg.includes('password should be at least') || msg.includes('weak password')) {
-    return 'Şifre en az 6 karakter uzunluğunda olmalıdır.';
+    return 'Password must be at least 6 characters long.';
   }
   if (msg.includes('email not confirmed')) {
-    return 'E-posta adresiniz henüz onaylanmamış. Lütfen gelen kutunuzdaki onay bağlantısını kontrol ediniz.';
+    return 'Your email address has not been confirmed yet. Please check your inbox for the verification link.';
   }
   if (msg.includes('email rate limit exceeded') || msg.includes('rate limit')) {
-    return 'Çok fazla istek gönderildi. Lütfen birkaç dakika bekleyip tekrar deneyiniz.';
+    return 'Too many requests. Please wait a few moments before trying again.';
   }
   if (msg.includes('user not found')) {
-    return 'Bu e-posta adresine kayıtlı bir hesap bulunamadı.';
+    return 'No account was found with this email address.';
   }
   if (msg.includes('otp_expired') || msg.includes('token has expired') || msg.includes('invalid or has expired')) {
-    return 'Onay bağlantısının süresi dolmuş veya daha önce kullanılmış. Lütfen yeni bir bağlantı talep ediniz.';
+    return 'The verification or reset link has expired or has already been used. Please request a new link.';
   }
   if (msg.includes('network') || msg.includes('failed to fetch')) {
-    return 'Sunucuya bağlanılamadı. Lütfen internet bağlantınızı kontrol ediniz.';
+    return 'Unable to reach the server. Please check your internet connection.';
   }
   if (msg.includes('502') || msg.includes('bad gateway')) {
-    return 'Sunucu geçici olarak yanıt vermiyor. Lütfen biraz sonra tekrar deneyiniz.';
+    return 'Authentication server is temporarily unavailable (502). Please try again in a few moments or use Demo Sign In.';
   }
-  return err.message || 'İşlem gerçekleştirilemedi. Lütfen bilgilerinizi kontrol ediniz.';
+  return err.message || 'Authentication request failed. Please check your information and try again.';
 }
+
 
 const AuthContext = createContext();
 
@@ -166,7 +167,7 @@ export function AuthProvider({ children }) {
       // Check if project returned 502 / bad gateway
       if (err.status === 502 || err.message?.includes('502') || err.message?.includes('Failed to fetch')) {
         setSupabaseStatus('paused');
-        throw new Error('Supabase projesi şu anda duraklatılmış (502). Supabase Dashboard üzerinden projenizi aktifleştirebilirsiniz veya Demo Girişi kullanabilirsiniz.');
+        throw new Error('Supabase project is temporarily paused or unavailable (502). Please resume it from your Supabase Dashboard or use Demo Executive sign in.');
       }
       throw err;
     }
@@ -191,7 +192,7 @@ export function AuthProvider({ children }) {
     } catch (err) {
       if (err.status === 502 || err.message?.includes('502') || err.message?.includes('Failed to fetch')) {
         setSupabaseStatus('paused');
-        throw new Error('Supabase projeniz duraklatılmış durumda (502). Lütfen Supabase panelinden projenizi "Restore" edin.');
+        throw new Error('Supabase project is temporarily paused or unavailable (502). Please resume it from your Supabase Dashboard or use Demo Executive sign in.');
       }
       throw err;
     }

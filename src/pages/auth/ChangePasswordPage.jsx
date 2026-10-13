@@ -26,15 +26,15 @@ export default function ChangePasswordPage() {
   const validate = () => {
     const errs = {};
     if (!newPassword) {
-      errs.newPassword = 'Yeni şifre alanı zorunludur.';
+      errs.newPassword = 'New password is required.';
     } else if (newPassword.length < 6) {
-      errs.newPassword = 'Şifre en az 6 karakter olmalıdır.';
+      errs.newPassword = 'Password must be at least 6 characters.';
     }
 
     if (!confirmPassword) {
-      errs.confirmPassword = 'Şifre tekrarı zorunludur.';
+      errs.confirmPassword = 'Confirm password is required.';
     } else if (newPassword !== confirmPassword) {
-      errs.confirmPassword = 'Şifreler birbiriyle uyuşmuyor.';
+      errs.confirmPassword = 'Passwords do not match.';
     }
 
     setErrors(errs);
@@ -44,14 +44,14 @@ export default function ChangePasswordPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validate()) {
-      toast.error('Lütfen formdaki hataları kontrol ediniz.');
+      toast.error('Please resolve the errors in the form.');
       return;
     }
 
     setIsSubmitting(true);
     try {
       await updatePassword(newPassword);
-      toast.success('Şifreniz başarıyla güncellendi! Dashboard ekranına yönlendiriliyorsunuz...');
+      toast.success('Password updated successfully! Redirecting to dashboard...');
       setNewPassword('');
       setConfirmPassword('');
       setTimeout(() => {
@@ -71,7 +71,7 @@ export default function ChangePasswordPage() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-gray-950 text-slate-900 dark:text-white">
         <Loader2 className="w-8 h-8 text-blue-500 animate-spin mr-3" />
-        <span className="text-sm text-slate-500 dark:text-gray-400">Oturum doğrulanıyor...</span>
+        <span className="text-sm text-slate-500 dark:text-gray-400">Verifying session...</span>
       </div>
     );
   }
@@ -90,7 +90,7 @@ export default function ChangePasswordPage() {
           className="inline-flex items-center gap-2 text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-200/60 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-800/60 py-2 px-3 rounded-lg border border-transparent hover:border-slate-300 dark:hover:border-gray-700/50 transition-colors"
         >
           <ChevronLeft className="w-4 h-4" />
-          <span>Dashboard'a Dön</span>
+          <span>Back to Dashboard</span>
         </Link>
       </div>
 
@@ -100,12 +100,12 @@ export default function ChangePasswordPage() {
             <KeyRound className="w-6 h-6 text-white" />
           </div>
           <h2 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
-            Yeni Şifrenizi Belirleyin
+            Set Your New Password
           </h2>
           <p className="mt-2 text-sm text-slate-500 dark:text-gray-400">
             {user?.email 
-              ? `${user.email} hesabı için yeni bir şifre girin` 
-              : 'Şifre sıfırlama işlemini tamamlamak için yeni şifrenizi belirleyin'}
+              ? `Enter a new password for ${user.email}` 
+              : 'Enter a new password to complete the account recovery process'}
           </p>
         </div>
 
@@ -120,11 +120,11 @@ export default function ChangePasswordPage() {
             <div className="mb-5 p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 dark:bg-amber-950/40 dark:border-amber-500/30 dark:text-amber-300 text-xs flex items-start gap-2.5">
               <AlertCircle className="w-4 h-4 shrink-0 text-amber-600 dark:text-amber-400 mt-0.5" />
               <span>
-                Aktif bir sıfırlama bağlantısı olmadan bu sayfaya geldiyseniz, lütfen{' '}
+                If you arrived here without an active recovery link, please request a new reset link from the{' '}
                 <Link to="/login" className="underline font-bold text-amber-900 dark:text-amber-200">
-                  Giriş Sayfası
+                  Login Page
                 </Link>
-                'ndan yeni bir şifre sıfırlama bağlantısı talep ediniz.
+                .
               </span>
             </div>
           )}
@@ -135,7 +135,7 @@ export default function ChangePasswordPage() {
                 htmlFor="new-password" 
                 className="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-gray-300 mb-1.5"
               >
-                Yeni Şifre
+                New Password
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 dark:text-gray-400">
@@ -149,7 +149,7 @@ export default function ChangePasswordPage() {
                     setNewPassword(e.target.value);
                     if (errors.newPassword) setErrors((prev) => ({ ...prev, newPassword: null }));
                   }}
-                  placeholder="En az 6 karakter"
+                  placeholder="At least 6 characters"
                   className={`block w-full pl-10 pr-10 py-2.5 bg-slate-50 dark:bg-gray-950/60 border rounded-xl text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-gray-500 focus:bg-white dark:focus:bg-gray-950 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm transition-all ${
                     errors.newPassword ? 'border-red-500/80 ring-1 ring-red-500/50' : 'border-slate-300 dark:border-gray-800 hover:border-slate-400 dark:hover:border-gray-700'
                   }`}
@@ -175,7 +175,7 @@ export default function ChangePasswordPage() {
                 htmlFor="confirm-new-password" 
                 className="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-gray-300 mb-1.5"
               >
-                Yeni Şifre Tekrarı
+                Confirm New Password
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 dark:text-gray-400">
@@ -189,7 +189,7 @@ export default function ChangePasswordPage() {
                     setConfirmPassword(e.target.value);
                     if (errors.confirmPassword) setErrors((prev) => ({ ...prev, confirmPassword: null }));
                   }}
-                  placeholder="Şifrenizi tekrar yazın"
+                  placeholder="Re-enter your new password"
                   className={`block w-full pl-10 pr-3.5 py-2.5 bg-slate-50 dark:bg-gray-950/60 border rounded-xl text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-gray-500 focus:bg-white dark:focus:bg-gray-950 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm transition-all ${
                     errors.confirmPassword ? 'border-red-500/80 ring-1 ring-red-500/50' : 'border-slate-300 dark:border-gray-800 hover:border-slate-400 dark:hover:border-gray-700'
                   }`}
@@ -211,12 +211,12 @@ export default function ChangePasswordPage() {
               {isSubmitting ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Şifre Güncelleniyor...</span>
+                  <span>Updating Password...</span>
                 </>
               ) : (
                 <>
                   <CheckCircle2 className="w-4 h-4" />
-                  <span>Yeni Şifreyi Kaydet</span>
+                  <span>Save New Password</span>
                 </>
               )}
             </button>

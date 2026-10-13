@@ -35,29 +35,29 @@ export default function SignUpPage() {
     const errs = {};
 
     if (!fullName.trim() || fullName.trim().length < 2) {
-      errs.fullName = 'Ad Soyad en az 2 karakter olmalıdır.';
+      errs.fullName = 'Full name must be at least 2 characters.';
     }
 
     if (!email.trim()) {
-      errs.email = 'E-posta adresi zorunludur.';
+      errs.email = 'Email address is required.';
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      errs.email = 'Lütfen geçerli bir kurumsal e-posta adresi giriniz.';
+      errs.email = 'Please enter a valid corporate email address.';
     }
 
     if (!password) {
-      errs.password = 'Şifre zorunludur.';
+      errs.password = 'Password is required.';
     } else if (password.length < 6) {
-      errs.password = 'Şifre en az 6 karakter olmalıdır.';
+      errs.password = 'Password must be at least 6 characters.';
     }
 
     if (!confirmPassword) {
-      errs.confirmPassword = 'Lütfen şifrenizi tekrar giriniz.';
+      errs.confirmPassword = 'Please confirm your password.';
     } else if (confirmPassword !== password) {
-      errs.confirmPassword = 'Şifreler birbiriyle uyuşmuyor.';
+      errs.confirmPassword = 'Passwords do not match.';
     }
 
     if (!agreeTerms) {
-      errs.agreeTerms = 'Kullanım şartlarını kabul etmelisiniz.';
+      errs.agreeTerms = 'You must accept the Terms of Service and Privacy Policy.';
     }
 
     setErrors(errs);
@@ -67,20 +67,20 @@ export default function SignUpPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validate()) {
-      toast.error('Lütfen formdaki eksik veya hatalı alanları kontrol ediniz.');
+      toast.error('Please check the missing or invalid fields in the form.');
       return;
     }
 
     setIsSubmitting(true);
     try {
       const data = await signUp(email, password, fullName);
-      toast.success('Kayıt başarılı! CashPredix ailesine hoş geldiniz.');
+      toast.success('Registration successful! Welcome to CashPredix.');
       
       // If Supabase auto-confirms or returns active session:
       if (data?.session) {
         navigate('/dashboard', { replace: true });
       } else {
-        toast.success('Doğrulama e-postası gönderildi! Giriş yapabilirsiniz.', { duration: 5000 });
+        toast.success('Verification email sent! Please check your inbox.', { duration: 5000 });
         navigate('/login', { replace: true });
       }
     } catch (err) {
@@ -109,7 +109,7 @@ export default function SignUpPage() {
           className="inline-flex items-center gap-2 text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-200/60 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-800/60 py-2 px-3 rounded-lg border border-transparent hover:border-slate-300 dark:hover:border-gray-700/50 transition-colors"
         >
           <ChevronLeft className="w-4 h-4" />
-          <span>Ana Sayfaya Dön</span>
+          <span>Back to Home</span>
         </Link>
 
         <button
@@ -134,10 +134,10 @@ export default function SignUpPage() {
             </span>
           </Link>
           <h2 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
-            Yeni Hesap Oluşturun
+            Create your account
           </h2>
           <p className="mt-2 text-sm text-slate-500 dark:text-gray-400">
-            Nakit akışınızı tahminleyin ve tedarikçi gecikme risklerini önleyin
+            Forecast cashflow dynamics and mitigate vendor liquidity risk
           </p>
         </div>
 
@@ -145,7 +145,7 @@ export default function SignUpPage() {
         <div className="bg-white/90 dark:bg-gray-900/80 backdrop-blur-xl border border-slate-200 dark:border-gray-800/80 shadow-xl dark:shadow-2xl rounded-2xl p-6 sm:p-8 transition-colors">
           {errors.form && (
             <div className="mb-5 p-3.5 rounded-xl bg-red-50 border border-red-200 text-red-700 dark:bg-red-950/50 dark:border-red-500/40 dark:text-red-300 text-sm flex items-start gap-2">
-              <span className="font-semibold">Uyarı:</span> {errors.form}
+              <span className="font-semibold">Notice:</span> {errors.form}
             </div>
           )}
 
@@ -156,7 +156,7 @@ export default function SignUpPage() {
                 htmlFor="signup-fullname" 
                 className="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-gray-300 mb-1.5"
               >
-                Ad ve Soyad
+                Full Name
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 dark:text-gray-400">
@@ -172,7 +172,7 @@ export default function SignUpPage() {
                     setFullName(e.target.value);
                     if (errors.fullName) setErrors((prev) => ({ ...prev, fullName: null }));
                   }}
-                  placeholder="Merve Gazi"
+                  placeholder="e.g. Merve Gazi"
                   className={`block w-full pl-10 pr-3.5 py-2.5 bg-slate-50 dark:bg-gray-950/60 border rounded-xl text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-gray-500 focus:bg-white dark:focus:bg-gray-950 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm transition-all ${
                     errors.fullName ? 'border-red-500/80 ring-1 ring-red-500/50' : 'border-slate-300 dark:border-gray-800 hover:border-slate-400 dark:hover:border-gray-700'
                   }`}
@@ -191,7 +191,7 @@ export default function SignUpPage() {
                 htmlFor="signup-email" 
                 className="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-gray-300 mb-1.5"
               >
-                Kurumsal E-posta Adresi
+                Corporate Email Address
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 dark:text-gray-400">
@@ -207,7 +207,7 @@ export default function SignUpPage() {
                     setEmail(e.target.value);
                     if (errors.email) setErrors((prev) => ({ ...prev, email: null }));
                   }}
-                  placeholder="merve@sirket.com"
+                  placeholder="name@company.com"
                   className={`block w-full pl-10 pr-3.5 py-2.5 bg-slate-50 dark:bg-gray-950/60 border rounded-xl text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-gray-500 focus:bg-white dark:focus:bg-gray-950 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm transition-all ${
                     errors.email ? 'border-red-500/80 ring-1 ring-red-500/50' : 'border-slate-300 dark:border-gray-800 hover:border-slate-400 dark:hover:border-gray-700'
                   }`}
@@ -226,7 +226,7 @@ export default function SignUpPage() {
                 htmlFor="signup-password" 
                 className="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-gray-300 mb-1.5"
               >
-                Şifre
+                Password
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 dark:text-gray-400">
@@ -242,7 +242,7 @@ export default function SignUpPage() {
                     setPassword(e.target.value);
                     if (errors.password) setErrors((prev) => ({ ...prev, password: null }));
                   }}
-                  placeholder="En az 6 karakter"
+                  placeholder="At least 6 characters"
                   className={`block w-full pl-10 pr-10 py-2.5 bg-slate-50 dark:bg-gray-950/60 border rounded-xl text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-gray-500 focus:bg-white dark:focus:bg-gray-950 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm transition-all ${
                     errors.password ? 'border-red-500/80 ring-1 ring-red-500/50' : 'border-slate-300 dark:border-gray-800 hover:border-slate-400 dark:hover:border-gray-700'
                   }`}
@@ -270,7 +270,7 @@ export default function SignUpPage() {
                 htmlFor="signup-confirm-password" 
                 className="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-gray-300 mb-1.5"
               >
-                Şifre Tekrarı
+                Confirm Password
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 dark:text-gray-400">
@@ -286,7 +286,7 @@ export default function SignUpPage() {
                     setConfirmPassword(e.target.value);
                     if (errors.confirmPassword) setErrors((prev) => ({ ...prev, confirmPassword: null }));
                   }}
-                  placeholder="Şifrenizi tekrar yazın"
+                  placeholder="Re-enter your password"
                   className={`block w-full pl-10 pr-3.5 py-2.5 bg-slate-50 dark:bg-gray-950/60 border rounded-xl text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-gray-500 focus:bg-white dark:focus:bg-gray-950 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm transition-all ${
                     errors.confirmPassword ? 'border-red-500/80 ring-1 ring-red-500/50' : 'border-slate-300 dark:border-gray-800 hover:border-slate-400 dark:hover:border-gray-700'
                   }`}
@@ -313,7 +313,7 @@ export default function SignUpPage() {
                   className="mt-0.5 w-4 h-4 rounded bg-white dark:bg-gray-950 border-slate-300 dark:border-gray-700 text-blue-600 focus:ring-blue-500/40"
                 />
                 <span>
-                  <span className="text-blue-600 dark:text-blue-400 font-semibold">Kullanım Koşulları</span> ve <span className="text-blue-600 dark:text-blue-400 font-semibold">Gizlilik Politikası</span>'nı okudum ve kabul ediyorum.
+                  I have read and agree to the <span className="text-blue-600 dark:text-blue-400 font-semibold">Terms of Service</span> and <span className="text-blue-600 dark:text-blue-400 font-semibold">Privacy Policy</span>.
                 </span>
               </label>
               {errors.agreeTerms && (
@@ -333,11 +333,11 @@ export default function SignUpPage() {
               {isSubmitting ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Hesap Oluşturuluyor...</span>
+                  <span>Creating account...</span>
                 </>
               ) : (
                 <>
-                  <span>Hesap Oluştur</span>
+                  <span>Create Account</span>
                   <ArrowRight className="w-4 h-4" />
                 </>
               )}
@@ -346,13 +346,13 @@ export default function SignUpPage() {
 
           {/* Login Link */}
           <div className="mt-6 text-center text-sm text-slate-600 dark:text-gray-400">
-            Zaten hesabınız var mı?{' '}
+            Already have an account?{' '}
             <Link 
               to="/login" 
               id="goto-login-link" 
               className="font-semibold text-blue-600 dark:text-blue-400 hover:underline"
             >
-              Giriş yapın
+              Sign in
             </Link>
           </div>
         </div>

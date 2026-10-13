@@ -101,30 +101,35 @@ export default function CashflowPredictsPlaceholder() {
       </div>
 
       {/* Visual Simulation Wireframe */}
-      <div className="rounded-2xl p-6 bg-gradient-to-br from-gray-900 via-gray-900 to-blue-950 border border-gray-800 text-white relative overflow-hidden">
-        <div className="flex items-center justify-between mb-4">
+      <div className="rounded-2xl p-6 bg-gradient-to-br from-blue-50/90 via-indigo-50/60 to-white border border-blue-200/80 shadow-sm text-slate-900 dark:bg-gradient-to-br dark:from-gray-900 dark:via-gray-900 dark:to-blue-950 dark:border-gray-800 dark:text-white relative overflow-hidden transition-colors">
+        <div className="relative z-10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-5">
           <div>
-            <span className="text-xs text-blue-400 font-semibold uppercase tracking-wider">
+            <span className="text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">
               Simulation Preview Engine
             </span>
-            <h3 className="text-lg font-bold">Predicted Cash Outflow vs Inflow Band</h3>
+            <h3 className="text-lg font-bold text-slate-900 dark:text-white mt-0.5">
+              Predicted Cash Outflow vs Inflow Band
+            </h3>
           </div>
-          <span className="px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+          <span className="px-3 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-300 dark:bg-emerald-500/20 dark:text-emerald-400 dark:border-emerald-500/30 self-start sm:self-auto transition-colors">
             95% Confidence Interval
           </span>
         </div>
 
-        <div className="h-44 w-full flex items-center justify-center border border-dashed border-gray-700/80 rounded-xl bg-gray-950/40">
+        <div className="relative z-10 h-48 w-full flex items-center justify-center border border-dashed border-blue-300/80 dark:border-gray-700/80 rounded-xl bg-white/80 dark:bg-gray-950/40 backdrop-blur-sm transition-colors">
           <div className="text-center px-4">
-            <LineChart className="w-10 h-10 text-blue-400 mx-auto mb-2 animate-bounce" />
-            <p className="text-sm font-semibold text-gray-200">
+            <LineChart className="w-10 h-10 text-blue-600 dark:text-blue-400 mx-auto mb-2 animate-bounce" />
+            <p className="text-sm font-semibold text-slate-800 dark:text-gray-200">
               Machine Learning Model Pipeline will connect in Week 4 & Week 5
             </p>
-            <p className="text-xs text-gray-400 mt-1">
-              Synthetic payment datasets and ML regression models will feed directly into this dashboard canvas.
+            <p className="text-xs text-slate-500 dark:text-gray-400 mt-1 max-w-lg mx-auto">
+              Synthetic payment datasets and ML regression models will feed directly into this interactive dashboard canvas.
             </p>
           </div>
         </div>
+
+        {/* Ambient decorative glow */}
+        <div className="absolute -right-16 -bottom-16 w-64 h-64 rounded-full bg-gradient-to-tr from-blue-500/10 to-indigo-500/10 blur-3xl pointer-events-none" />
       </div>
     </div>
   );
