@@ -32,6 +32,9 @@ jobs:
         run: npm ci
       - name: Build
         run: npm run build
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL || 'https://fvppactxgsfqhwariqxh.supabase.co' }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY || 'sb_publishable_GqzCnBKj8XgiGPXo3tclfw_E7da1sC6' }}
       - name: Setup Pages
         uses: actions/configure-pages@v4
       - name: Upload artifact

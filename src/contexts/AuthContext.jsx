@@ -4,66 +4,144 @@ import { supabase } from '../lib/supabaseClient';
 const AuthContext = createContext();
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null);
-  const [session, setSession] = useState(null);
+  const [user, setUser] = useState(() => {
+    const savedDemo = localStorage.getItem('cashpredix_demo_session');
+    if (savedDemo) {
+      try {
+        return JSON.parse(savedDemo);
+      } catch {
+        return null;
+      }
+    }
+    return null;
+  });
+
+  const [session, setSession] = useState(() => {
+    const savedDemo = localStorage.getItem('cashpredix_demo_session');
+    if (savedDemo) {
+      try {
+        const parsed = JSON.parse(savedDemo);
+        return { user: parsed, access_token: 'demo-token' };
+      } catch {
+        return null;
+      }
+    }
+    return null;
+  });
+
   const [loading, setLoading] = useState(true);
+  const [supabaseStatus, setSupabaseStatus] = useState('checking'); // 'connected' | 'paused' | 'error'
 
   useEffect(() => {
-    // 1. Check existing session on load
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-    }).catch((err) => {
-      console.error('Error getting initial session:', err);
-      setLoading(false);
-    });
+    // Check Supabase session with safety timeout
+    let isMounted = true;
+    const sessionPromise = supabase.auth.getSession();
+    const timeoutPromise = new Promise((resolve) => setTimeout(() => resolve({ timeout: true }), 3500));
 
-    // 2. Listen for auth changes (sign in, sign out, token refresh)
+    Promise.race([sessionPromise, timeoutPromise])
+      .then((result) => {
+        if (!isMounted) return;
+        if (result && !result.timeout) {
+          const { data, error } = result;
+          if (error) {
+            console.warn('Supabase session notice:', error);
+            setSupabaseStatus('paused');
+          } else if (data?.session) {
+            setSession(data.session);
+            setUser(data.session.user);
+            setSupabaseStatus('connected');
+          }
+        }
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.warn('Initial session check caught:', err);
+        if (isMounted) {
+          setSupabaseStatus('paused');
+          setLoading(false);
+        }
+      });
+
+    // 3. Listen for Supabase auth state changes
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      setUser(session?.user ?? null);
+    } = supabase.auth.onAuthStateChange((_event, newSession) => {
+      if (!isMounted) return;
+      if (newSession) {
+        setSession(newSession);
+        setUser(newSession.user);
+        setSupabaseStatus('connected');
+        localStorage.removeItem('cashpredix_demo_session');
+      } else if (!localStorage.getItem('cashpredix_demo_session')) {
+        setSession(null);
+        setUser(null);
+      }
       setLoading(false);
     });
 
     return () => {
+      isMounted = false;
       subscription.unsubscribe();
     };
   }, []);
 
   const signIn = async (email, password) => {
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-    if (error) throw error;
-    return data;
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      if (error) throw error;
+      setSupabaseStatus('connected');
+      return data;
+    } catch (err) {
+      // Check if project returned 502 / bad gateway
+      if (err.status === 502 || err.message?.includes('502') || err.message?.includes('Failed to fetch')) {
+        setSupabaseStatus('paused');
+        throw new Error('Supabase projesi şu anda duraklatılmış (502). Supabase Dashboard üzerinden projenizi aktifleştirebilirsiniz veya Demo Girişi kullanabilirsiniz.');
+      }
+      throw err;
+    }
   };
 
   const signUp = async (email, password, fullName) => {
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          full_name: fullName,
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            full_name: fullName,
+          },
         },
-      },
-    });
-    if (error) throw error;
-    return data;
+      });
+      if (error) throw error;
+      setSupabaseStatus('connected');
+      return data;
+    } catch (err) {
+      if (err.status === 502 || err.message?.includes('502') || err.message?.includes('Failed to fetch')) {
+        setSupabaseStatus('paused');
+        throw new Error('Supabase projeniz duraklatılmış durumda (502). Lütfen Supabase panelinden projenizi "Restore" edin.');
+      }
+      throw err;
+    }
   };
 
   const signOut = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) throw error;
-    setUser(null);
-    setSession(null);
+    try {
+      localStorage.removeItem('cashpredix_demo_session');
+      await supabase.auth.signOut().catch(() => {});
+    } finally {
+      setUser(null);
+      setSession(null);
+    }
   };
 
   const updatePassword = async (newPassword) => {
+    // If running in local demo mode, simulate success
+    if (localStorage.getItem('cashpredix_demo_session')) {
+      return { user };
+    }
     const { data, error } = await supabase.auth.updateUser({
       password: newPassword,
     });
@@ -79,27 +157,29 @@ export function AuthProvider({ children }) {
     return data;
   };
 
-  // Demo account convenience helper for testing when needed
+  // Demo Executive account with offline fallback
   const signInDemo = async () => {
-    // Try signing in with pre-configured demo account or create session
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
         email: 'demo@cashpredix.com',
         password: 'DemoPassword123!',
       });
       if (error) throw error;
+      localStorage.removeItem('cashpredix_demo_session');
       return data;
     } catch {
-      // If demo account doesn't exist yet, attempt to sign it up
-      const { data, error } = await supabase.auth.signUp({
+      // If Supabase is paused or credentials not found, activate local demo session
+      const demoUser = {
+        id: 'demo-exec-uuid-999',
         email: 'demo@cashpredix.com',
-        password: 'DemoPassword123!',
-        options: {
-          data: { full_name: 'Demo Executive' },
+        user_metadata: {
+          full_name: 'Demo Executive',
         },
-      });
-      if (error) throw error;
-      return data;
+      };
+      localStorage.setItem('cashpredix_demo_session', JSON.stringify(demoUser));
+      setUser(demoUser);
+      setSession({ user: demoUser, access_token: 'mock-session-token' });
+      return { user: demoUser };
     }
   };
 
@@ -107,6 +187,7 @@ export function AuthProvider({ children }) {
     user,
     session,
     loading,
+    supabaseStatus,
     signIn,
     signUp,
     signOut,
