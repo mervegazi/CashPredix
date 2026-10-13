@@ -73,15 +73,9 @@ function App() {
               }
             />
 
-            {/* Standalone Change Password route */}
-            <Route
-              path="/change-password"
-              element={
-                <ProtectedRoute>
-                  <ChangePasswordPage />
-                </ProtectedRoute>
-              }
-            />
+            {/* Change Password / Reset Password routes */}
+            <Route path="/change-password" element={<ChangePasswordPage />} />
+            <Route path="/reset-password" element={<ChangePasswordPage />} />
 
             {/* Protected Dashboard Routes */}
             <Route

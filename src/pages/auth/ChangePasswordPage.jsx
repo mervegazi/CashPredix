@@ -9,7 +9,8 @@ import {
   EyeOff, 
   CheckCircle2, 
   Loader2, 
-  ChevronLeft
+  ChevronLeft,
+  AlertCircle
 } from 'lucide-react';
 
 export default function ChangePasswordPage() {
@@ -19,7 +20,7 @@ export default function ChangePasswordPage() {
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const { updatePassword, user } = useAuth();
+  const { updatePassword, user, loading } = useAuth();
   const navigate = useNavigate();
 
   const validate = () => {
@@ -50,7 +51,7 @@ export default function ChangePasswordPage() {
     setIsSubmitting(true);
     try {
       await updatePassword(newPassword);
-      toast.success('Your password has been updated securely!');
+      toast.success('Your password has been updated securely! Redirecting to Dashboard...');
       setNewPassword('');
       setConfirmPassword('');
       setTimeout(() => {
@@ -64,6 +65,15 @@ export default function ChangePasswordPage() {
       setIsSubmitting(false);
     }
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-950 text-white">
+        <Loader2 className="w-8 h-8 text-blue-400 animate-spin mr-3" />
+        <span className="text-sm text-gray-400">Verifying session...</span>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen relative flex flex-col justify-center items-center py-12 px-4 sm:px-6 lg:px-8 bg-gray-950 text-gray-100 transition-colors">
@@ -89,10 +99,12 @@ export default function ChangePasswordPage() {
             <KeyRound className="w-6 h-6 text-white" />
           </div>
           <h2 className="text-2xl font-bold tracking-tight text-white">
-            Change Password
+            Set Your New Password
           </h2>
           <p className="mt-2 text-sm text-gray-400">
-            {user?.email ? `Update password for ${user.email}` : 'Enter your new secure password'}
+            {user?.email 
+              ? `Enter a new password for ${user.email}` 
+              : 'Choose a new, secure password to complete your password reset'}
           </p>
         </div>
 
@@ -100,6 +112,18 @@ export default function ChangePasswordPage() {
           {errors.form && (
             <div className="mb-5 p-3.5 rounded-xl bg-red-950/50 border border-red-500/40 text-red-300 text-sm">
               {errors.form}
+            </div>
+          )}
+
+          {!user && (
+            <div className="mb-5 p-3.5 rounded-xl bg-amber-950/40 border border-amber-500/30 text-amber-300 text-xs flex items-start gap-2.5">
+              <AlertCircle className="w-4 h-4 shrink-0 text-amber-400 mt-0.5" />
+              <span>
+                If you arrived here directly without clicking an active reset link, please request a fresh link from the{' '}
+                <Link to="/login" className="underline font-bold text-amber-200">
+                  Login page
+                </Link>.
+              </span>
             </div>
           )}
 
@@ -190,7 +214,7 @@ export default function ChangePasswordPage() {
               ) : (
                 <>
                   <CheckCircle2 className="w-4 h-4" />
-                  <span>Update Password</span>
+                  <span>Save New Password</span>
                 </>
               )}
             </button>

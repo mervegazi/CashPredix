@@ -50,6 +50,15 @@ export function AuthProvider({ children }) {
       }
     }
 
+    // Check if arriving from a password recovery link
+    if (window.location.hash.includes('type=recovery')) {
+      const changePwPath = `${window.location.origin}${import.meta.env.BASE_URL}change-password${window.location.hash}`;
+      if (!window.location.pathname.includes('/change-password')) {
+        window.location.replace(changePwPath);
+        return;
+      }
+    }
+
     // Check Supabase session with safety timeout
     let isMounted = true;
     const sessionPromise = supabase.auth.getSession();
@@ -82,13 +91,21 @@ export function AuthProvider({ children }) {
     // 3. Listen for Supabase auth state changes
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, newSession) => {
+    } = supabase.auth.onAuthStateChange((event, newSession) => {
       if (!isMounted) return;
       if (newSession) {
         setSession(newSession);
         setUser(newSession.user);
         setSupabaseStatus('connected');
         localStorage.removeItem('cashpredix_demo_session');
+
+        // Redirect to change-password if recovery link triggered
+        if (event === 'PASSWORD_RECOVERY') {
+          const target = `${window.location.origin}${import.meta.env.BASE_URL}change-password`;
+          if (!window.location.pathname.includes('/change-password')) {
+            window.location.replace(target);
+          }
+        }
       } else if (!localStorage.getItem('cashpredix_demo_session')) {
         setSession(null);
         setUser(null);
