@@ -2,11 +2,12 @@ import json
 import subprocess
 import time
 
-items_json = subprocess.check_output(['gh', 'project', 'item-list', '3', '--owner', 'mervegazi', '--format', 'json'])
+items_json = subprocess.check_output(['gh', 'project', 'item-list', '3', '--owner', 'mervegazi', '--limit', '100', '--format', 'json'])
 items = json.loads(items_json)['items']
 
 for item in items:
-    title = item['title']
+    title = item.get('title', '')
+    if not title: continue
     item_id = item['id']
     
     # Extract week number from title (e.g. "Week 1: ...")
