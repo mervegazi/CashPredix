@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth, formatAuthError } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import { toast } from 'react-hot-toast';
 import { 
@@ -35,29 +35,29 @@ export default function SignUpPage() {
     const errs = {};
 
     if (!fullName.trim() || fullName.trim().length < 2) {
-      errs.fullName = 'Full name must be at least 2 characters';
+      errs.fullName = 'Ad Soyad en az 2 karakter olmalıdır.';
     }
 
     if (!email.trim()) {
-      errs.email = 'Email address is required';
+      errs.email = 'E-posta adresi zorunludur.';
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      errs.email = 'Please provide a valid business email';
+      errs.email = 'Lütfen geçerli bir kurumsal e-posta adresi giriniz.';
     }
 
     if (!password) {
-      errs.password = 'Password is required';
+      errs.password = 'Şifre zorunludur.';
     } else if (password.length < 6) {
-      errs.password = 'Password must be at least 6 characters';
+      errs.password = 'Şifre en az 6 karakter olmalıdır.';
     }
 
     if (!confirmPassword) {
-      errs.confirmPassword = 'Please confirm your password';
+      errs.confirmPassword = 'Lütfen şifrenizi tekrar giriniz.';
     } else if (confirmPassword !== password) {
-      errs.confirmPassword = 'Passwords do not match';
+      errs.confirmPassword = 'Şifreler birbiriyle uyuşmuyor.';
     }
 
     if (!agreeTerms) {
-      errs.agreeTerms = 'You must accept the terms of service';
+      errs.agreeTerms = 'Kullanım şartlarını kabul etmelisiniz.';
     }
 
     setErrors(errs);
@@ -67,38 +67,38 @@ export default function SignUpPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validate()) {
-      toast.error('Please fix the form errors before submitting');
+      toast.error('Lütfen formdaki eksik veya hatalı alanları kontrol ediniz.');
       return;
     }
 
     setIsSubmitting(true);
     try {
       const data = await signUp(email, password, fullName);
-      toast.success('Registration successful! Welcome to CashPredix.');
+      toast.success('Kayıt başarılı! CashPredix ailesine hoş geldiniz.');
       
       // If Supabase auto-confirms or returns active session:
       if (data?.session) {
         navigate('/dashboard', { replace: true });
       } else {
-        toast.success('Confirmation email sent! You can now log in.', { duration: 5000 });
+        toast.success('Doğrulama e-postası gönderildi! Giriş yapabilirsiniz.', { duration: 5000 });
         navigate('/login', { replace: true });
       }
     } catch (err) {
       console.error('Sign up error:', err);
-      const msg = err.message || 'Registration failed. Please try again.';
-      toast.error(msg);
-      setErrors((prev) => ({ ...prev, form: msg }));
+      const friendlyMsg = formatAuthError(err);
+      toast.error(friendlyMsg);
+      setErrors((prev) => ({ ...prev, form: friendlyMsg }));
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <div className="min-h-screen relative flex flex-col justify-center items-center py-12 px-4 sm:px-6 lg:px-8 bg-gray-950 text-gray-100 dark:bg-gray-950 dark:text-gray-100 transition-colors selection:bg-blue-500 selection:text-white">
+    <div className="min-h-screen relative flex flex-col justify-center items-center py-12 px-4 sm:px-6 lg:px-8 bg-slate-50 text-slate-900 dark:bg-gray-950 dark:text-gray-100 transition-colors selection:bg-blue-500 selection:text-white">
       {/* Background Glow Orbs */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 sm:w-[600px] sm:h-[600px] bg-gradient-to-tr from-emerald-600/20 to-blue-500/20 rounded-full blur-3xl opacity-70 animate-float" />
-        <div className="absolute bottom-10 left-10 w-72 h-72 bg-blue-600/10 rounded-full blur-2xl animate-float-delayed" />
+        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 sm:w-[600px] sm:h-[600px] bg-gradient-to-tr from-emerald-400/20 to-blue-400/20 dark:from-emerald-600/20 dark:to-blue-500/20 rounded-full blur-3xl opacity-70 animate-float" />
+        <div className="absolute bottom-10 left-10 w-72 h-72 bg-blue-400/10 dark:bg-blue-600/10 rounded-full blur-2xl animate-float-delayed" />
       </div>
 
       {/* Top Navigation Bar Controls */}
@@ -106,19 +106,19 @@ export default function SignUpPage() {
         <Link
           to="/"
           id="signup-back-to-home"
-          className="inline-flex items-center gap-2 text-sm font-medium text-gray-400 hover:text-white transition-colors py-2 px-3 rounded-lg hover:bg-gray-800/60 border border-transparent hover:border-gray-700/50"
+          className="inline-flex items-center gap-2 text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-200/60 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-800/60 py-2 px-3 rounded-lg border border-transparent hover:border-slate-300 dark:hover:border-gray-700/50 transition-colors"
         >
           <ChevronLeft className="w-4 h-4" />
-          <span>Back to Landing</span>
+          <span>Ana Sayfaya Dön</span>
         </Link>
 
         <button
           onClick={toggleTheme}
           id="signup-theme-toggle"
           title={`Switch to ${isDark ? 'Light' : 'Dark'} mode`}
-          className="p-2.5 rounded-xl bg-gray-900/80 hover:bg-gray-800 text-gray-300 hover:text-white border border-gray-800 transition-all shadow-sm"
+          className="p-2.5 rounded-xl bg-white hover:bg-slate-100 dark:bg-gray-900/80 dark:hover:bg-gray-800 text-slate-700 hover:text-slate-900 dark:text-gray-300 dark:hover:text-white border border-slate-200 dark:border-gray-800 transition-all shadow-sm"
         >
-          {isDark ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-blue-400" />}
+          {isDark ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-blue-600" />}
         </button>
       </div>
 
@@ -129,23 +129,23 @@ export default function SignUpPage() {
             <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-emerald-500 flex items-center justify-center shadow-lg shadow-blue-500/20 group-hover:scale-105 transition-transform">
               <ShieldCheck className="w-6 h-6 text-white" />
             </div>
-            <span className="text-3xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-indigo-300 to-emerald-400">
+            <span className="text-3xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-blue-600 via-indigo-600 to-emerald-600 dark:from-blue-400 dark:via-indigo-300 dark:to-emerald-400">
               CashPredix
             </span>
           </Link>
-          <h2 className="text-2xl font-bold tracking-tight text-white">
-            Create your account
+          <h2 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
+            Yeni Hesap Oluşturun
           </h2>
-          <p className="mt-2 text-sm text-gray-400">
-            Start predicting cash flow & mitigating vendor delay risks
+          <p className="mt-2 text-sm text-slate-500 dark:text-gray-400">
+            Nakit akışınızı tahminleyin ve tedarikçi gecikme risklerini önleyin
           </p>
         </div>
 
         {/* Auth Card */}
-        <div className="bg-gray-900/80 backdrop-blur-xl border border-gray-800/80 shadow-2xl rounded-2xl p-6 sm:p-8">
+        <div className="bg-white/90 dark:bg-gray-900/80 backdrop-blur-xl border border-slate-200 dark:border-gray-800/80 shadow-xl dark:shadow-2xl rounded-2xl p-6 sm:p-8 transition-colors">
           {errors.form && (
-            <div className="mb-5 p-3.5 rounded-xl bg-red-950/50 border border-red-500/40 text-red-300 text-sm flex items-start gap-2">
-              <span className="font-semibold">Error:</span> {errors.form}
+            <div className="mb-5 p-3.5 rounded-xl bg-red-50 border border-red-200 text-red-700 dark:bg-red-950/50 dark:border-red-500/40 dark:text-red-300 text-sm flex items-start gap-2">
+              <span className="font-semibold">Uyarı:</span> {errors.form}
             </div>
           )}
 
@@ -154,12 +154,12 @@ export default function SignUpPage() {
             <div>
               <label 
                 htmlFor="signup-fullname" 
-                className="block text-xs font-semibold uppercase tracking-wider text-gray-300 mb-1.5"
+                className="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-gray-300 mb-1.5"
               >
-                Full Name
+                Ad ve Soyad
               </label>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 dark:text-gray-400">
                   <User className="w-4 h-4" />
                 </div>
                 <input
@@ -172,14 +172,14 @@ export default function SignUpPage() {
                     setFullName(e.target.value);
                     if (errors.fullName) setErrors((prev) => ({ ...prev, fullName: null }));
                   }}
-                  placeholder="Jane Doe"
-                  className={`block w-full pl-10 pr-3.5 py-2.5 bg-gray-950/60 border rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm transition-all ${
-                    errors.fullName ? 'border-red-500/80 ring-1 ring-red-500/50' : 'border-gray-800 hover:border-gray-700'
+                  placeholder="Merve Gazi"
+                  className={`block w-full pl-10 pr-3.5 py-2.5 bg-slate-50 dark:bg-gray-950/60 border rounded-xl text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-gray-500 focus:bg-white dark:focus:bg-gray-950 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm transition-all ${
+                    errors.fullName ? 'border-red-500/80 ring-1 ring-red-500/50' : 'border-slate-300 dark:border-gray-800 hover:border-slate-400 dark:hover:border-gray-700'
                   }`}
                 />
               </div>
               {errors.fullName && (
-                <p className="mt-1.5 text-xs text-red-400 font-medium" id="fullname-error">
+                <p className="mt-1.5 text-xs text-red-500 font-medium" id="fullname-error">
                   {errors.fullName}
                 </p>
               )}
@@ -189,12 +189,12 @@ export default function SignUpPage() {
             <div>
               <label 
                 htmlFor="signup-email" 
-                className="block text-xs font-semibold uppercase tracking-wider text-gray-300 mb-1.5"
+                className="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-gray-300 mb-1.5"
               >
-                Work Email Address
+                Kurumsal E-posta Adresi
               </label>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 dark:text-gray-400">
                   <Mail className="w-4 h-4" />
                 </div>
                 <input
@@ -207,14 +207,14 @@ export default function SignUpPage() {
                     setEmail(e.target.value);
                     if (errors.email) setErrors((prev) => ({ ...prev, email: null }));
                   }}
-                  placeholder="jane@company.com"
-                  className={`block w-full pl-10 pr-3.5 py-2.5 bg-gray-950/60 border rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm transition-all ${
-                    errors.email ? 'border-red-500/80 ring-1 ring-red-500/50' : 'border-gray-800 hover:border-gray-700'
+                  placeholder="merve@sirket.com"
+                  className={`block w-full pl-10 pr-3.5 py-2.5 bg-slate-50 dark:bg-gray-950/60 border rounded-xl text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-gray-500 focus:bg-white dark:focus:bg-gray-950 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm transition-all ${
+                    errors.email ? 'border-red-500/80 ring-1 ring-red-500/50' : 'border-slate-300 dark:border-gray-800 hover:border-slate-400 dark:hover:border-gray-700'
                   }`}
                 />
               </div>
               {errors.email && (
-                <p className="mt-1.5 text-xs text-red-400 font-medium" id="signup-email-error">
+                <p className="mt-1.5 text-xs text-red-500 font-medium" id="signup-email-error">
                   {errors.email}
                 </p>
               )}
@@ -224,12 +224,12 @@ export default function SignUpPage() {
             <div>
               <label 
                 htmlFor="signup-password" 
-                className="block text-xs font-semibold uppercase tracking-wider text-gray-300 mb-1.5"
+                className="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-gray-300 mb-1.5"
               >
-                Password
+                Şifre
               </label>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 dark:text-gray-400">
                   <Lock className="w-4 h-4" />
                 </div>
                 <input
@@ -242,23 +242,23 @@ export default function SignUpPage() {
                     setPassword(e.target.value);
                     if (errors.password) setErrors((prev) => ({ ...prev, password: null }));
                   }}
-                  placeholder="Min. 6 characters"
-                  className={`block w-full pl-10 pr-10 py-2.5 bg-gray-950/60 border rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm transition-all ${
-                    errors.password ? 'border-red-500/80 ring-1 ring-red-500/50' : 'border-gray-800 hover:border-gray-700'
+                  placeholder="En az 6 karakter"
+                  className={`block w-full pl-10 pr-10 py-2.5 bg-slate-50 dark:bg-gray-950/60 border rounded-xl text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-gray-500 focus:bg-white dark:focus:bg-gray-950 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm transition-all ${
+                    errors.password ? 'border-red-500/80 ring-1 ring-red-500/50' : 'border-slate-300 dark:border-gray-800 hover:border-slate-400 dark:hover:border-gray-700'
                   }`}
                 />
                 <button
                   type="button"
                   id="toggle-signup-password-visibility"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-gray-400 hover:text-gray-200 focus:outline-none"
+                  className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600 dark:text-gray-400 dark:hover:text-gray-200 focus:outline-none"
                   aria-label={showPassword ? 'Hide password' : 'Show password'}
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
               {errors.password && (
-                <p className="mt-1.5 text-xs text-red-400 font-medium" id="signup-password-error">
+                <p className="mt-1.5 text-xs text-red-500 font-medium" id="signup-password-error">
                   {errors.password}
                 </p>
               )}
@@ -268,12 +268,12 @@ export default function SignUpPage() {
             <div>
               <label 
                 htmlFor="signup-confirm-password" 
-                className="block text-xs font-semibold uppercase tracking-wider text-gray-300 mb-1.5"
+                className="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-gray-300 mb-1.5"
               >
-                Confirm Password
+                Şifre Tekrarı
               </label>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 dark:text-gray-400">
                   <Lock className="w-4 h-4" />
                 </div>
                 <input
@@ -286,14 +286,14 @@ export default function SignUpPage() {
                     setConfirmPassword(e.target.value);
                     if (errors.confirmPassword) setErrors((prev) => ({ ...prev, confirmPassword: null }));
                   }}
-                  placeholder="Re-enter password"
-                  className={`block w-full pl-10 pr-3.5 py-2.5 bg-gray-950/60 border rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm transition-all ${
-                    errors.confirmPassword ? 'border-red-500/80 ring-1 ring-red-500/50' : 'border-gray-800 hover:border-gray-700'
+                  placeholder="Şifrenizi tekrar yazın"
+                  className={`block w-full pl-10 pr-3.5 py-2.5 bg-slate-50 dark:bg-gray-950/60 border rounded-xl text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-gray-500 focus:bg-white dark:focus:bg-gray-950 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm transition-all ${
+                    errors.confirmPassword ? 'border-red-500/80 ring-1 ring-red-500/50' : 'border-slate-300 dark:border-gray-800 hover:border-slate-400 dark:hover:border-gray-700'
                   }`}
                 />
               </div>
               {errors.confirmPassword && (
-                <p className="mt-1.5 text-xs text-red-400 font-medium" id="confirm-password-error">
+                <p className="mt-1.5 text-xs text-red-500 font-medium" id="confirm-password-error">
                   {errors.confirmPassword}
                 </p>
               )}
@@ -301,7 +301,7 @@ export default function SignUpPage() {
 
             {/* Terms Checkbox */}
             <div className="pt-1">
-              <label className="flex items-start gap-2.5 text-xs text-gray-300 cursor-pointer">
+              <label className="flex items-start gap-2.5 text-xs text-slate-700 dark:text-gray-300 cursor-pointer">
                 <input
                   id="signup-terms"
                   type="checkbox"
@@ -310,14 +310,14 @@ export default function SignUpPage() {
                     setAgreeTerms(e.target.checked);
                     if (errors.agreeTerms) setErrors((prev) => ({ ...prev, agreeTerms: null }));
                   }}
-                  className="mt-0.5 w-4 h-4 rounded bg-gray-950 border-gray-700 text-blue-600 focus:ring-blue-500/40"
+                  className="mt-0.5 w-4 h-4 rounded bg-white dark:bg-gray-950 border-slate-300 dark:border-gray-700 text-blue-600 focus:ring-blue-500/40"
                 />
                 <span>
-                  I agree to the <span className="text-blue-400">Terms of Service</span> and <span className="text-blue-400">Privacy Policy</span>.
+                  <span className="text-blue-600 dark:text-blue-400 font-semibold">Kullanım Koşulları</span> ve <span className="text-blue-600 dark:text-blue-400 font-semibold">Gizlilik Politikası</span>'nı okudum ve kabul ediyorum.
                 </span>
               </label>
               {errors.agreeTerms && (
-                <p className="mt-1 text-xs text-red-400 font-medium" id="terms-error">
+                <p className="mt-1 text-xs text-red-500 font-medium" id="terms-error">
                   {errors.agreeTerms}
                 </p>
               )}
@@ -328,16 +328,16 @@ export default function SignUpPage() {
               id="signup-submit-button"
               type="submit"
               disabled={isSubmitting}
-              className="w-full mt-2 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-blue-600 to-emerald-600 hover:from-blue-500 hover:to-emerald-500 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-lg shadow-blue-600/30 active:scale-[0.99] transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+              className="w-full mt-2 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-blue-600 to-emerald-600 hover:from-blue-500 hover:to-emerald-500 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-md shadow-blue-600/30 active:scale-[0.99] transition-all disabled:opacity-60 disabled:cursor-not-allowed"
             >
               {isSubmitting ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Creating Account...</span>
+                  <span>Hesap Oluşturuluyor...</span>
                 </>
               ) : (
                 <>
-                  <span>Create CashPredix Account</span>
+                  <span>Hesap Oluştur</span>
                   <ArrowRight className="w-4 h-4" />
                 </>
               )}
@@ -345,14 +345,14 @@ export default function SignUpPage() {
           </form>
 
           {/* Login Link */}
-          <div className="mt-6 text-center text-sm text-gray-400">
-            Already have an account?{' '}
+          <div className="mt-6 text-center text-sm text-slate-600 dark:text-gray-400">
+            Zaten hesabınız var mı?{' '}
             <Link 
               to="/login" 
               id="goto-login-link" 
-              className="font-semibold text-blue-400 hover:text-blue-300 hover:underline"
+              className="font-semibold text-blue-600 dark:text-blue-400 hover:underline"
             >
-              Sign in
+              Giriş yapın
             </Link>
           </div>
         </div>

@@ -90,23 +90,23 @@ export default function WelcomeDashboard() {
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
       {/* Welcome Hero Banner */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-blue-900/40 via-indigo-900/30 to-purple-900/20 dark:from-blue-950/60 dark:via-indigo-950/40 dark:to-gray-900 border border-blue-500/20 dark:border-blue-500/30 p-6 sm:p-8 backdrop-blur-xl shadow-xl">
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-blue-50 via-indigo-50/50 to-white dark:bg-gradient-to-br dark:from-blue-950/60 dark:via-indigo-950/40 dark:to-gray-900 border border-blue-200/80 dark:border-blue-500/30 p-6 sm:p-8 backdrop-blur-xl shadow-sm dark:shadow-xl transition-colors">
         <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-6">
           <div>
             <div className="flex items-center gap-2 mb-2">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-300 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20 transition-colors">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 dark:bg-emerald-400 animate-pulse" />
                 Live Predictive Environment
               </span>
-              <span className="text-xs text-gray-400 flex items-center gap-1">
-                <Calendar className="w-3.5 h-3.5" />
+              <span className="text-xs text-slate-500 dark:text-gray-400 flex items-center gap-1">
+                <Calendar className="w-3.5 h-3.5 text-slate-400 dark:text-gray-400" />
                 {currentDate}
               </span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight">
-              Welcome back, <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-500 via-indigo-400 to-emerald-400">{userName}</span>!
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+              Welcome back, <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-600 via-indigo-600 to-emerald-600 dark:from-blue-400 dark:via-indigo-300 dark:to-emerald-400">{userName}</span>!
             </h1>
-            <p className="mt-1.5 text-sm sm:text-base text-gray-600 dark:text-gray-300 max-w-2xl">
+            <p className="mt-1.5 text-sm sm:text-base text-slate-600 dark:text-gray-300 max-w-2xl leading-relaxed">
               CashPredix AI has analyzed your vendor behavior metrics. Your business cash position is optimal, with no immediate liquidity shortfalls projected for the next 30 days.
             </p>
           </div>
@@ -116,7 +116,7 @@ export default function WelcomeDashboard() {
             <Link
               to="/dashboard/company-vendor"
               id="hero-add-vendor-button"
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-white bg-blue-600 hover:bg-blue-500 shadow-lg shadow-blue-600/30 transition-all hover:scale-[1.02] active:scale-[0.98]"
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-white bg-blue-600 hover:bg-blue-500 shadow-md shadow-blue-600/30 transition-all hover:scale-[1.02] active:scale-[0.98]"
             >
               <Building2 className="w-4 h-4" />
               <span>Add Company & Vendor</span>
@@ -124,9 +124,9 @@ export default function WelcomeDashboard() {
             <Link
               to="/dashboard/cashflow-predicts"
               id="hero-view-forecast-button"
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium text-gray-700 dark:text-gray-200 bg-white/80 dark:bg-gray-800/80 hover:bg-white dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700 transition-all"
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium text-slate-700 bg-white hover:bg-slate-50 border border-slate-300 shadow-sm dark:bg-gray-800/80 dark:hover:bg-gray-700 dark:text-gray-200 dark:border-gray-700 transition-all"
             >
-              <TrendingUp className="w-4 h-4 text-emerald-500" />
+              <TrendingUp className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
               <span>Cashflow Predicts</span>
             </Link>
           </div>
@@ -310,22 +310,22 @@ export default function WelcomeDashboard() {
       </div>
 
       {/* Architecture & Sprint Progress Bar */}
-      <div className="rounded-2xl p-5 bg-gradient-to-r from-gray-900 to-gray-800 border border-gray-800 text-white flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <div className="rounded-2xl p-5 bg-gradient-to-r from-blue-50/90 via-indigo-50/60 to-emerald-50/60 border border-blue-200/80 text-slate-900 shadow-sm dark:bg-gradient-to-r dark:from-gray-900 dark:to-gray-800 dark:border-gray-800 dark:text-white flex flex-col md:flex-row md:items-center md:justify-between gap-4 transition-colors">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-blue-600/30 border border-blue-500/40 flex items-center justify-center text-blue-400 shrink-0">
+          <div className="w-10 h-10 rounded-xl bg-blue-100 border border-blue-300 text-blue-700 dark:bg-blue-600/30 dark:border-blue-500/40 dark:text-blue-400 flex items-center justify-center shrink-0">
             <Sparkles className="w-5 h-5" />
           </div>
           <div>
-            <h3 className="text-sm font-bold">Week 2 Implementation Complete</h3>
-            <p className="text-xs text-gray-400">
+            <h3 className="text-sm font-bold text-slate-900 dark:text-white">Week 2 Implementation Complete</h3>
+            <p className="text-xs text-slate-600 dark:text-gray-400">
               Supabase Authentication, Protected Routing, Dark Mode & Persistent Dashboard Sidebar active.
             </p>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
-          <span className="text-xs text-gray-400">Next Sprint:</span>
-          <span className="text-xs font-semibold px-2.5 py-1 rounded-lg bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+          <span className="text-xs text-slate-500 dark:text-gray-400">Next Sprint:</span>
+          <span className="text-xs font-semibold px-2.5 py-1 rounded-lg bg-emerald-100 text-emerald-800 border border-emerald-300 dark:bg-emerald-500/20 dark:text-emerald-400 dark:border-emerald-500/30">
             Week 3: Company & Vendor CRUD + Synthetic Data
           </span>
         </div>
