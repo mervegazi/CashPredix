@@ -154,23 +154,23 @@ export default function FileDropzone({ companies, onBatchUpload, isUploading }) 
       fileName = 'cashpredix_ar_financial_ledger_sample.csv';
       sampleContent =
         'Invoice Number,Customer Name,Invoice Date,Due Date,Payment Terms,Invoice Amount,Payment Date,Amount Paid,Remaining Balance,Payment Method,Installment,Check Number,Check Maturity Date,Factoring Fee,Status\n' +
-        'INV-2025-10482,JPMorgan Chase Treasury,2025-06-20,2025-07-20,Net 30,12500.00,2025-07-18,6250.00,6250.00,wire_transfer,1/2,,,0.00,PARTIAL\n' +
-        'INV-2025-10482,JPMorgan Chase Treasury,2025-06-20,2025-07-20,Net 30,12500.00,2025-07-28,6250.00,0.00,check,2/2,CHK-884120,2025-07-28,0.00,PAID\n' +
-        'INV-2025-22415,Walmart eCommerce,2025-08-01,2025-09-30,Net 60,45000.00,2025-08-15,45000.00,0.00,check,1/1,CHK-441209,2025-09-30,1125.00,PAID (Factored)\n' +
-        'INV-2025-33190,Shopify Plus Merchant,2025-08-10,2025-08-25,Net 15,18200.00,2025-08-23,18200.00,0.00,ach,1/1,,,0.00,PAID\n' +
-        'INV-2025-44012,Mayo Clinical Systems,2025-09-05,2025-10-20,Net 45,65000.00,2025-10-10,65000.00,0.00,cash,1/1,,,0.00,PAID\n' +
-        'INV-2025-55910,Nike Global Logistics,2025-09-12,2025-10-12,2/10 Net 30,32500.00,2025-09-20,31850.00,0.00,wire_transfer,1/1,,,0.00,PAID (2% Early Discount)\n' +
-        'INV-2025-66120,State Research Institute,2025-09-20,2025-12-19,Net 90,19500.00,,,19500.00,,1/1,,,0.00,PENDING\n';
+        'INV-2025-10482,Beacon Capital Group,2025-06-20,2025-07-20,Net 30,12500.00,2025-07-18,6250.00,6250.00,wire_transfer,1/2,,,0.00,PARTIAL\n' +
+        'INV-2025-10482,Beacon Capital Group,2025-06-20,2025-07-20,Net 30,12500.00,2025-07-28,6250.00,0.00,check,2/2,CHK-884120,2025-07-28,0.00,PAID\n' +
+        'INV-2025-22415,Summit Retail Logistics,2025-08-01,2025-09-30,Net 60,45000.00,2025-08-15,45000.00,0.00,check,1/1,CHK-441209,2025-09-30,1125.00,PAID (Factored)\n' +
+        'INV-2025-33190,NovaTech Cloud Systems,2025-08-10,2025-08-25,Net 15,18200.00,2025-08-23,18200.00,0.00,ach,1/1,,,0.00,PAID\n' +
+        'INV-2025-44012,Meridian Clinical Systems,2025-09-05,2025-10-20,Net 45,65000.00,2025-10-10,65000.00,0.00,cash,1/1,,,0.00,PAID\n' +
+        'INV-2025-55910,Horizon Global Transport,2025-09-12,2025-10-12,2/10 Net 30,32500.00,2025-09-20,31850.00,0.00,wire_transfer,1/1,,,0.00,PAID (2% Early Discount)\n' +
+        'INV-2025-66120,Pacific Research Institute,2025-09-20,2025-12-19,Net 90,19500.00,,,19500.00,,1/1,,,0.00,PENDING\n';
     } else {
       fileName = 'cashpredix_customer_sample.csv';
       sampleContent =
         'Customer Name,Payment Terms,Category,Estimated Monthly Inflow\n' +
-        'JPMorgan Chase Treasury,Net 30,FinTech & Banking,45000.00\n' +
-        'Shopify Plus Merchant,Net 15,SaaS & Digital Platforms,18200.00\n' +
-        'Walmart eCommerce,Net 60,Retail & Wholesale Chains,84000.00\n' +
-        'Mayo Clinical Systems,Net 45,Healthcare & Clinical,65000.00\n' +
-        'Nike Global Logistics,2/10 Net 30,Logistics & Transit,32500.00\n' +
-        'State Research Institute,Net 90,Public Sector & Education,19500.00\n';
+        'Beacon Capital Group,Net 30,FinTech & Banking,45000.00\n' +
+        'NovaTech Cloud Systems,Net 15,SaaS & Digital Platforms,18200.00\n' +
+        'Summit Retail Logistics,Net 60,Retail & Wholesale Chains,84000.00\n' +
+        'Meridian Clinical Systems,Net 45,Healthcare & Clinical,65000.00\n' +
+        'Horizon Global Transport,2/10 Net 30,Logistics & Transit,32500.00\n' +
+        'Pacific Research Institute,Net 90,Public Sector & Education,19500.00\n';
     }
 
     const blob = new Blob([sampleContent], { type: 'text/csv;charset=utf-8;' });

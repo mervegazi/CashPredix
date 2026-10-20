@@ -13,9 +13,11 @@ import {
   Clock,
   ChevronRight
 } from 'lucide-react';
+import { isEnterpriseDataAuthorized } from '../../config/authWhitelist';
 
 export default function WelcomeDashboard() {
   const { user } = useAuth();
+  const isAuthorized = isEnterpriseDataAuthorized(user);
   const userName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Executive User';
 
   // Format today's date
@@ -62,7 +64,7 @@ export default function WelcomeDashboard() {
 
   const UPCOMING_ALERTS = [
     {
-      customer: 'JPMorgan Chase Treasury',
+      customer: isAuthorized ? 'JPMorgan Chase Treasury' : 'Beacon Capital Group',
       amount: '$14,200.00',
       dueDate: 'Oct 19, 2026',
       risk: 'High Delay Risk (44%)',
@@ -70,7 +72,7 @@ export default function WelcomeDashboard() {
       recommendation: 'Recommend prompt follow-up or early payment incentive.',
     },
     {
-      customer: 'Shopify Plus Merchant Corp',
+      customer: isAuthorized ? 'Shopify Plus Merchant Corp' : 'NovaTech Cloud Systems',
       amount: '$8,450.00',
       dueDate: 'Oct 23, 2026',
       risk: 'Moderate Risk (12%)',
@@ -78,7 +80,7 @@ export default function WelcomeDashboard() {
       recommendation: 'Historical invoice settlement is steady.',
     },
     {
-      customer: 'Walmart eCommerce Partners',
+      customer: isAuthorized ? 'Walmart eCommerce Partners' : 'Summit Retail Logistics',
       amount: '$19,470.00',
       dueDate: 'Oct 28, 2026',
       risk: 'Optimal Low Risk (3%)',

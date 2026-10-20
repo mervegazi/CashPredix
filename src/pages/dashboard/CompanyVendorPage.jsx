@@ -27,7 +27,13 @@ import ConfirmationModal from '../../components/ConfirmationModal';
 import CustomerLedgerModal from '../../components/CustomerLedgerModal';
 import Tooltip from '../../components/Tooltip';
 import CompanyVendorSkeleton from '../../components/CompanyVendorSkeleton';
-import { INITIAL_SEED_COMPANIES, INITIAL_SEED_CUSTOMERS } from '../../data/seedData';
+import {
+  CANONICAL_ENTERPRISE_COMPANIES,
+  CANONICAL_ENTERPRISE_CUSTOMERS,
+  DEMO_ANONYMIZED_COMPANIES,
+  DEMO_ANONYMIZED_CUSTOMERS,
+} from '../../data/seedData';
+import { isEnterpriseDataAuthorized, isTestCompany } from '../../config/authWhitelist';
 
 const DEFAULT_INDUSTRIES = [
   'Technology & SaaS',
@@ -111,32 +117,79 @@ export default function CompanyVendorPage() {
   const [customerSearches, setCustomerSearches] = useState({});
   const [customerCategories, setCustomerCategories] = useState({});
   const [customerPages, setCustomerPages] = useState({});
+  const isAuthorized = isEnterpriseDataAuthorized(user);
+
   // Entities state
   const [companies, setCompanies] = useState(() => {
     try {
-      const saved = localStorage.getItem('cashpredix_companies_v2');
+      const storageKey = isAuthorized ? 'cashpredix_companies_v2' : 'cashpredix_demo_companies_v2';
+      const saved = localStorage.getItem(storageKey);
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const clean = isAuthorized ? parsed.filter((c) => !isTestCompany(c)) : parsed;
+          return clean.length > 0 ? clean : (isAuthorized ? CANONICAL_ENTERPRISE_COMPANIES : DEMO_ANONYMIZED_COMPANIES);
+        }
       }
-      return INITIAL_SEED_COMPANIES;
+      return isAuthorized ? CANONICAL_ENTERPRISE_COMPANIES : DEMO_ANONYMIZED_COMPANIES;
     } catch {
-      return INITIAL_SEED_COMPANIES;
+      return isAuthorized ? CANONICAL_ENTERPRISE_COMPANIES : DEMO_ANONYMIZED_COMPANIES;
     }
   });
 
   const [customers, setCustomers] = useState(() => {
     try {
-      const savedCust = localStorage.getItem('cashpredix_customers_v2') || localStorage.getItem('cashpredix_vendors_v2');
+      const storageKey = isAuthorized ? 'cashpredix_customers_v2' : 'cashpredix_demo_customers_v2';
+      const savedCust = localStorage.getItem(storageKey);
       if (savedCust) {
         const parsed = JSON.parse(savedCust);
         if (Array.isArray(parsed) && parsed.length > 0) return parsed;
       }
-      return INITIAL_SEED_CUSTOMERS;
+      return isAuthorized ? CANONICAL_ENTERPRISE_CUSTOMERS : DEMO_ANONYMIZED_CUSTOMERS;
     } catch {
-      return INITIAL_SEED_CUSTOMERS;
+      return isAuthorized ? CANONICAL_ENTERPRISE_CUSTOMERS : DEMO_ANONYMIZED_CUSTOMERS;
     }
   });
+
+  // Re-evaluate data when authenticated user changes (Authorized vs Demo Privacy mode)
+  useEffect(() => {
+    const isAuth = isEnterpriseDataAuthorized(user);
+    const companyKey = isAuth ? 'cashpredix_companies_v2' : 'cashpredix_demo_companies_v2';
+    const customerKey = isAuth ? 'cashpredix_customers_v2' : 'cashpredix_demo_customers_v2';
+
+    try {
+      const saved = localStorage.getItem(companyKey);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const clean = isAuth ? parsed.filter((c) => !isTestCompany(c)) : parsed;
+          setCompanies(clean.length > 0 ? clean : (isAuth ? CANONICAL_ENTERPRISE_COMPANIES : DEMO_ANONYMIZED_COMPANIES));
+        } else {
+          setCompanies(isAuth ? CANONICAL_ENTERPRISE_COMPANIES : DEMO_ANONYMIZED_COMPANIES);
+        }
+      } else {
+        setCompanies(isAuth ? CANONICAL_ENTERPRISE_COMPANIES : DEMO_ANONYMIZED_COMPANIES);
+      }
+    } catch {
+      setCompanies(isAuth ? CANONICAL_ENTERPRISE_COMPANIES : DEMO_ANONYMIZED_COMPANIES);
+    }
+
+    try {
+      const savedCust = localStorage.getItem(customerKey);
+      if (savedCust) {
+        const parsedCust = JSON.parse(savedCust);
+        if (Array.isArray(parsedCust) && parsedCust.length > 0) {
+          setCustomers(parsedCust);
+        } else {
+          setCustomers(isAuth ? CANONICAL_ENTERPRISE_CUSTOMERS : DEMO_ANONYMIZED_CUSTOMERS);
+        }
+      } else {
+        setCustomers(isAuth ? CANONICAL_ENTERPRISE_CUSTOMERS : DEMO_ANONYMIZED_CUSTOMERS);
+      }
+    } catch {
+      setCustomers(isAuth ? CANONICAL_ENTERPRISE_CUSTOMERS : DEMO_ANONYMIZED_CUSTOMERS);
+    }
+  }, [user]);
 
   // Modal State for Delete Confirmation
   const [modalState, setModalState] = useState({
@@ -170,21 +223,25 @@ export default function CompanyVendorPage() {
   // Sync to localStorage
   useEffect(() => {
     try {
-      localStorage.setItem('cashpredix_companies_v2', JSON.stringify(companies));
+      const storageKey = isAuthorized ? 'cashpredix_companies_v2' : 'cashpredix_demo_companies_v2';
+      const cleanCompanies = isAuthorized ? companies.filter((c) => !isTestCompany(c)) : companies;
+      localStorage.setItem(storageKey, JSON.stringify(cleanCompanies));
     } catch (e) {
       console.warn('Failed to save companies locally', e);
     }
-  }, [companies]);
+  }, [companies, isAuthorized]);
 
   useEffect(() => {
     try {
-      localStorage.setItem('cashpredix_customers_v2', JSON.stringify(customers));
-      // keep vendor key in sync for legacy compatibility
-      localStorage.setItem('cashpredix_vendors_v2', JSON.stringify(customers));
+      const storageKey = isAuthorized ? 'cashpredix_customers_v2' : 'cashpredix_demo_customers_v2';
+      localStorage.setItem(storageKey, JSON.stringify(customers));
+      if (isAuthorized) {
+        localStorage.setItem('cashpredix_vendors_v2', JSON.stringify(customers));
+      }
     } catch (e) {
       console.warn('Failed to save customers locally', e);
     }
-  }, [customers]);
+  }, [customers, isAuthorized]);
 
   // Ingest Enterprise Dataset into Supabase (4 Companies, 280 Customers)
   // Fetch real data from Supabase if connected
@@ -470,12 +527,25 @@ export default function CompanyVendorPage() {
       {/* Header Banner */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2.5">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2.5 flex-wrap">
             <Building2 className="w-6 h-6 text-blue-500" />
             <span>Company & Customer Management</span>
+            {isAuthorized ? (
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                <ShieldCheck className="w-3.5 h-3.5" />
+                <span>Authorized Portfolio</span>
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                <ShieldCheck className="w-3.5 h-3.5" />
+                <span>Demo View (Real Names Protected)</span>
+              </span>
+            )}
           </h1>
           <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            Hierarchical directory of enterprise entities, linked corporate clients, credit risk ratings, and incoming receivables.
+            {isAuthorized
+              ? 'Hierarchical directory of enterprise entities, proprietary counterparties, credit risk ratings, and incoming receivables.'
+              : 'Demonstration directory of enterprise entities with privacy-protected synthetic counterparties and credit risk analytics.'}
           </p>
         </div>
 
@@ -1100,7 +1170,7 @@ export default function CompanyVendorPage() {
                       setCustomerForm((prev) => ({ ...prev, name: e.target.value }));
                       if (customerErrors.name) setCustomerErrors((prev) => ({ ...prev, name: null }));
                     }}
-                    placeholder="e.g. JPMorgan Chase Treasury LLC"
+                    placeholder="e.g. Acme Global Logistics Corp."
                     className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                   />
                   {customerErrors.name && (

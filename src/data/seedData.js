@@ -252,7 +252,25 @@ export function generateInitialSeedCustomers() {
   return customers;
 }
 
-export const INITIAL_SEED_CUSTOMERS = generateInitialSeedCustomers();
+export function generateAnonymizedSeedCustomers() {
+  const emptyBase = [];
+  return [
+    ...expandCustomers(emptyBase, 160, 'comp-cashpredix', 'Account'),
+    ...expandCustomers(emptyBase, 45, 'comp-apex', 'Shipper'),
+    ...expandCustomers(emptyBase, 40, 'comp-vanguard', 'Health'),
+    ...expandCustomers(emptyBase, 35, 'comp-quantum', 'Fund'),
+  ];
+}
 
-// Backward-compatible alias
+// 1. Authorized Enterprise Dataset (Real Bank & Corporate Counterparties)
+export const CANONICAL_ENTERPRISE_COMPANIES = INITIAL_SEED_COMPANIES;
+export const CANONICAL_ENTERPRISE_CUSTOMERS = generateInitialSeedCustomers();
+
+// 2. Demo Anonymized Dataset (100% Synthetic Privacy-Preserving Counterparties)
+export const DEMO_ANONYMIZED_COMPANIES = INITIAL_SEED_COMPANIES;
+export const DEMO_ANONYMIZED_CUSTOMERS = generateAnonymizedSeedCustomers();
+
+// Backward-compatible exports
+export const INITIAL_SEED_CUSTOMERS = CANONICAL_ENTERPRISE_CUSTOMERS;
 export const INITIAL_SEED_VENDORS = INITIAL_SEED_CUSTOMERS;
+

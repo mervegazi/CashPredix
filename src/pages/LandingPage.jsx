@@ -106,7 +106,7 @@ export default function LandingPage() {
               <g className="animate-float">
                 <text x="0" y="-10" fill="currentColor" fontSize="16" fontFamily="monospace" opacity="0.6">TOP CUSTOMER SCORES</text>
                 {/* Customer 1 */}
-                <text x="0" y="20" fill="currentColor" fontSize="14" opacity="0.8">JPMorgan Corporate</text>
+                <text x="0" y="20" fill="currentColor" fontSize="14" opacity="0.8">Beacon Global Capital</text>
                 <rect x="100" y="8" width="180" height="12" fill="currentColor" opacity="0.2" rx="6" />
                 <rect x="100" y="8" width="165" height="12" fill="currentColor" opacity="0.8" rx="6" />
                 <text x="290" y="20" fill="currentColor" fontSize="14" fontWeight="bold">92</text>
