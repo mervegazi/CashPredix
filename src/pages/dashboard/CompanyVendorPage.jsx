@@ -15,13 +15,11 @@ import {
   ChevronDown,
   ChevronUp,
   Trash2,
-  RefreshCw,
   FolderTree,
   Info,
   Search,
   ChevronLeft,
   ChevronRight,
-  Database,
   Receipt,
 } from 'lucide-react';
 import FileDropzone from '../../components/FileDropzone';
@@ -113,15 +111,13 @@ export default function CompanyVendorPage() {
   const [customerSearches, setCustomerSearches] = useState({});
   const [customerCategories, setCustomerCategories] = useState({});
   const [customerPages, setCustomerPages] = useState({});
-  const [isIngestingDataset, setIsIngestingDataset] = useState(false);
-
   // Entities state
   const [companies, setCompanies] = useState(() => {
     try {
       const saved = localStorage.getItem('cashpredix_companies_v2');
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length >= 4) return parsed;
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
       }
       return INITIAL_SEED_COMPANIES;
     } catch {
@@ -134,7 +130,7 @@ export default function CompanyVendorPage() {
       const savedCust = localStorage.getItem('cashpredix_customers_v2') || localStorage.getItem('cashpredix_vendors_v2');
       if (savedCust) {
         const parsed = JSON.parse(savedCust);
-        if (Array.isArray(parsed) && parsed.length >= 100) return parsed;
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
       }
       return INITIAL_SEED_CUSTOMERS;
     } catch {
@@ -191,75 +187,7 @@ export default function CompanyVendorPage() {
   }, [customers]);
 
   // Ingest Enterprise Dataset into Supabase (4 Companies, 280 Customers)
-  const handleIngestEnterpriseData = async () => {
-    if (!user?.id) {
-      setCompanies(INITIAL_SEED_COMPANIES);
-      setCustomers(INITIAL_SEED_CUSTOMERS);
-      toast.success('Enterprise dataset active! (4 Companies, 280 Customers with 160 for CashPredix)');
-      return;
-    }
-
-    setIsIngestingDataset(true);
-    const toastId = toast.loading('Ingesting 4 Companies & 280 Customers into Supabase...');
-
-    try {
-      // 1. Prepare companies with user_id
-      const companyIdMap = {};
-      const companiesToInsert = INITIAL_SEED_COMPANIES.map((c) => {
-        const realId = crypto.randomUUID();
-        companyIdMap[c.id] = realId;
-        return {
-          id: realId,
-          user_id: user.id,
-          name: c.name,
-          industry: c.industry,
-          created_at: c.created_at,
-        };
-      });
-
-      const { error: compErr } = await supabase
-        .from('companies')
-        .upsert(companiesToInsert, { onConflict: 'id' });
-
-      if (compErr) throw compErr;
-
-      // 2. Prepare 280 customers
-      const customersToInsert = INITIAL_SEED_CUSTOMERS.map((v) => ({
-        id: crypto.randomUUID(),
-        company_id: companyIdMap[v.company_id] || companyIdMap['comp-cashpredix'],
-        name: v.name,
-        payment_terms: v.payment_terms,
-        created_at: v.created_at,
-      }));
-
-      // Chunk in batches of 50 into customers table (and vendors table if available)
-      for (let i = 0; i < customersToInsert.length; i += 50) {
-        const chunk = customersToInsert.slice(i, i + 50);
-        try {
-          await supabase.from('customers').upsert(chunk, { onConflict: 'id' });
-        } catch {
-          // fallback to vendors
-        }
-        try {
-          await supabase.from('vendors').upsert(chunk, { onConflict: 'id' });
-        } catch {
-          // ignore
-        }
-      }
-
-      toast.success(`Successfully ingested 4 Companies & ${customersToInsert.length} Customers into Supabase!`, { id: toastId });
-      await loadSupabaseData();
-    } catch (err) {
-      console.error('Enterprise dataset ingestion error:', err);
-      setCompanies(INITIAL_SEED_COMPANIES);
-      setCustomers(INITIAL_SEED_CUSTOMERS);
-      toast.error(`Ingestion notice: ${err.message || 'Updated local state'}. Local dataset loaded!`, { id: toastId });
-    } finally {
-      setIsIngestingDataset(false);
-    }
-  };
-
-  // Fetch real data from Supabase
+  // Fetch real data from Supabase if connected
   const loadSupabaseData = async () => {
     if (!user?.id) return;
     setIsLoading(true);
@@ -270,7 +198,11 @@ export default function CompanyVendorPage() {
         .order('created_at', { ascending: false });
 
       if (dbCompanies && !compErr && dbCompanies.length > 0) {
-        setCompanies(dbCompanies);
+        setCompanies((prev) => {
+          const dbIds = new Set(dbCompanies.map((c) => c.id));
+          const localOnly = prev.filter((c) => !dbIds.has(c.id));
+          return [...dbCompanies, ...localOnly];
+        });
         
         // Try customers table first, fallback to vendors table
         let { data: dbCustomers, error: custErr } = await supabase
@@ -288,16 +220,19 @@ export default function CompanyVendorPage() {
         }
 
         if (!custErr && dbCustomers && dbCustomers.length > 0) {
-          setCustomers(
-            dbCustomers.map((v) => ({
+          setCustomers((prev) => {
+            const dbIds = new Set(dbCustomers.map((v) => v.id));
+            const localOnly = prev.filter((v) => !dbIds.has(v.id));
+            const formattedDb = dbCustomers.map((v) => ({
               ...v,
               reliability_score: v.reliability_score || Math.floor(Math.random() * 45 + 55),
-            }))
-          );
+            }));
+            return [...formattedDb, ...localOnly];
+          });
         }
       }
     } catch {
-      // Keep local state
+      // Keep local state silently
     } finally {
       setIsLoading(false);
     }
@@ -547,39 +482,22 @@ export default function CompanyVendorPage() {
         <div className="flex items-center gap-2.5 self-start sm:self-auto flex-wrap">
           <button
             type="button"
-            onClick={handleIngestEnterpriseData}
-            disabled={isIngestingDataset}
-            className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 shadow-md shadow-blue-500/20 transition-all disabled:opacity-60"
-            title="Seed/Ingest 4 Canonical Enterprise Companies and 280 Customers (160 for CashPredix)"
+            onClick={() => setActiveTab('forms')}
+            className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold text-white bg-blue-600 hover:bg-blue-500 shadow-sm transition-all"
+            title="Create a new company entity or link a customer"
           >
-            {isIngestingDataset ? (
-              <>
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                <span>Ingesting Dataset...</span>
-              </>
-            ) : (
-              <>
-                <Database className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Ingest 4 Companies & 280 Customers</span>
-                <span className="sm:hidden">Ingest Dataset</span>
-              </>
-            )}
+            <Plus className="w-4 h-4" />
+            <span>Add Company / Customer</span>
           </button>
 
           <button
             type="button"
-            onClick={() => {
-              setIsLoading(true);
-              setTimeout(() => {
-                loadSupabaseData();
-                setIsLoading(false);
-                toast.success('Directory refreshed with database state');
-              }, 600);
-            }}
-            className="p-2 rounded-xl text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm transition-all"
-            title="Refresh database records"
+            onClick={() => setActiveTab('dropzone')}
+            className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/60 shadow-sm transition-all"
+            title="Import customer and AR invoice ledger CSV"
           >
-            <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin text-blue-500' : ''}`} />
+            <FileSpreadsheet className="w-4 h-4 text-blue-500" />
+            <span>Import Invoices / CSV</span>
           </button>
         </div>
       </div>
