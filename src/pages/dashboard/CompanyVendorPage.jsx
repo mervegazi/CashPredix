@@ -108,7 +108,7 @@ function getScoreInsight(score) {
   if (score >= 90) {
     return {
       tier: 'Prime / Benchmark',
-      color: 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20',
+      color: 'text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800/60',
       badge: 'bg-emerald-500',
       onTimeRate: `${score}%`,
       avgDelay: '-2.4 days (Early settlement)',
@@ -118,7 +118,7 @@ function getScoreInsight(score) {
   if (score >= 75) {
     return {
       tier: 'Standard Operational',
-      color: 'text-blue-500 bg-blue-500/10 border-blue-500/20',
+      color: 'text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/40 border-blue-200 dark:border-blue-800/60',
       badge: 'bg-blue-500',
       onTimeRate: `${score}%`,
       avgDelay: '+3.1 days (Within grace)',
@@ -127,7 +127,7 @@ function getScoreInsight(score) {
   }
   return {
     tier: 'High Anomaly Risk',
-    color: 'text-amber-500 bg-amber-500/10 border-amber-500/20',
+    color: 'text-amber-800 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-800/60',
     badge: 'bg-amber-500',
     onTimeRate: `${score}%`,
     avgDelay: '+16.8 days (Frequent friction)',
@@ -743,21 +743,35 @@ export default function CompanyVendorPage() {
                                         <Tooltip
                                           position="top"
                                           content={
-                                            <div className="space-y-1.5 text-left">
-                                              <div className="flex items-center justify-between pb-1 border-b border-gray-700">
-                                                <span className="font-bold text-white">{vendor.name}</span>
-                                                <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${insight.badge} text-white`}>
+                                            <div className="space-y-2 text-left">
+                                              <div className="flex items-start justify-between gap-2 pb-2 border-b border-gray-100 dark:border-gray-800">
+                                                <span className="font-bold text-gray-900 dark:text-white leading-snug break-words">
+                                                  {vendor.name}
+                                                </span>
+                                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${insight.badge} text-white shrink-0`}>
                                                   {score}%
                                                 </span>
                                               </div>
-                                              <div className="text-[11px] text-gray-300 space-y-0.5">
-                                                <p><span className="text-gray-400">Risk Tier:</span> {insight.tier}</p>
-                                                <p><span className="text-gray-400">On-Time Rate:</span> {insight.onTimeRate}</p>
-                                                <p><span className="text-gray-400">Avg Variance:</span> {insight.avgDelay}</p>
+                                              <div className="text-[11px] space-y-1.5">
+                                                <div className="flex items-center justify-between gap-2">
+                                                  <span className="text-gray-500 dark:text-gray-400">Risk Tier:</span>
+                                                  <span className="font-semibold text-gray-900 dark:text-gray-100">{insight.tier}</span>
+                                                </div>
+                                                <div className="flex items-center justify-between gap-2">
+                                                  <span className="text-gray-500 dark:text-gray-400">On-Time Rate:</span>
+                                                  <span className="font-semibold text-gray-900 dark:text-gray-100">{insight.onTimeRate}</span>
+                                                </div>
+                                                <div className="flex items-center justify-between gap-2">
+                                                  <span className="text-gray-500 dark:text-gray-400">Avg Settlement:</span>
+                                                  <span className="font-semibold text-gray-900 dark:text-gray-100">{insight.avgDelay}</span>
+                                                </div>
                                               </div>
-                                              <p className="pt-1 text-[10px] text-blue-300 italic border-t border-gray-700/60">
-                                                💡 {insight.action}
-                                              </p>
+                                              <div className="pt-2 border-t border-gray-100 dark:border-gray-800">
+                                                <p className="text-[11px] text-blue-700 dark:text-blue-300 bg-blue-50/80 dark:bg-blue-950/40 p-2.5 rounded-xl border border-blue-200/60 dark:border-blue-900/40 leading-relaxed flex items-start gap-1.5">
+                                                  <span className="shrink-0 mt-0.5">💡</span>
+                                                  <span>{insight.action}</span>
+                                                </p>
+                                              </div>
                                             </div>
                                           }
                                         >
