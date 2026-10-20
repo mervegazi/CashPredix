@@ -245,6 +245,36 @@ export function AuthProvider({ children }) {
     return data;
   };
 
+  const updateProfile = async ({ firstName, lastName, fullName }) => {
+    const computedFullName = fullName || `${firstName || ''} ${lastName || ''}`.trim();
+    const updatedMetadata = {
+      ...(user?.user_metadata || {}),
+      first_name: firstName,
+      last_name: lastName,
+      full_name: computedFullName,
+    };
+
+    // If running in local demo mode, simulate success
+    if (localStorage.getItem('cashpredix_demo_session')) {
+      const updatedUser = {
+        ...user,
+        user_metadata: updatedMetadata,
+      };
+      localStorage.setItem('cashpredix_demo_session', JSON.stringify(updatedUser));
+      setUser(updatedUser);
+      return { user: updatedUser };
+    }
+
+    const { data, error } = await supabase.auth.updateUser({
+      data: updatedMetadata,
+    });
+    if (error) throw error;
+    if (data?.user) {
+      setUser(data.user);
+    }
+    return data;
+  };
+
   const resetPassword = async (email) => {
     const redirectUrl = `${window.location.origin}${import.meta.env.BASE_URL}change-password`;
     const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
@@ -289,6 +319,7 @@ export function AuthProvider({ children }) {
     signUp,
     signOut,
     updatePassword,
+    updateProfile,
     resetPassword,
     signInDemo,
     formatAuthError,
