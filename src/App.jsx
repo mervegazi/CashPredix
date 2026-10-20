@@ -12,7 +12,7 @@ import ChangePasswordPage from './pages/auth/ChangePasswordPage';
 // Dashboard Layout & Sub-pages
 import DashboardLayout from './layouts/DashboardLayout';
 import WelcomeDashboard from './pages/dashboard/WelcomeDashboard';
-import CompanyVendorPlaceholder from './pages/dashboard/CompanyVendorPlaceholder';
+import CompanyVendorPage from './pages/dashboard/CompanyVendorPage';
 import CashflowPredictsPlaceholder from './pages/dashboard/CashflowPredictsPlaceholder';
 import ProfilePage from './pages/dashboard/ProfilePage';
 
@@ -104,7 +104,7 @@ function App() {
               }
             >
               <Route index element={<WelcomeDashboard />} />
-              <Route path="company-vendor" element={<CompanyVendorPlaceholder />} />
+              <Route path="company-vendor" element={<CompanyVendorPage />} />
               <Route path="cashflow-predicts" element={<CashflowPredictsPlaceholder />} />
               <Route path="profile" element={<ProfilePage />} />
             </Route>
