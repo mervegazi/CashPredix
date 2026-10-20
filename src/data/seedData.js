@@ -193,8 +193,8 @@ function expandCustomers(baseList, targetCount, companyId, prefixPrefix) {
   // 2. Synthesize additional unique customers up to target count
   const genericPrefixes = [
     'Beacon', 'Cobalt', 'Summit', 'Velox', 'Hyperion', 'Kore', 'Atlas',
-    'Novus', 'Terra', 'Zephyr', 'Aegis', 'Centurion', 'Optima', 'Vanguard',
-    'Apex', 'Nexus', 'Vertex', 'Horizon', 'Pinnacle', 'Pulse', 'Meridian',
+    'Novus', 'Terra', 'Zephyr', 'Aegis', 'Centurion', 'Optima', 'Polaris',
+    'Orion', 'Nexus', 'Vertex', 'Horizon', 'Pinnacle', 'Pulse', 'Meridian',
     'Solas', 'Omni', 'Crestview', 'Astra', 'Strata', 'Synergy',
   ];
   const genericMiddles = [
@@ -262,12 +262,41 @@ export function generateAnonymizedSeedCustomers() {
   ];
 }
 
-// 1. Authorized Enterprise Dataset (Real Bank & Corporate Counterparties)
+// 1. Authorized Enterprise Dataset (Real Bank & Corporate Counterparties for Merve & Prof. Sarah Zelikovitz)
 export const CANONICAL_ENTERPRISE_COMPANIES = INITIAL_SEED_COMPANIES;
 export const CANONICAL_ENTERPRISE_CUSTOMERS = generateInitialSeedCustomers();
 
-// 2. Demo Anonymized Dataset (100% Synthetic Privacy-Preserving Counterparties)
-export const DEMO_ANONYMIZED_COMPANIES = INITIAL_SEED_COMPANIES;
+// 2. Demo Anonymized Dataset (100% Synthetic, Purely Fictitious - ZERO Real Company Brands)
+export const DEMO_ANONYMIZED_COMPANIES = [
+  {
+    id: 'comp-cashpredix',
+    name: 'CashPredix Technologies Inc.',
+    industry: 'Technology & SaaS',
+    created_at: new Date(Date.now() - 720 * 86400000).toISOString(),
+    description: 'Flagship enterprise fintech AI platform holding simulated corporate receivable accounts.',
+  },
+  {
+    id: 'comp-apex',
+    name: 'Atlas Horizon Freight Corp.',
+    industry: 'Logistics & Freight',
+    created_at: new Date(Date.now() - 360 * 86400000).toISOString(),
+    description: 'Simulated multimodal freight forwarding and supply chain operator.',
+  },
+  {
+    id: 'comp-vanguard',
+    name: 'Aegis Healthcare Systems Network',
+    industry: 'Healthcare & Pharmaceuticals',
+    created_at: new Date(Date.now() - 280 * 86400000).toISOString(),
+    description: 'Simulated healthcare and clinical diagnostic network counterparty.',
+  },
+  {
+    id: 'comp-quantum',
+    name: 'Cobalt Capital & Asset Management',
+    industry: 'Financial Services & FinTech',
+    created_at: new Date(Date.now() - 210 * 86400000).toISOString(),
+    description: 'Simulated institutional clearing and asset management network.',
+  },
+];
 export const DEMO_ANONYMIZED_CUSTOMERS = generateAnonymizedSeedCustomers();
 
 // Backward-compatible exports
