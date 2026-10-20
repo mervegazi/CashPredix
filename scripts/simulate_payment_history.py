@@ -80,7 +80,7 @@ def sample_pareto_amount(base_amount: float = 350.0, alpha: float = 1.6, max_amo
     """
     Sample transaction amounts from a Pareto (Type I) power-law distribution.
     Reflects realistic B2B enterprise expenditures: dense concentration around routine operations
-    ($500 - $10,000) with a heavy right tail for major enterprise supplier contracts.
+    ($500 - $10,000) with a heavy right tail for major enterprise customer contracts.
     """
     u = max(1e-9, 1.0 - random.random())
     val = base_amount / (u ** (1.0 / alpha))

@@ -1245,7 +1245,7 @@ export default function CompanyVendorPage() {
             </div>
 
             <div className="mt-6 pt-4 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between text-[11px] text-gray-400">
-              <span>Automatic Foreign Key Validation</span>
+              <span>Verified Entity Linkage</span>
               <span>Linked Customers: {customers.length}</span>
             </div>
           </div>
@@ -1271,8 +1271,13 @@ export default function CompanyVendorPage() {
         }
         message={
           modalState.type === 'company'
-            ? `Deleting "${modalState.target?.name}" will trigger a foreign key cascade and permanently remove all linked customer accounts and incoming invoice ledger rows. This action cannot be undone.`
-            : `Are you sure you want to remove customer "${modalState.target?.name}" from this corporate entity? Historical receivables and invoice entries will also be permanently deleted.`
+            ? `Deleting "${modalState.target?.name}" will permanently remove this company along with all linked customer accounts, invoices, and payment histories. This action cannot be undone.`
+            : `Are you sure you want to remove customer "${modalState.target?.name}"? All associated invoices, payment history, and receivable records will also be permanently deleted.`
+        }
+        warningNote={
+          modalState.type === 'company'
+            ? 'All associated customer accounts, invoices, and transaction histories will be permanently removed.'
+            : 'All incoming invoices, payment transactions, and ledger entries for this customer will be permanently removed.'
         }
         confirmText={modalState.type === 'company' ? 'Delete Company Entity' : 'Delete Customer'}
         isDeleting={modalState.isDeleting}

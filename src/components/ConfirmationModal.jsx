@@ -5,6 +5,7 @@ export default function ConfirmationModal({
   isOpen,
   title = 'Confirm Deletion',
   message = 'Are you sure you want to delete this item? This action cannot be undone.',
+  warningNote = 'All linked records and customer transactions will be permanently removed.',
   confirmText = 'Delete Permanently',
   cancelText = 'Cancel',
   isDeleting = false,
@@ -64,10 +65,12 @@ export default function ConfirmationModal({
         </div>
 
         {/* Warning Callout */}
-        <div className="mt-4 p-3 rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/50 text-[11px] text-red-600 dark:text-red-300 flex items-center gap-2">
-          <span className="font-semibold">Irreversible Action:</span>
-          <span>Foreign key cascades will remove all nested supplier transactions.</span>
-        </div>
+        {warningNote && (
+          <div className="mt-4 p-3 rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/50 text-[11px] text-red-600 dark:text-red-300 flex items-center gap-2">
+            <span className="font-semibold">Irreversible Action:</span>
+            <span>{warningNote}</span>
+          </div>
+        )}
 
         {/* Action Buttons */}
         <div className="mt-6 flex items-center justify-end gap-3 pt-3 border-t border-gray-100 dark:border-gray-800">

@@ -124,7 +124,7 @@ def generate_company_name(existing_names: set) -> str:
 
 
 def generate_vendor_name(category: str, existing_names: set) -> str:
-    """Generate a realistic vendor / supplier name within a given industry category."""
+    """Generate a realistic customer / client account name within a given industry category."""
     cat_data = VENDOR_CATEGORIES.get(category, random.choice(list(VENDOR_CATEGORIES.values())))
     for _ in range(200):
         prefix = random.choice(cat_data["prefixes"])
