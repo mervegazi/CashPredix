@@ -4,6 +4,9 @@
 # production
 /dist
 
+# generated synthetic data
+/data/
+
 # environment variables
 .env
 .env.local
