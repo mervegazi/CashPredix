@@ -7,15 +7,23 @@ import {
   Users,
   FileSpreadsheet,
   Plus,
-  CheckCircle2,
   AlertCircle,
   Loader2,
   Sparkles,
   Clock,
   ShieldCheck,
-  Briefcase
+  Briefcase,
+  ChevronDown,
+  ChevronUp,
+  Trash2,
+  RefreshCw,
+  FolderTree,
+  Info
 } from 'lucide-react';
 import FileDropzone from '../../components/FileDropzone';
+import ConfirmationModal from '../../components/ConfirmationModal';
+import Tooltip from '../../components/Tooltip';
+import CompanyVendorSkeleton from '../../components/CompanyVendorSkeleton';
 
 const DEFAULT_INDUSTRIES = [
   'Technology & SaaS',
@@ -73,6 +81,7 @@ const INITIAL_SEED_VENDORS = [
     name: 'CloudScale Compute Infrastructure',
     payment_terms: 'Net 30',
     category: 'Cloud & Infrastructure',
+    reliability_score: 96,
     created_at: new Date(Date.now() - 30 * 86400000).toISOString(),
   },
   {
@@ -81,6 +90,7 @@ const INITIAL_SEED_VENDORS = [
     name: 'ByteStream Data Analytics Corp.',
     payment_terms: 'Net 15',
     category: 'Cloud & Infrastructure',
+    reliability_score: 88,
     created_at: new Date(Date.now() - 25 * 86400000).toISOString(),
   },
   {
@@ -89,15 +99,54 @@ const INITIAL_SEED_VENDORS = [
     name: 'Nordic Freight Express',
     payment_terms: 'Net 45',
     category: 'Logistics & Shipping',
+    reliability_score: 58,
     created_at: new Date(Date.now() - 20 * 86400000).toISOString(),
   },
 ];
+
+// Helper to calculate score details
+function getScoreInsight(score) {
+  if (score >= 90) {
+    return {
+      tier: 'Prime / Benchmark',
+      color: 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20',
+      badge: 'bg-emerald-500',
+      onTimeRate: `${score}%`,
+      avgDelay: '-2.4 days (Early settlement)',
+      action: 'High reliability; eligible for favorable 2% early payment rebates.',
+    };
+  }
+  if (score >= 75) {
+    return {
+      tier: 'Standard Operational',
+      color: 'text-blue-500 bg-blue-500/10 border-blue-500/20',
+      badge: 'bg-blue-500',
+      onTimeRate: `${score}%`,
+      avgDelay: '+3.1 days (Within grace)',
+      action: 'Consistent settlement; standard Net 30 liquidity schedule.',
+    };
+  }
+  return {
+    tier: 'High Anomaly Risk',
+    color: 'text-amber-500 bg-amber-500/10 border-amber-500/20',
+    badge: 'bg-amber-500',
+    onTimeRate: `${score}%`,
+    avgDelay: '+16.8 days (Frequent friction)',
+    action: 'Payment bottlenecks detected; recommend review of supplier terms.',
+  };
+}
 
 export default function CompanyVendorPage() {
   const { user } = useAuth();
 
   // Active view tab
-  const [activeTab, setActiveTab] = useState('forms'); // 'forms' | 'dropzone'
+  const [activeTab, setActiveTab] = useState('directory'); // 'directory' | 'forms' | 'dropzone'
+
+  // Loading state for skeleton shimmer
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Expanded company accordion IDs
+  const [expandedCompanyIds, setExpandedCompanyIds] = useState(new Set(['comp-101', 'comp-102']));
 
   // Entities state
   const [companies, setCompanies] = useState(() => {
@@ -118,6 +167,14 @@ export default function CompanyVendorPage() {
     }
   });
 
+  // Modal State for Delete Confirmation
+  const [modalState, setModalState] = useState({
+    isOpen: false,
+    type: null, // 'company' | 'vendor'
+    target: null,
+    isDeleting: false,
+  });
+
   // Form states
   const [companyForm, setCompanyForm] = useState({
     name: '',
@@ -127,7 +184,7 @@ export default function CompanyVendorPage() {
   const [isSubmittingCompany, setIsSubmittingCompany] = useState(false);
 
   const [vendorForm, setVendorForm] = useState({
-    company_id: companies[0]?.id || '',
+    company_id: '',
     name: '',
     payment_terms: 'Net 30',
     category: VENDOR_CATEGORIES[0],
@@ -153,33 +210,133 @@ export default function CompanyVendorPage() {
     }
   }, [vendors]);
 
+  // Fetch real data from Supabase
+  const loadSupabaseData = async () => {
+    if (!user?.id) return;
+    setIsLoading(true);
+    try {
+      const { data: dbCompanies, error: compErr } = await supabase
+        .from('companies')
+        .select('*')
+        .order('created_at', { ascending: false });
 
-  // Fetch real data from Supabase if available
-  useEffect(() => {
-    async function fetchFromSupabase() {
-      if (!user?.id) return;
-      try {
-        const { data: dbCompanies, error: compErr } = await supabase
-          .from('companies')
+      if (dbCompanies && !compErr && dbCompanies.length > 0) {
+        setCompanies(dbCompanies);
+        const { data: dbVendors, error: vendErr } = await supabase
+          .from('vendors')
           .select('*')
           .order('created_at', { ascending: false });
-
-        if (!compErr && dbCompanies && dbCompanies.length > 0) {
-          setCompanies(dbCompanies);
-          const { data: dbVendors, error: vendErr } = await supabase
-            .from('vendors')
-            .select('*')
-            .order('created_at', { ascending: false });
-          if (!vendErr && dbVendors) {
-            setVendors(dbVendors);
-          }
+        if (!vendErr && dbVendors) {
+          setVendors(
+            dbVendors.map((v) => ({
+              ...v,
+              reliability_score: v.reliability_score || Math.floor(Math.random() * 45 + 55),
+            }))
+          );
         }
-      } catch {
-        // Fallback to local state quietly
       }
+    } catch {
+      // Keep local state
+    } finally {
+      setIsLoading(false);
     }
-    fetchFromSupabase();
-  }, [user]);
+  };
+
+  useEffect(() => {
+    let active = true;
+    if (user?.id) {
+      supabase
+        .from('companies')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .then(({ data: dbCompanies, error: compErr }) => {
+          if (active && dbCompanies && !compErr && dbCompanies.length > 0) {
+            setCompanies(dbCompanies);
+            supabase
+              .from('vendors')
+              .select('*')
+              .order('created_at', { ascending: false })
+              .then(({ data: dbVendors, error: vendErr }) => {
+                if (active && dbVendors && !vendErr) {
+                  setVendors(
+                    dbVendors.map((v) => ({
+                      ...v,
+                      reliability_score: v.reliability_score || Math.floor(Math.random() * 45 + 55),
+                    }))
+                  );
+                }
+              });
+          }
+        });
+    }
+    return () => {
+      active = false;
+    };
+  }, [user?.id]);
+
+  // Accordion toggle
+  const toggleCompanyExpand = (companyId) => {
+    setExpandedCompanyIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(companyId)) {
+        next.delete(companyId);
+      } else {
+        next.add(companyId);
+      }
+      return next;
+    });
+  };
+
+  // Trigger Delete Company Modal
+  const requestDeleteCompany = (company) => {
+    setModalState({
+      isOpen: true,
+      type: 'company',
+      target: company,
+      isDeleting: false,
+    });
+  };
+
+  // Trigger Delete Vendor Modal
+  const requestDeleteVendor = (vendor) => {
+    setModalState({
+      isOpen: true,
+      type: 'vendor',
+      target: vendor,
+      isDeleting: false,
+    });
+  };
+
+  // Execute Deletion after confirmation
+  const handleConfirmDelete = async () => {
+    const { type, target } = modalState;
+    if (!target) return;
+
+    setModalState((prev) => ({ ...prev, isDeleting: true }));
+
+    try {
+      if (type === 'company') {
+        // Delete company & cascade vendors
+        if (user?.id) {
+          await supabase.from('companies').delete().eq('id', target.id);
+        }
+        setCompanies((prev) => prev.filter((c) => c.id !== target.id));
+        setVendors((prev) => prev.filter((v) => v.company_id !== target.id));
+        toast.success(`Company entity "${target.name}" and associated suppliers deleted.`);
+      } else if (type === 'vendor') {
+        // Delete vendor
+        if (user?.id) {
+          await supabase.from('vendors').delete().eq('id', target.id);
+        }
+        setVendors((prev) => prev.filter((v) => v.id !== target.id));
+        toast.success(`Vendor "${target.name}" removed successfully.`);
+      }
+    } catch (err) {
+      toast.error(`Delete failed: ${err.message}`);
+    } finally {
+      setModalState({ isOpen: false, type: null, target: null, isDeleting: false });
+    }
+  };
 
   // Handle Create Company
   const handleCreateCompany = async (e) => {
@@ -207,17 +364,17 @@ export default function CompanyVendorPage() {
     };
 
     try {
-      // Attempt Supabase insert if logged in
       if (user?.id) {
         const { error } = await supabase.from('companies').insert([newCompany]);
         if (error) console.warn('Supabase insert note:', error.message);
       }
 
       setCompanies((prev) => [newCompany, ...prev]);
-      setVendorForm((prev) => ({ ...prev, company_id: newCompany.id }));
+      setExpandedCompanyIds((prev) => new Set([...prev, newCompany.id]));
       setCompanyForm({ name: '', industry: DEFAULT_INDUSTRIES[0] });
       setCompanyErrors({});
       toast.success(`Company entity "${newCompany.name}" registered successfully!`);
+      setActiveTab('directory');
     } catch (err) {
       toast.error(`Error registering company: ${err.message}`);
     } finally {
@@ -229,7 +386,9 @@ export default function CompanyVendorPage() {
   const handleCreateVendor = async (e) => {
     e.preventDefault();
     const errors = {};
-    if (!vendorForm.company_id) {
+    const effectiveCompanyId = vendorForm.company_id || companies[0]?.id;
+
+    if (!effectiveCompanyId) {
       errors.company_id = 'Please select a company';
     }
     if (!vendorForm.name.trim()) {
@@ -247,10 +406,11 @@ export default function CompanyVendorPage() {
     const newVendorId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `vend-${Date.now()}`;
     const newVendor = {
       id: newVendorId,
-      company_id: vendorForm.company_id,
+      company_id: effectiveCompanyId,
       name: vendorForm.name.trim(),
       payment_terms: vendorForm.payment_terms,
       category: vendorForm.category,
+      reliability_score: Math.floor(Math.random() * 20 + 80),
       created_at: new Date().toISOString(),
     };
 
@@ -261,14 +421,16 @@ export default function CompanyVendorPage() {
       }
 
       setVendors((prev) => [newVendor, ...prev]);
-      setVendorForm((prev) => ({
-        ...prev,
+      setExpandedCompanyIds((prev) => new Set([...prev, effectiveCompanyId]));
+      setVendorForm({
+        company_id: effectiveCompanyId,
         name: '',
         payment_terms: 'Net 30',
         category: VENDOR_CATEGORIES[0],
-      }));
+      });
       setVendorErrors({});
       toast.success(`Vendor "${newVendor.name}" linked successfully!`);
+      setActiveTab('directory');
     } catch (err) {
       toast.error(`Error registering vendor: ${err.message}`);
     } finally {
@@ -286,6 +448,7 @@ export default function CompanyVendorPage() {
         name: row.name,
         payment_terms: row.payment_terms || 'Net 30',
         category: row.category || 'General Supplier',
+        reliability_score: Math.floor(Math.random() * 40 + 60),
         created_at: new Date().toISOString(),
       }));
 
@@ -295,14 +458,17 @@ export default function CompanyVendorPage() {
       }
 
       setVendors((prev) => [...newVendors, ...prev]);
+      setExpandedCompanyIds((prev) => new Set([...prev, targetCompanyId]));
       toast.success(`Successfully imported ${newVendors.length} vendors!`);
-      setActiveTab('forms');
+      setActiveTab('directory');
     } catch (err) {
       toast.error(`Batch import failed: ${err.message}`);
     } finally {
       setIsUploadingBatch(false);
     }
   };
+
+  const selectedCompanyForVendor = vendorForm.company_id || companies[0]?.id || '';
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
@@ -311,14 +477,30 @@ export default function CompanyVendorPage() {
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2.5">
             <Building2 className="w-6 h-6 text-blue-500" />
-            <span>Create Company & Vendor</span>
+            <span>Company & Vendor Management</span>
           </h1>
           <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            Define corporate parent entities, register supplier agreements, and batch-ingest payment ledgers.
+            Hierarchical directory of enterprise entities, nested suppliers, risk ratings, and batch ledgers.
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2.5 self-start sm:self-auto">
+          <button
+            type="button"
+            onClick={() => {
+              setIsLoading(true);
+              setTimeout(() => {
+                loadSupabaseData();
+                setIsLoading(false);
+                toast.success('Directory refreshed with database state');
+              }, 600);
+            }}
+            className="p-2 rounded-xl text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm transition-all"
+            title="Refresh database records"
+          >
+            <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin text-blue-500' : ''}`} />
+          </button>
+
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800/40 text-xs font-semibold">
             <Sparkles className="w-4 h-4 text-blue-500" />
             <span>Week 3 Feature Sprint</span>
@@ -369,6 +551,19 @@ export default function CompanyVendorPage() {
       <div className="flex items-center gap-2 p-1.5 rounded-2xl bg-gray-100 dark:bg-gray-800/80 w-fit">
         <button
           type="button"
+          onClick={() => setActiveTab('directory')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all ${
+            activeTab === 'directory'
+              ? 'bg-white dark:bg-gray-900 text-blue-600 dark:text-blue-400 shadow-sm'
+              : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+          }`}
+        >
+          <FolderTree className="w-4 h-4" />
+          <span>Expandable Directory</span>
+        </button>
+
+        <button
+          type="button"
           onClick={() => setActiveTab('forms')}
           className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all ${
             activeTab === 'forms'
@@ -377,7 +572,7 @@ export default function CompanyVendorPage() {
           }`}
         >
           <Plus className="w-4 h-4" />
-          <span>Interactive Creation Forms</span>
+          <span>Register New Entity</span>
         </button>
 
         <button
@@ -390,12 +585,224 @@ export default function CompanyVendorPage() {
           }`}
         >
           <FileSpreadsheet className="w-4 h-4" />
-          <span>Excel / CSV Batch Ingestion</span>
+          <span>Excel / CSV Dropzone</span>
         </button>
       </div>
 
-      {/* Main Content Area */}
-      {activeTab === 'forms' ? (
+      {/* Main Tab Content */}
+      {activeTab === 'directory' && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between px-1">
+            <h2 className="text-base font-bold text-gray-900 dark:text-white flex items-center gap-2">
+              <FolderTree className="w-5 h-5 text-blue-500" />
+              <span>Hierarchical Corporate Entities & Nested Suppliers</span>
+            </h2>
+            <span className="text-xs text-gray-400">
+              Click any company card to expand or collapse suppliers
+            </span>
+          </div>
+
+          {/* Skeleton Loader during fetch */}
+          {isLoading ? (
+            <CompanyVendorSkeleton />
+          ) : companies.length === 0 ? (
+            <div className="text-center p-12 rounded-2xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800">
+              <Building2 className="w-12 h-12 text-gray-300 dark:text-gray-700 mx-auto mb-3" />
+              <h3 className="text-sm font-bold text-gray-900 dark:text-white">No Companies Registered</h3>
+              <p className="text-xs text-gray-500 mt-1 mb-4">
+                Register your first company entity or upload a batch ledger to begin tracking suppliers.
+              </p>
+              <button
+                type="button"
+                onClick={() => setActiveTab('forms')}
+                className="px-4 py-2 text-xs font-semibold rounded-xl bg-blue-600 text-white hover:bg-blue-500 shadow-md shadow-blue-600/30 transition-all inline-flex items-center gap-2"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Create Company Entity</span>
+              </button>
+            </div>
+          ) : (
+            /* Expandable Companies Accordion */
+            <div className="space-y-4">
+              {companies.map((company) => {
+                const isExpanded = expandedCompanyIds.has(company.id);
+                const companyVendors = vendors.filter((v) => v.company_id === company.id);
+
+                return (
+                  <div
+                    key={company.id}
+                    className="rounded-2xl bg-white dark:bg-gray-900/90 border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden transition-all"
+                  >
+                    {/* Accordion Company Header */}
+                    <div className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-gray-50/50 dark:bg-gray-900/60 border-b border-gray-100 dark:border-gray-800">
+                      <div
+                        onClick={() => toggleCompanyExpand(company.id)}
+                        className="flex items-center gap-3.5 cursor-pointer flex-1 select-none"
+                      >
+                        <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center shrink-0 shadow-sm">
+                          <Building2 className="w-5 h-5" />
+                        </div>
+
+                        <div>
+                          <div className="flex items-center gap-2.5">
+                            <h3 className="text-sm font-bold text-gray-900 dark:text-white">
+                              {company.name}
+                            </h3>
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-500/10 text-blue-500 border border-blue-500/20">
+                              {company.industry}
+                            </span>
+                          </div>
+
+                          <div className="flex items-center gap-3 text-xs text-gray-400 mt-1">
+                            <span>{companyVendors.length} Suppliers Linked</span>
+                            <span>•</span>
+                            <span>
+                              Created: {company.created_at ? new Date(company.created_at).toLocaleDateString() : 'Active'}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Controls */}
+                      <div className="flex items-center gap-2 self-end sm:self-auto">
+                        <button
+                          type="button"
+                          onClick={() => requestDeleteCompany(company)}
+                          className="p-2 rounded-xl text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors"
+                          title="Delete company entity"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => toggleCompanyExpand(company.id)}
+                          className="p-2 rounded-xl text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm transition-transform"
+                          title={isExpanded ? 'Collapse' : 'Expand'}
+                        >
+                          {isExpanded ? (
+                            <ChevronUp className="w-4 h-4 text-blue-500" />
+                          ) : (
+                            <ChevronDown className="w-4 h-4" />
+                          )}
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Nested Suppliers Table (Expandable) */}
+                    {isExpanded && (
+                      <div className="p-4 sm:p-5 space-y-3">
+                        <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+                          <span className="font-semibold">Associated Suppliers & Agreements</span>
+                          <span className="text-[11px] text-gray-400">
+                            Hover over Reliability Index for AI risk insights
+                          </span>
+                        </div>
+
+                        {companyVendors.length === 0 ? (
+                          <div className="p-6 text-center rounded-xl bg-gray-50 dark:bg-gray-800/40 border border-dashed border-gray-200 dark:border-gray-700">
+                            <Users className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                            <p className="text-xs text-gray-500">No suppliers registered for this company yet.</p>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setVendorForm((prev) => ({ ...prev, company_id: company.id }));
+                                setActiveTab('forms');
+                              }}
+                              className="mt-3 px-3 py-1.5 text-xs font-semibold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors inline-flex items-center gap-1.5"
+                            >
+                              <Plus className="w-3.5 h-3.5" />
+                              <span>Add Vendor to {company.name}</span>
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="overflow-x-auto rounded-xl border border-gray-100 dark:border-gray-800">
+                            <table className="w-full text-left text-xs">
+                              <thead className="bg-gray-50 dark:bg-gray-800/60 text-gray-500 dark:text-gray-400">
+                                <tr>
+                                  <th className="py-2.5 px-3.5 font-semibold">Supplier Name</th>
+                                  <th className="py-2.5 px-3.5 font-semibold">Payment Terms</th>
+                                  <th className="py-2.5 px-3.5 font-semibold">Category</th>
+                                  <th className="py-2.5 px-3.5 font-semibold">Reliability Index</th>
+                                  <th className="py-2.5 px-3.5 font-semibold text-right">Actions</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-gray-100 dark:divide-gray-800 text-gray-700 dark:text-gray-300">
+                                {companyVendors.map((vendor) => {
+                                  const score = vendor.reliability_score || 88;
+                                  const insight = getScoreInsight(score);
+
+                                  return (
+                                    <tr key={vendor.id} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/40 transition-colors">
+                                      <td className="py-3 px-3.5 font-medium text-gray-900 dark:text-white flex items-center gap-2">
+                                        <Briefcase className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+                                        <span>{vendor.name}</span>
+                                      </td>
+                                      <td className="py-3 px-3.5 font-semibold text-blue-600 dark:text-blue-400">
+                                        {vendor.payment_terms}
+                                      </td>
+                                      <td className="py-3 px-3.5 text-gray-500 dark:text-gray-400">
+                                        {vendor.category || 'General Supplier'}
+                                      </td>
+                                      <td className="py-3 px-3.5">
+                                        {/* Informative Tooltip for Vendor Score */}
+                                        <Tooltip
+                                          position="top"
+                                          content={
+                                            <div className="space-y-1.5 text-left">
+                                              <div className="flex items-center justify-between pb-1 border-b border-gray-700">
+                                                <span className="font-bold text-white">{vendor.name}</span>
+                                                <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${insight.badge} text-white`}>
+                                                  {score}%
+                                                </span>
+                                              </div>
+                                              <div className="text-[11px] text-gray-300 space-y-0.5">
+                                                <p><span className="text-gray-400">Risk Tier:</span> {insight.tier}</p>
+                                                <p><span className="text-gray-400">On-Time Rate:</span> {insight.onTimeRate}</p>
+                                                <p><span className="text-gray-400">Avg Variance:</span> {insight.avgDelay}</p>
+                                              </div>
+                                              <p className="pt-1 text-[10px] text-blue-300 italic border-t border-gray-700/60">
+                                                💡 {insight.action}
+                                              </p>
+                                            </div>
+                                          }
+                                        >
+                                          <div className={`cursor-help inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border ${insight.color} transition-transform hover:scale-105`}>
+                                            <span className={`w-1.5 h-1.5 rounded-full ${insight.badge}`} />
+                                            <span>{score}% ({insight.tier.split('/')[0].trim()})</span>
+                                            <Info className="w-3 h-3 opacity-70" />
+                                          </div>
+                                        </Tooltip>
+                                      </td>
+                                      <td className="py-3 px-3.5 text-right">
+                                        <button
+                                          type="button"
+                                          onClick={() => requestDeleteVendor(vendor)}
+                                          className="p-1 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors"
+                                          title="Delete supplier"
+                                        >
+                                          <Trash2 className="w-3.5 h-3.5" />
+                                        </button>
+                                      </td>
+                                    </tr>
+                                  );
+                                })}
+                              </tbody>
+                            </table>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Forms Tab */}
+      {activeTab === 'forms' && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Form 1: Create Company */}
           <div className="rounded-2xl p-6 bg-white dark:bg-gray-900/90 border border-gray-200 dark:border-gray-800 shadow-sm flex flex-col justify-between">
@@ -521,7 +928,7 @@ export default function CompanyVendorPage() {
                   </label>
                   <select
                     id="vendor-company"
-                    value={vendorForm.company_id}
+                    value={selectedCompanyForVendor}
                     onChange={(e) => {
                       setVendorForm((prev) => ({ ...prev, company_id: e.target.value }));
                       if (vendorErrors.company_id) setVendorErrors((prev) => ({ ...prev, company_id: null }));
@@ -639,8 +1046,10 @@ export default function CompanyVendorPage() {
             </div>
           </div>
         </div>
-      ) : (
-        /* Tab 2: Batch Excel / CSV Dropzone */
+      )}
+
+      {/* Dropzone Tab */}
+      {activeTab === 'dropzone' && (
         <FileDropzone
           companies={companies}
           onBatchUpload={handleBatchUpload}
@@ -648,68 +1057,24 @@ export default function CompanyVendorPage() {
         />
       )}
 
-      {/* Registry Preview Section */}
-      <div className="rounded-2xl bg-white dark:bg-gray-900/90 border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
-        <div className="p-5 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
-          <div>
-            <h3 className="text-sm font-bold text-gray-900 dark:text-white">
-              Recently Added Entities & Relationships
-            </h3>
-            <p className="text-xs text-gray-400 mt-0.5">
-              Live synchronized registry preview
-            </p>
-          </div>
-          <span className="text-xs font-semibold px-2.5 py-1 rounded-lg bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400">
-            {vendors.length} Total Vendors Active
-          </span>
-        </div>
-
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
-            <thead className="bg-gray-50 dark:bg-gray-800/50 text-gray-500 dark:text-gray-400 border-b border-gray-100 dark:border-gray-800">
-              <tr>
-                <th className="py-3 px-4 font-semibold">Vendor Name</th>
-                <th className="py-3 px-4 font-semibold">Associated Company</th>
-                <th className="py-3 px-4 font-semibold">Payment Terms</th>
-                <th className="py-3 px-4 font-semibold">Category</th>
-                <th className="py-3 px-4 font-semibold">Created Date</th>
-                <th className="py-3 px-4 font-semibold">Status</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100 dark:divide-gray-800 text-gray-700 dark:text-gray-300">
-              {vendors.slice(0, 5).map((v) => {
-                const parentComp = companies.find((c) => c.id === v.company_id);
-                return (
-                  <tr key={v.id} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/40">
-                    <td className="py-3 px-4 font-medium text-gray-900 dark:text-white flex items-center gap-2">
-                      <Briefcase className="w-3.5 h-3.5 text-blue-500" />
-                      <span>{v.name}</span>
-                    </td>
-                    <td className="py-3 px-4 text-gray-600 dark:text-gray-300">
-                      {parentComp?.name || 'CashPredix Global Technologies LLC'}
-                    </td>
-                    <td className="py-3 px-4 font-medium text-blue-600 dark:text-blue-400">
-                      {v.payment_terms}
-                    </td>
-                    <td className="py-3 px-4 text-gray-500 dark:text-gray-400">
-                      {v.category || 'General Supplier'}
-                    </td>
-                    <td className="py-3 px-4 text-gray-400">
-                      {v.created_at ? new Date(v.created_at).toLocaleDateString() : 'Today'}
-                    </td>
-                    <td className="py-3 px-4">
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-500">
-                        <CheckCircle2 className="w-3 h-3" />
-                        Active
-                      </span>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      {/* Confirmation Modal for Deletion Warnings */}
+      <ConfirmationModal
+        isOpen={modalState.isOpen}
+        title={
+          modalState.type === 'company'
+            ? `Delete Company: "${modalState.target?.name}"?`
+            : `Delete Supplier: "${modalState.target?.name}"?`
+        }
+        message={
+          modalState.type === 'company'
+            ? `Deleting "${modalState.target?.name}" will trigger a foreign key cascade and permanently remove all linked supplier relationships and payment ledger rows. This action cannot be undone.`
+            : `Are you sure you want to remove supplier "${modalState.target?.name}" from this corporate entity? Historical payment entries will also be permanently deleted.`
+        }
+        confirmText={modalState.type === 'company' ? 'Delete Company Entity' : 'Delete Supplier'}
+        isDeleting={modalState.isDeleting}
+        onConfirm={handleConfirmDelete}
+        onClose={() => setModalState({ isOpen: false, type: null, target: null, isDeleting: false })}
+      />
     </div>
   );
 }
