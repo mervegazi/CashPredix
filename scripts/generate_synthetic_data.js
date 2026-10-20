@@ -129,10 +129,58 @@ function generateVendorName(category, existingNames) {
   return fallback;
 }
 
+export const CANONICAL_FOUR_COMPANIES = [
+  {
+    name: 'CashPredix Technologies Inc.',
+    industry: 'Technology & SaaS',
+    vendorCount: 160,
+    isFlagship: true,
+    specializedPrefixes: [
+      'AWS Cloud', 'Azure Infra', 'Google Cloud', 'Snowflake Data', 'Datadog Observability',
+      'OpenAI API', 'Anthropic AI', 'GitHub Enterprise', 'Stripe Global', 'Twilio Messaging',
+      'Supabase DB', 'Vercel Edge', 'Cloudflare Security', 'MongoDB Atlas', 'Redis Enterprise',
+      'SentinelOne', 'CrowdStrike', 'Elasticsearch', 'Atlassian', 'Figma Design', 'Slack Enterprise',
+      'Zoom Communications', 'Confluent Kafka', 'Docker Hub', 'HashiCorp', 'Databricks Analytics',
+      'PagerDuty', 'Postman Enterprise', 'Linear Systems', 'Notion Labs',
+    ],
+  },
+  {
+    name: 'Apex Horizon Logistics Corp.',
+    industry: 'Logistics & Freight',
+    vendorCount: 45,
+    isFlagship: false,
+    specializedPrefixes: [
+      'Maersk Maritime', 'Swift Haulage', 'Nordic Freight', 'DHL Supply', 'FedEx Corporate',
+      'Shell Commercial Fuel', 'Volvo Fleet Maintenance', 'Caterpillar Equipment', 'Kuehne+Nagel Transit',
+    ],
+  },
+  {
+    name: 'Vanguard Healthcare Systems Enterprises',
+    industry: 'Healthcare & Pharmaceuticals',
+    vendorCount: 40,
+    isFlagship: false,
+    specializedPrefixes: [
+      'Pfizer BioPharmaceuticals', 'Siemens Healthineers', 'Medtronic Devices', 'Quest Diagnostics',
+      'Abbott Laboratories', 'McKesson Medical Supply', 'Roche Diagnostics', 'Thermo Fisher Scientific',
+    ],
+  },
+  {
+    name: 'Quantum Capital & Financial Holdings',
+    industry: 'Financial Services & FinTech',
+    vendorCount: 35,
+    isFlagship: false,
+    specializedPrefixes: [
+      'Bloomberg Financial', 'Moody\'s Risk Analytics', 'S&P Global Market', 'Refinitiv Data',
+      'SWIFT Interbank', 'State Street Custody', 'FactSet Research', 'Fitch Ratings Global',
+    ],
+  },
+];
+
 export function generateSyntheticDataset({
-  numCompanies = 10,
+  numCompanies = 4,
   vendorsPerCompany = 100,
   userId = null,
+  useCanonicalFour = true,
 } = {}) {
   const baseUserId = userId || crypto.randomUUID();
   const now = new Date();
@@ -141,8 +189,70 @@ export function generateSyntheticDataset({
   const vendors = [];
   const existingCompanyNames = new Set();
   const existingVendorNames = new Set();
-
   const categoryKeys = Object.keys(VENDOR_CATEGORIES);
+
+  if (useCanonicalFour) {
+    for (const compSpec of CANONICAL_FOUR_COMPANIES) {
+      const companyId = crypto.randomUUID();
+      const companyName = compSpec.name;
+      existingCompanyNames.add(companyName);
+
+      const daysAgo = compSpec.isFlagship ? 720 : Math.floor(Math.random() * (500 - 180)) + 180;
+      const companyCreatedAt = new Date(now.getTime() - (daysAgo * 86400000 + Math.random() * 86400000)).toISOString();
+
+      companies.push({
+        id: companyId,
+        user_id: baseUserId,
+        name: companyName,
+        industry: compSpec.industry,
+        created_at: companyCreatedAt,
+      });
+
+      const companyDate = new Date(companyCreatedAt);
+      const maxOffsetDays = Math.max(1, Math.floor((now.getTime() - companyDate.getTime()) / 86400000) - 10);
+      const prefixesPool = compSpec.specializedPrefixes || [];
+
+      for (let v = 0; v < compSpec.vendorCount; v++) {
+        const vendorId = crypto.randomUUID();
+        const category = pickRandom(categoryKeys);
+
+        let vendorName;
+        if (v < prefixesPool.length) {
+          const prefix = prefixesPool[v];
+          vendorName = `${prefix} ${pickRandom(['Systems', 'Technologies', 'Services', 'Corp.', 'LLC'])}`;
+          existingVendorNames.add(vendorName);
+        } else {
+          vendorName = generateVendorName(category, existingVendorNames);
+        }
+
+        const termsBias = VENDOR_CATEGORIES[category].terms_bias;
+        const paymentTerm = Math.random() < 0.75 ? pickRandom(termsBias) : pickRandom(PAYMENT_TERMS_ALL);
+
+        const offsetDays = Math.floor(Math.random() * maxOffsetDays) + 1;
+        const vendorCreatedAt = new Date(companyDate.getTime() + (offsetDays * 86400000 + Math.random() * 86400000)).toISOString();
+
+        vendors.push({
+          id: vendorId,
+          company_id: companyId,
+          name: vendorName,
+          payment_terms: paymentTerm,
+          created_at: vendorCreatedAt,
+        });
+      }
+    }
+
+    return {
+      user_id: baseUserId,
+      companies,
+      vendors,
+      summary: {
+        total_companies: companies.length,
+        total_vendors: vendors.length,
+        flagship_vendors: CANONICAL_FOUR_COMPANIES[0].vendorCount,
+        generated_at: now.toISOString(),
+      },
+    };
+  }
 
   for (let c = 0; c < numCompanies; c++) {
     const companyId = crypto.randomUUID();

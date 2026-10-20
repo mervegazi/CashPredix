@@ -17,12 +17,17 @@ import {
   Trash2,
   RefreshCw,
   FolderTree,
-  Info
+  Info,
+  Search,
+  ChevronLeft,
+  ChevronRight,
+  Database
 } from 'lucide-react';
 import FileDropzone from '../../components/FileDropzone';
 import ConfirmationModal from '../../components/ConfirmationModal';
 import Tooltip from '../../components/Tooltip';
 import CompanyVendorSkeleton from '../../components/CompanyVendorSkeleton';
+import { INITIAL_SEED_COMPANIES, INITIAL_SEED_VENDORS } from '../../data/seedData';
 
 const DEFAULT_INDUSTRIES = [
   'Technology & SaaS',
@@ -56,51 +61,6 @@ const VENDOR_CATEGORIES = [
   'Marketing & Creative Media',
   'Facilities & Office Maintenance',
   'General Supplier',
-];
-
-const INITIAL_SEED_COMPANIES = [
-  {
-    id: 'comp-101',
-    name: 'CashPredix Global Technologies LLC',
-    industry: 'Technology & SaaS',
-    created_at: new Date(Date.now() - 90 * 86400000).toISOString(),
-  },
-  {
-    id: 'comp-102',
-    name: 'Apex Horizon Logistics Corp.',
-    industry: 'Logistics & Freight',
-    created_at: new Date(Date.now() - 45 * 86400000).toISOString(),
-  },
-];
-
-const INITIAL_SEED_VENDORS = [
-  {
-    id: 'vend-201',
-    company_id: 'comp-101',
-    name: 'CloudScale Compute Infrastructure',
-    payment_terms: 'Net 30',
-    category: 'Cloud & Infrastructure',
-    reliability_score: 96,
-    created_at: new Date(Date.now() - 30 * 86400000).toISOString(),
-  },
-  {
-    id: 'vend-202',
-    company_id: 'comp-101',
-    name: 'ByteStream Data Analytics Corp.',
-    payment_terms: 'Net 15',
-    category: 'Cloud & Infrastructure',
-    reliability_score: 88,
-    created_at: new Date(Date.now() - 25 * 86400000).toISOString(),
-  },
-  {
-    id: 'vend-203',
-    company_id: 'comp-102',
-    name: 'Nordic Freight Express',
-    payment_terms: 'Net 45',
-    category: 'Logistics & Shipping',
-    reliability_score: 58,
-    created_at: new Date(Date.now() - 20 * 86400000).toISOString(),
-  },
 ];
 
 // Helper to calculate score details
@@ -144,14 +104,24 @@ export default function CompanyVendorPage() {
   // Loading state for skeleton shimmer
   const [isLoading, setIsLoading] = useState(false);
 
-  // Expanded company accordion IDs
-  const [expandedCompanyIds, setExpandedCompanyIds] = useState(new Set(['comp-101', 'comp-102']));
+  // Expanded company accordion IDs - CashPredix expanded by default
+  const [expandedCompanyIds, setExpandedCompanyIds] = useState(new Set(['comp-cashpredix']));
+
+  // Per-company search, category filter, and pagination
+  const [vendorSearches, setVendorSearches] = useState({});
+  const [vendorCategories, setVendorCategories] = useState({});
+  const [vendorPages, setVendorPages] = useState({});
+  const [isIngestingDataset, setIsIngestingDataset] = useState(false);
 
   // Entities state
   const [companies, setCompanies] = useState(() => {
     try {
-      const saved = localStorage.getItem('cashpredix_companies');
-      return saved ? JSON.parse(saved) : INITIAL_SEED_COMPANIES;
+      const saved = localStorage.getItem('cashpredix_companies_v2');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length >= 4) return parsed;
+      }
+      return INITIAL_SEED_COMPANIES;
     } catch {
       return INITIAL_SEED_COMPANIES;
     }
@@ -159,8 +129,12 @@ export default function CompanyVendorPage() {
 
   const [vendors, setVendors] = useState(() => {
     try {
-      const saved = localStorage.getItem('cashpredix_vendors');
-      return saved ? JSON.parse(saved) : INITIAL_SEED_VENDORS;
+      const saved = localStorage.getItem('cashpredix_vendors_v2');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length >= 100) return parsed;
+      }
+      return INITIAL_SEED_VENDORS;
     } catch {
       return INITIAL_SEED_VENDORS;
     }
@@ -195,7 +169,7 @@ export default function CompanyVendorPage() {
   // Sync to localStorage
   useEffect(() => {
     try {
-      localStorage.setItem('cashpredix_companies', JSON.stringify(companies));
+      localStorage.setItem('cashpredix_companies_v2', JSON.stringify(companies));
     } catch (e) {
       console.warn('Failed to save companies locally', e);
     }
@@ -203,11 +177,72 @@ export default function CompanyVendorPage() {
 
   useEffect(() => {
     try {
-      localStorage.setItem('cashpredix_vendors', JSON.stringify(vendors));
+      localStorage.setItem('cashpredix_vendors_v2', JSON.stringify(vendors));
     } catch (e) {
       console.warn('Failed to save vendors locally', e);
     }
   }, [vendors]);
+
+  // Ingest Enterprise Dataset into Supabase (4 Companies, 280 Vendors)
+  const handleIngestEnterpriseData = async () => {
+    if (!user?.id) {
+      setCompanies(INITIAL_SEED_COMPANIES);
+      setVendors(INITIAL_SEED_VENDORS);
+      toast.success('Enterprise dataset active! (4 Companies, 280 Suppliers with 160 for CashPredix)');
+      return;
+    }
+
+    setIsIngestingDataset(true);
+    const toastId = toast.loading('Ingesting 4 Companies & 280 Suppliers into Supabase...');
+
+    try {
+      // 1. Prepare companies with user_id
+      const companyIdMap = {};
+      const companiesToInsert = INITIAL_SEED_COMPANIES.map((c) => {
+        const realId = crypto.randomUUID();
+        companyIdMap[c.id] = realId;
+        return {
+          id: realId,
+          user_id: user.id,
+          name: c.name,
+          industry: c.industry,
+          created_at: c.created_at,
+        };
+      });
+
+      const { error: compErr } = await supabase
+        .from('companies')
+        .upsert(companiesToInsert, { onConflict: 'id' });
+
+      if (compErr) throw compErr;
+
+      // 2. Prepare 280 vendors
+      const vendorsToInsert = INITIAL_SEED_VENDORS.map((v) => ({
+        id: crypto.randomUUID(),
+        company_id: companyIdMap[v.company_id] || companyIdMap['comp-cashpredix'],
+        name: v.name,
+        payment_terms: v.payment_terms,
+        created_at: v.created_at,
+      }));
+
+      // Chunk in batches of 50
+      for (let i = 0; i < vendorsToInsert.length; i += 50) {
+        const chunk = vendorsToInsert.slice(i, i + 50);
+        const { error: vendErr } = await supabase.from('vendors').upsert(chunk, { onConflict: 'id' });
+        if (vendErr) throw vendErr;
+      }
+
+      toast.success(`Successfully ingested 4 Companies & ${vendorsToInsert.length} Suppliers into Supabase!`, { id: toastId });
+      await loadSupabaseData();
+    } catch (err) {
+      console.error('Enterprise dataset ingestion error:', err);
+      setCompanies(INITIAL_SEED_COMPANIES);
+      setVendors(INITIAL_SEED_VENDORS);
+      toast.error(`Ingestion notice: ${err.message || 'Updated local state'}. Local dataset loaded!`, { id: toastId });
+    } finally {
+      setIsIngestingDataset(false);
+    }
+  };
 
   // Fetch real data from Supabase
   const loadSupabaseData = async () => {
@@ -483,7 +518,28 @@ export default function CompanyVendorPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5 self-start sm:self-auto">
+        <div className="flex items-center gap-2.5 self-start sm:self-auto flex-wrap">
+          <button
+            type="button"
+            onClick={handleIngestEnterpriseData}
+            disabled={isIngestingDataset}
+            className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 shadow-md shadow-blue-500/20 transition-all disabled:opacity-60"
+            title="Seed/Ingest 4 Canonical Enterprise Companies and 280 Suppliers (160 for CashPredix)"
+          >
+            {isIngestingDataset ? (
+              <>
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                <span>Ingesting Dataset...</span>
+              </>
+            ) : (
+              <>
+                <Database className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Ingest 4 Companies & 280 Vendors</span>
+                <span className="sm:hidden">Ingest Dataset</span>
+              </>
+            )}
+          </button>
+
           <button
             type="button"
             onClick={() => {
@@ -684,123 +740,242 @@ export default function CompanyVendorPage() {
                     </div>
 
                     {/* Nested Suppliers Table (Expandable) */}
-                    {isExpanded && (
-                      <div className="p-4 sm:p-5 space-y-3">
-                        <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
-                          <span className="font-semibold">Associated Suppliers & Agreements</span>
-                          <span className="text-[11px] text-gray-400">
-                            Hover over Reliability Index for AI risk insights
-                          </span>
-                        </div>
+                    {isExpanded && (() => {
+                      const search = (vendorSearches[company.id] || '').trim().toLowerCase();
+                      const catFilter = vendorCategories[company.id] || 'ALL';
+                      const page = vendorPages[company.id] || 1;
+                      const pageSize = 12;
 
-                        {companyVendors.length === 0 ? (
-                          <div className="p-6 text-center rounded-xl bg-gray-50 dark:bg-gray-800/40 border border-dashed border-gray-200 dark:border-gray-700">
-                            <Users className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                            <p className="text-xs text-gray-500">No suppliers registered for this company yet.</p>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setVendorForm((prev) => ({ ...prev, company_id: company.id }));
-                                setActiveTab('forms');
-                              }}
-                              className="mt-3 px-3 py-1.5 text-xs font-semibold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors inline-flex items-center gap-1.5"
-                            >
-                              <Plus className="w-3.5 h-3.5" />
-                              <span>Add Vendor to {company.name}</span>
-                            </button>
+                      const filteredVendors = companyVendors.filter((v) => {
+                        const matchesSearch =
+                          !search ||
+                          v.name.toLowerCase().includes(search) ||
+                          (v.category && v.category.toLowerCase().includes(search)) ||
+                          (v.payment_terms && v.payment_terms.toLowerCase().includes(search));
+                        const matchesCat = catFilter === 'ALL' || v.category === catFilter;
+                        return matchesSearch && matchesCat;
+                      });
+
+                      const totalPages = Math.ceil(filteredVendors.length / pageSize) || 1;
+                      const currentPage = Math.min(page, totalPages);
+                      const pagedVendors = filteredVendors.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
+                      return (
+                        <div className="p-4 sm:p-5 space-y-3">
+                          <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+                            <span className="font-semibold">Associated Suppliers & Agreements ({companyVendors.length} Total)</span>
+                            <span className="text-[11px] text-gray-400">
+                              Hover over Reliability Index for AI risk insights
+                            </span>
                           </div>
-                        ) : (
-                          <div className="overflow-x-auto rounded-xl border border-gray-100 dark:border-gray-800">
-                            <table className="w-full text-left text-xs">
-                              <thead className="bg-gray-50 dark:bg-gray-800/60 text-gray-500 dark:text-gray-400">
-                                <tr>
-                                  <th className="py-2.5 px-3.5 font-semibold">Supplier Name</th>
-                                  <th className="py-2.5 px-3.5 font-semibold">Payment Terms</th>
-                                  <th className="py-2.5 px-3.5 font-semibold">Category</th>
-                                  <th className="py-2.5 px-3.5 font-semibold">Reliability Index</th>
-                                  <th className="py-2.5 px-3.5 font-semibold text-right">Actions</th>
-                                </tr>
-                              </thead>
-                              <tbody className="divide-y divide-gray-100 dark:divide-gray-800 text-gray-700 dark:text-gray-300">
-                                {companyVendors.map((vendor) => {
-                                  const score = vendor.reliability_score || 88;
-                                  const insight = getScoreInsight(score);
 
-                                  return (
-                                    <tr key={vendor.id} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/40 transition-colors">
-                                      <td className="py-3 px-3.5 font-medium text-gray-900 dark:text-white flex items-center gap-2">
-                                        <Briefcase className="w-3.5 h-3.5 text-blue-500 shrink-0" />
-                                        <span>{vendor.name}</span>
-                                      </td>
-                                      <td className="py-3 px-3.5 font-semibold text-blue-600 dark:text-blue-400">
-                                        {vendor.payment_terms}
-                                      </td>
-                                      <td className="py-3 px-3.5 text-gray-500 dark:text-gray-400">
-                                        {vendor.category || 'General Supplier'}
-                                      </td>
-                                      <td className="py-3 px-3.5">
-                                        {/* Informative Tooltip for Vendor Score */}
-                                        <Tooltip
-                                          position="top"
-                                          content={
-                                            <div className="space-y-2 text-left">
-                                              <div className="flex items-start justify-between gap-2 pb-2 border-b border-gray-100 dark:border-gray-800">
-                                                <span className="font-bold text-gray-900 dark:text-white leading-snug break-words">
-                                                  {vendor.name}
-                                                </span>
-                                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${insight.badge} text-white shrink-0`}>
-                                                  {score}%
-                                                </span>
-                                              </div>
-                                              <div className="text-[11px] space-y-1.5">
-                                                <div className="flex items-center justify-between gap-2">
-                                                  <span className="text-gray-500 dark:text-gray-400">Risk Tier:</span>
-                                                  <span className="font-semibold text-gray-900 dark:text-gray-100">{insight.tier}</span>
+                          {companyVendors.length === 0 ? (
+                            <div className="p-6 text-center rounded-xl bg-gray-50 dark:bg-gray-800/40 border border-dashed border-gray-200 dark:border-gray-700">
+                              <Users className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                              <p className="text-xs text-gray-500">No suppliers registered for this company yet.</p>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setVendorForm((prev) => ({ ...prev, company_id: company.id }));
+                                  setActiveTab('forms');
+                                }}
+                                className="mt-3 px-3 py-1.5 text-xs font-semibold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors inline-flex items-center gap-1.5"
+                              >
+                                <Plus className="w-3.5 h-3.5" />
+                                <span>Add Vendor to {company.name}</span>
+                              </button>
+                            </div>
+                          ) : (
+                            <>
+                              {/* Search & Filter Toolbar */}
+                              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-gray-50/70 dark:bg-gray-800/40 p-2.5 rounded-xl border border-gray-100 dark:border-gray-800">
+                                <div className="flex items-center gap-2 flex-1">
+                                  <div className="relative flex-1 max-w-xs">
+                                    <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                                    <input
+                                      type="text"
+                                      placeholder={`Search ${companyVendors.length} suppliers...`}
+                                      value={vendorSearches[company.id] || ''}
+                                      onChange={(e) => {
+                                        setVendorSearches((prev) => ({ ...prev, [company.id]: e.target.value }));
+                                        setVendorPages((prev) => ({ ...prev, [company.id]: 1 }));
+                                      }}
+                                      className="w-full pl-8 pr-3 py-1.5 text-xs rounded-lg bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                    />
+                                  </div>
+
+                                  <select
+                                    value={vendorCategories[company.id] || 'ALL'}
+                                    onChange={(e) => {
+                                      setVendorCategories((prev) => ({ ...prev, [company.id]: e.target.value }));
+                                      setVendorPages((prev) => ({ ...prev, [company.id]: 1 }));
+                                    }}
+                                    className="px-2.5 py-1.5 text-xs rounded-lg bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                  >
+                                    <option value="ALL">All Categories</option>
+                                    {VENDOR_CATEGORIES.map((cat) => (
+                                      <option key={cat} value={cat}>
+                                        {cat}
+                                      </option>
+                                    ))}
+                                  </select>
+                                </div>
+
+                                <div className="text-[11px] text-gray-500 dark:text-gray-400 shrink-0 font-medium">
+                                  Showing {filteredVendors.length === 0 ? 0 : (currentPage - 1) * pageSize + 1}–{Math.min(filteredVendors.length, currentPage * pageSize)} of {filteredVendors.length} suppliers
+                                </div>
+                              </div>
+
+                              {filteredVendors.length === 0 ? (
+                                <div className="p-6 text-center rounded-xl bg-gray-50 dark:bg-gray-800/40 border border-dashed border-gray-200 dark:border-gray-700">
+                                  <p className="text-xs text-gray-500">No suppliers matching "{search}" in this category.</p>
+                                </div>
+                              ) : (
+                                <div className="overflow-x-auto rounded-xl border border-gray-100 dark:border-gray-800">
+                                  <table className="w-full text-left text-xs">
+                                    <thead className="bg-gray-50 dark:bg-gray-800/60 text-gray-500 dark:text-gray-400">
+                                      <tr>
+                                        <th className="py-2.5 px-3.5 font-semibold">Supplier Name</th>
+                                        <th className="py-2.5 px-3.5 font-semibold">Payment Terms</th>
+                                        <th className="py-2.5 px-3.5 font-semibold">Category</th>
+                                        <th className="py-2.5 px-3.5 font-semibold">Reliability Index</th>
+                                        <th className="py-2.5 px-3.5 font-semibold text-right">Actions</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-100 dark:divide-gray-800 text-gray-700 dark:text-gray-300">
+                                      {pagedVendors.map((vendor) => {
+                                        const score = vendor.reliability_score || 88;
+                                        const insight = getScoreInsight(score);
+
+                                        return (
+                                          <tr key={vendor.id} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/40 transition-colors">
+                                            <td className="py-3 px-3.5 font-medium text-gray-900 dark:text-white flex items-center gap-2">
+                                              <Briefcase className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+                                              <span>{vendor.name}</span>
+                                            </td>
+                                            <td className="py-3 px-3.5 font-semibold text-blue-600 dark:text-blue-400">
+                                              {vendor.payment_terms}
+                                            </td>
+                                            <td className="py-3 px-3.5 text-gray-500 dark:text-gray-400">
+                                              {vendor.category || 'General Supplier'}
+                                            </td>
+                                            <td className="py-3 px-3.5">
+                                              {/* Informative Tooltip for Vendor Score */}
+                                              <Tooltip
+                                                position="top"
+                                                content={
+                                                  <div className="space-y-2 text-left">
+                                                    <div className="flex items-start justify-between gap-2 pb-2 border-b border-gray-100 dark:border-gray-800">
+                                                      <span className="font-bold text-gray-900 dark:text-white leading-snug break-words">
+                                                        {vendor.name}
+                                                      </span>
+                                                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${insight.badge} text-white shrink-0`}>
+                                                        {score}%
+                                                      </span>
+                                                    </div>
+                                                    <div className="text-[11px] space-y-1.5">
+                                                      <div className="flex items-center justify-between gap-2">
+                                                        <span className="text-gray-500 dark:text-gray-400">Risk Tier:</span>
+                                                        <span className="font-semibold text-gray-900 dark:text-gray-100">{insight.tier}</span>
+                                                      </div>
+                                                      <div className="flex items-center justify-between gap-2">
+                                                        <span className="text-gray-500 dark:text-gray-400">On-Time Rate:</span>
+                                                        <span className="font-semibold text-gray-900 dark:text-gray-100">{insight.onTimeRate}</span>
+                                                      </div>
+                                                      <div className="flex items-center justify-between gap-2">
+                                                        <span className="text-gray-500 dark:text-gray-400">Avg Settlement:</span>
+                                                        <span className="font-semibold text-gray-900 dark:text-gray-100">{insight.avgDelay}</span>
+                                                      </div>
+                                                    </div>
+                                                    <div className="pt-2 border-t border-gray-100 dark:border-gray-800">
+                                                      <p className="text-[11px] text-blue-700 dark:text-blue-300 bg-blue-50/80 dark:bg-blue-950/40 p-2.5 rounded-xl border border-blue-200/60 dark:border-blue-900/40 leading-relaxed flex items-start gap-1.5">
+                                                        <span className="shrink-0 mt-0.5">💡</span>
+                                                        <span>{insight.action}</span>
+                                                      </p>
+                                                    </div>
+                                                  </div>
+                                                }
+                                              >
+                                                <div className={`cursor-help inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border ${insight.color} transition-transform hover:scale-105`}>
+                                                  <span className={`w-1.5 h-1.5 rounded-full ${insight.badge}`} />
+                                                  <span>{score}% ({insight.tier.split('/')[0].trim()})</span>
+                                                  <Info className="w-3 h-3 opacity-70" />
                                                 </div>
-                                                <div className="flex items-center justify-between gap-2">
-                                                  <span className="text-gray-500 dark:text-gray-400">On-Time Rate:</span>
-                                                  <span className="font-semibold text-gray-900 dark:text-gray-100">{insight.onTimeRate}</span>
-                                                </div>
-                                                <div className="flex items-center justify-between gap-2">
-                                                  <span className="text-gray-500 dark:text-gray-400">Avg Settlement:</span>
-                                                  <span className="font-semibold text-gray-900 dark:text-gray-100">{insight.avgDelay}</span>
-                                                </div>
-                                              </div>
-                                              <div className="pt-2 border-t border-gray-100 dark:border-gray-800">
-                                                <p className="text-[11px] text-blue-700 dark:text-blue-300 bg-blue-50/80 dark:bg-blue-950/40 p-2.5 rounded-xl border border-blue-200/60 dark:border-blue-900/40 leading-relaxed flex items-start gap-1.5">
-                                                  <span className="shrink-0 mt-0.5">💡</span>
-                                                  <span>{insight.action}</span>
-                                                </p>
-                                              </div>
-                                            </div>
-                                          }
-                                        >
-                                          <div className={`cursor-help inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border ${insight.color} transition-transform hover:scale-105`}>
-                                            <span className={`w-1.5 h-1.5 rounded-full ${insight.badge}`} />
-                                            <span>{score}% ({insight.tier.split('/')[0].trim()})</span>
-                                            <Info className="w-3 h-3 opacity-70" />
-                                          </div>
-                                        </Tooltip>
-                                      </td>
-                                      <td className="py-3 px-3.5 text-right">
+                                              </Tooltip>
+                                            </td>
+                                            <td className="py-3 px-3.5 text-right">
+                                              <button
+                                                type="button"
+                                                onClick={() => requestDeleteVendor(vendor)}
+                                                className="p-1 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors"
+                                                title="Delete supplier"
+                                              >
+                                                <Trash2 className="w-3.5 h-3.5" />
+                                              </button>
+                                            </td>
+                                          </tr>
+                                        );
+                                      })}
+                                    </tbody>
+                                  </table>
+                                </div>
+                              )}
+
+                              {/* Pagination Footer */}
+                              {totalPages > 1 && (
+                                <div className="flex items-center justify-between pt-3 text-xs border-t border-gray-100 dark:border-gray-800">
+                                  <div className="text-[11px] text-gray-500 dark:text-gray-400">
+                                    Page {currentPage} of {totalPages}
+                                  </div>
+                                  <div className="flex items-center gap-1.5">
+                                    <button
+                                      type="button"
+                                      disabled={currentPage === 1}
+                                      onClick={() => setVendorPages((prev) => ({ ...prev, [company.id]: Math.max(1, currentPage - 1) }))}
+                                      className="px-2.5 py-1 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors flex items-center gap-1 text-[11px]"
+                                    >
+                                      <ChevronLeft className="w-3.5 h-3.5" />
+                                      <span>Prev</span>
+                                    </button>
+
+                                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                                      let pNum = i + 1;
+                                      if (totalPages > 5 && currentPage > 3) {
+                                        pNum = Math.min(totalPages - 4, currentPage - 2) + i;
+                                      }
+                                      return (
                                         <button
+                                          key={pNum}
                                           type="button"
-                                          onClick={() => requestDeleteVendor(vendor)}
-                                          className="p-1 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors"
-                                          title="Delete supplier"
+                                          onClick={() => setVendorPages((prev) => ({ ...prev, [company.id]: pNum }))}
+                                          className={`w-7 h-7 rounded-lg text-[11px] font-semibold transition-colors ${
+                                            pNum === currentPage
+                                              ? 'bg-blue-600 text-white shadow-sm'
+                                              : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
+                                          }`}
                                         >
-                                          <Trash2 className="w-3.5 h-3.5" />
+                                          {pNum}
                                         </button>
-                                      </td>
-                                    </tr>
-                                  );
-                                })}
-                              </tbody>
-                            </table>
-                          </div>
-                        )}
-                      </div>
-                    )}
+                                      );
+                                    })}
+
+                                    <button
+                                      type="button"
+                                      disabled={currentPage === totalPages}
+                                      onClick={() => setVendorPages((prev) => ({ ...prev, [company.id]: Math.min(totalPages, currentPage + 1) }))}
+                                      className="px-2.5 py-1 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors flex items-center gap-1 text-[11px]"
+                                    >
+                                      <span>Next</span>
+                                      <ChevronRight className="w-3.5 h-3.5" />
+                                    </button>
+                                  </div>
+                                </div>
+                              )}
+                            </>
+                          )}
+                        </div>
+                      );
+                    })()}
                   </div>
                 );
               })}

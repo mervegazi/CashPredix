@@ -141,21 +141,72 @@ def generate_vendor_name(category: str, existing_names: set) -> str:
     return name
 
 
+CANONICAL_FOUR_COMPANIES = [
+    {
+        "name": "CashPredix Technologies Inc.",
+        "industry": "Technology & SaaS",
+        "vendor_count": 160,
+        "is_flagship": True,
+        "specialized_prefixes": [
+            "AWS Cloud", "Azure Infra", "Google Cloud", "Snowflake Data", "Datadog Observability",
+            "OpenAI API", "Anthropic AI", "GitHub Enterprise", "Stripe Global", "Twilio Messaging",
+            "Supabase DB", "Vercel Edge", "Cloudflare Security", "MongoDB Atlas", "Redis Enterprise",
+            "SentinelOne", "CrowdStrike", "Elasticsearch", "Atlassian", "Figma Design", "Slack Enterprise",
+            "Zoom Communications", "Confluent Kafka", "Docker Hub", "HashiCorp", "Databricks Analytics",
+            "PagerDuty", "Postman Enterprise", "Linear Systems", "Notion Labs"
+        ]
+    },
+    {
+        "name": "Apex Horizon Logistics Corp.",
+        "industry": "Logistics & Freight",
+        "vendor_count": 45,
+        "is_flagship": False,
+        "specialized_prefixes": [
+            "Maersk Maritime", "Swift Haulage", "Nordic Freight", "DHL Supply", "FedEx Corporate",
+            "Shell Commercial Fuel", "Volvo Fleet Maintenance", "Caterpillar Equipment", "Kuehne+Nagel Transit"
+        ]
+    },
+    {
+        "name": "Vanguard Healthcare Systems Enterprises",
+        "industry": "Healthcare & Pharmaceuticals",
+        "vendor_count": 40,
+        "is_flagship": False,
+        "specialized_prefixes": [
+            "Pfizer BioPharmaceuticals", "Siemens Healthineers", "Medtronic Devices", "Quest Diagnostics",
+            "Abbott Laboratories", "McKesson Medical Supply", "Roche Diagnostics", "Thermo Fisher Scientific"
+        ]
+    },
+    {
+        "name": "Quantum Capital & Financial Holdings",
+        "industry": "Financial Services & FinTech",
+        "vendor_count": 35,
+        "is_flagship": False,
+        "specialized_prefixes": [
+            "Bloomberg Financial", "Moody's Risk Analytics", "S&P Global Market", "Refinitiv Data",
+            "SWIFT Interbank", "State Street Custody", "FactSet Research", "Fitch Ratings Global"
+        ]
+    }
+]
+
+
 def generate_synthetic_dataset(
-    num_companies: int = 10,
+    num_companies: int = 4,
     vendors_per_company: int = 100,
     user_id: str = None,
-    seed: int = None
+    seed: int = None,
+    use_canonical_four: bool = True
 ):
     """
     Programmatically synthesize relational datasets matching the Supabase schema:
       - companies: id, user_id, name, industry, created_at
       - vendors: id, company_id, name, payment_terms, created_at
+
+    When use_canonical_four=True (default), generates exactly 4 enterprise companies
+    with CashPredix Technologies Inc. holding hundreds of vendors (160+).
     """
     if seed is not None:
         random.seed(seed)
 
-    # Use specified user_id or a deterministic / random UUID
     base_user_id = user_id if user_id else str(uuid.uuid4())
     now = datetime.now(timezone.utc)
 
@@ -165,12 +216,77 @@ def generate_synthetic_dataset(
     existing_company_names = set()
     existing_vendor_names = set()
 
+    if use_canonical_four:
+        for comp_spec in CANONICAL_FOUR_COMPANIES:
+            company_id = str(uuid.uuid4())
+            company_name = comp_spec["name"]
+            industry = comp_spec["industry"]
+            existing_company_names.add(company_name)
+
+            days_ago = random.randint(180, 500) if not comp_spec.get("is_flagship") else 720
+            company_created_at = (now - timedelta(days=days_ago, seconds=random.randint(0, 86400))).isoformat()
+
+            companies.append({
+                "id": company_id,
+                "user_id": base_user_id,
+                "name": company_name,
+                "industry": industry,
+                "created_at": company_created_at
+            })
+
+            target_count = comp_spec["vendor_count"]
+            categories = list(VENDOR_CATEGORIES.keys())
+            prefixes_pool = list(comp_spec.get("specialized_prefixes", []))
+
+            for v_idx in range(target_count):
+                vendor_id = str(uuid.uuid4())
+                category = random.choice(categories)
+
+                # Prioritize realistic specialized names first, then generative fallback
+                if v_idx < len(prefixes_pool):
+                    prefix = prefixes_pool[v_idx]
+                    vendor_name = f"{prefix} {random.choice(['Systems', 'Technologies', 'Services', 'Corp.', 'LLC'])}"
+                    existing_vendor_names.add(vendor_name)
+                else:
+                    vendor_name = generate_vendor_name(category, existing_vendor_names)
+
+                cat_bias = VENDOR_CATEGORIES[category]["terms_bias"]
+                if random.random() < 0.75:
+                    payment_term = random.choice(cat_bias)
+                else:
+                    payment_term = random.choice(PAYMENT_TERMS_ALL)
+
+                company_dt = datetime.fromisoformat(company_created_at)
+                max_vendor_offset = max(1, (now - company_dt).days - 10)
+                vendor_offset = random.randint(1, max_vendor_offset)
+                vendor_created_at = (company_dt + timedelta(days=vendor_offset, seconds=random.randint(0, 86400))).isoformat()
+
+                vendors.append({
+                    "id": vendor_id,
+                    "company_id": company_id,
+                    "name": vendor_name,
+                    "payment_terms": payment_term,
+                    "created_at": vendor_created_at
+                })
+
+        return {
+            "user_id": base_user_id,
+            "companies": companies,
+            "vendors": vendors,
+            "summary": {
+                "total_companies": len(companies),
+                "total_vendors": len(vendors),
+                "flagship_vendors": CANONICAL_FOUR_COMPANIES[0]["vendor_count"],
+                "generated_at": now.isoformat()
+            }
+        }
+
+    # Custom number of companies fallback
     for c_idx in range(num_companies):
         company_id = str(uuid.uuid4())
         company_name = generate_company_name(existing_company_names)
         industry = random.choice(INDUSTRIES)
         
-        # Stagger company creation over past 180 to 730 days
         days_ago = random.randint(180, 730)
         company_created_at = (now - timedelta(days=days_ago, seconds=random.randint(0, 86400))).isoformat()
 
@@ -183,21 +299,18 @@ def generate_synthetic_dataset(
         }
         companies.append(company_record)
 
-        # Generate synthetic vendors for this company
         categories = list(VENDOR_CATEGORIES.keys())
         for v_idx in range(vendors_per_company):
             vendor_id = str(uuid.uuid4())
             category = random.choice(categories)
             vendor_name = generate_vendor_name(category, existing_vendor_names)
 
-            # Choose payment term biased by category
             cat_bias = VENDOR_CATEGORIES[category]["terms_bias"]
             if random.random() < 0.75:
                 payment_term = random.choice(cat_bias)
             else:
                 payment_term = random.choice(PAYMENT_TERMS_ALL)
 
-            # Vendor created shortly after company
             company_dt = datetime.fromisoformat(company_created_at)
             max_vendor_offset = max(1, (now - company_dt).days - 10)
             vendor_offset = random.randint(1, max_vendor_offset)
@@ -281,16 +394,28 @@ def main():
         description="CashPredix Week 3 Task #42: Generate synthetic company and vendor records."
     )
     parser.add_argument(
+        "--canonical-four",
+        action="store_true",
+        default=True,
+        help="Generate the canonical 4 companies preset with CashPredix holding hundreds of vendors (default: True)"
+    )
+    parser.add_argument(
+        "--custom-companies",
+        action="store_true",
+        default=False,
+        help="Use generic randomly generated companies instead of the canonical 4 preset"
+    )
+    parser.add_argument(
         "--companies",
         type=int,
-        default=10,
-        help="Number of company profiles to generate (default: 10)"
+        default=4,
+        help="Number of company profiles to generate when --custom-companies is set (default: 4)"
     )
     parser.add_argument(
         "--vendors-per-company",
         type=int,
         default=100,
-        help="Number of vendor records per company (default: 100 -> 10 x 100 = 1,000 vendors)"
+        help="Number of vendor records per company when --custom-companies is set (default: 100)"
     )
     parser.add_argument(
         "--user-id",
@@ -320,13 +445,21 @@ def main():
 
     args = parser.parse_args()
 
-    total_expected_vendors = args.companies * args.vendors_per_company
+    use_canonical = not args.custom_companies
     print("=" * 60)
     print(" CashPredix - Synthetic Data Generation Tool (Week 3 / #42)")
     print("=" * 60)
-    print(f" Target Companies:           {args.companies}")
-    print(f" Target Vendors / Company:   {args.vendors_per_company}")
-    print(f" Total Synthetic Vendors:    {total_expected_vendors}")
+    if use_canonical:
+        print(" Mode:                       Canonical 4 Companies Preset")
+        print(" Companies:                  4 (CashPredix, Apex, Vanguard, Quantum)")
+        print(" CashPredix Vendors:         160 (Hundreds of Specialized Suppliers)")
+        print(" Total Ecosystem Vendors:    280")
+    else:
+        total_expected_vendors = args.companies * args.vendors_per_company
+        print(" Mode:                       Custom Generic Generation")
+        print(f" Target Companies:           {args.companies}")
+        print(f" Target Vendors / Company:   {args.vendors_per_company}")
+        print(f" Total Synthetic Vendors:    {total_expected_vendors}")
     print(f" Format:                     {args.format.upper()}")
     print(f" Output Directory:           {args.output_dir}")
     print(f" Random Seed:                {args.seed}")
@@ -336,7 +469,8 @@ def main():
         num_companies=args.companies,
         vendors_per_company=args.vendors_per_company,
         user_id=args.user_id,
-        seed=args.seed
+        seed=args.seed,
+        use_canonical_four=use_canonical
     )
 
     out_path = Path(args.output_dir)
