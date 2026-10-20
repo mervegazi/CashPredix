@@ -181,7 +181,7 @@ function generateCustomerLedger(customer) {
           });
         }
       }
-      // Case B: Post-Dated Check with Early Factoring / Discounting (Kırdırma, ~15%)
+      // Case B: Post-Dated Check with Early Factoring / Discounting (~15%)
       else if (roll < 0.40) {
         const chkNum = `CHK-${Math.floor(100000 + rand() * 900000)}`;
         const checkMaturityDt = new Date(dueDt.getTime() + 20 * 86400000);
@@ -334,7 +334,7 @@ export default function CustomerLedgerModal({ isOpen, customer, company, onClose
     const headers = [
       'Invoice Number',
       'Invoice Date',
-      'Due Date (Vade)',
+      'Due Date',
       'Invoice Amount',
       'Amount Paid',
       'Remaining Balance',
@@ -516,7 +516,7 @@ export default function CustomerLedgerModal({ isOpen, customer, company, onClose
                   : 'text-gray-500 hover:text-gray-900 dark:hover:text-white'
               }`}
             >
-              Vadeli Çekler ({transactions.filter((t) => t.payment_method === 'check').length})
+              Post-Dated Checks ({transactions.filter((t) => t.payment_method === 'check').length})
             </button>
             <button
               type="button"
@@ -543,7 +543,7 @@ export default function CustomerLedgerModal({ isOpen, customer, company, onClose
               <thead className="bg-gray-50 dark:bg-gray-800/60 text-gray-500 dark:text-gray-400 sticky top-0">
                 <tr>
                   <th className="py-3 px-3.5 font-semibold">Invoice # & Date</th>
-                  <th className="py-3 px-3.5 font-semibold">Due Date (Vade)</th>
+                  <th className="py-3 px-3.5 font-semibold">Due Date</th>
                   <th className="py-3 px-3.5 font-semibold">Invoice Amount</th>
                   <th className="py-3 px-3.5 font-semibold">Amount Paid</th>
                   <th className="py-3 px-3.5 font-semibold">Remaining Balance</th>
@@ -572,7 +572,7 @@ export default function CustomerLedgerModal({ isOpen, customer, company, onClose
                         </span>
                       </td>
 
-                      {/* Due Date (Vade Tarihi) */}
+                      {/* Due Date */}
                       <td className="py-3 px-3.5 font-mono font-medium text-gray-800 dark:text-gray-200">
                         {t.due_date}
                       </td>
@@ -618,14 +618,14 @@ export default function CustomerLedgerModal({ isOpen, customer, company, onClose
                         {t.payment_method === 'check' ? (
                           <div className="space-y-1">
                             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800/50">
-                              Vadeli Çek: {t.check_number}
+                              Post-Dated Check: {t.check_number}
                             </span>
                             <span className="text-[10px] text-gray-500 dark:text-gray-400 block font-mono">
-                              Çek Vadesi: {t.check_maturity_date}
+                              Check Maturity: {t.check_maturity_date}
                             </span>
                             {isFactored && (
                               <span className="text-[10px] text-purple-600 dark:text-purple-400 font-semibold block bg-purple-50 dark:bg-purple-950/30 px-1.5 py-0.5 rounded border border-purple-200 dark:border-purple-800/40">
-                                ⚡ Kırdırıldı (Factored): Kesinti ${t.factoring_fee} | Net Kasa ${t.net_cash_received.toLocaleString()}
+                                ⚡ Factored (Early Settlement): Fee ${t.factoring_fee} | Net Received ${t.net_cash_received.toLocaleString()}
                               </span>
                             )}
                           </div>
@@ -639,7 +639,7 @@ export default function CustomerLedgerModal({ isOpen, customer, company, onClose
                           </span>
                         ) : t.payment_method === 'cash' ? (
                           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/50">
-                            Cash / Kasa
+                            Cash Settlement
                           </span>
                         ) : (
                           <span className="text-gray-400 text-[11px]">Pending Instrument</span>

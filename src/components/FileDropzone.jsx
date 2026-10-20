@@ -41,7 +41,7 @@ export default function FileDropzone({ companies, onBatchUpload, isUploading }) 
     const amountIdx = rawHeaders.findIndex((h) => h.includes('invoice amount') || h.includes('amount') || h.includes('balance') || h.includes('inflow') || h.includes('receivable'));
     const invNoIdx = rawHeaders.findIndex((h) => h.includes('invoice number') || h.includes('invoice #') || h.includes('inv_number') || h.includes('invoice_no') || h.includes('inv'));
     const invDateIdx = rawHeaders.findIndex((h) => h.includes('invoice date') || h.includes('issue date'));
-    const dueDateIdx = rawHeaders.findIndex((h) => h.includes('due date') || h.includes('maturity date') || h.includes('vade'));
+    const dueDateIdx = rawHeaders.findIndex((h) => h.includes('due date') || h.includes('maturity date') || h.includes('due'));
     const methodIdx = rawHeaders.findIndex((h) => h.includes('method') || h.includes('payment method') || h.includes('instrument'));
     const checkNoIdx = rawHeaders.findIndex((h) => h.includes('check number') || h.includes('check #') || h.includes('chk'));
     const installmentIdx = rawHeaders.findIndex((h) => h.includes('installment') || h.includes('split') || h.includes('part'));
@@ -156,7 +156,7 @@ export default function FileDropzone({ companies, onBatchUpload, isUploading }) 
         'Invoice Number,Customer Name,Invoice Date,Due Date,Payment Terms,Invoice Amount,Payment Date,Amount Paid,Remaining Balance,Payment Method,Installment,Check Number,Check Maturity Date,Factoring Fee,Status\n' +
         'INV-2025-10482,JPMorgan Chase Treasury,2025-06-20,2025-07-20,Net 30,12500.00,2025-07-18,6250.00,6250.00,wire_transfer,1/2,,,0.00,PARTIAL\n' +
         'INV-2025-10482,JPMorgan Chase Treasury,2025-06-20,2025-07-20,Net 30,12500.00,2025-07-28,6250.00,0.00,check,2/2,CHK-884120,2025-07-28,0.00,PAID\n' +
-        'INV-2025-22415,Walmart eCommerce,2025-08-01,2025-09-30,Net 60,45000.00,2025-08-15,45000.00,0.00,check,1/1,CHK-441209,2025-09-30,1125.00,PAID (Factored / Kırdırıldı)\n' +
+        'INV-2025-22415,Walmart eCommerce,2025-08-01,2025-09-30,Net 60,45000.00,2025-08-15,45000.00,0.00,check,1/1,CHK-441209,2025-09-30,1125.00,PAID (Factored)\n' +
         'INV-2025-33190,Shopify Plus Merchant,2025-08-10,2025-08-25,Net 15,18200.00,2025-08-23,18200.00,0.00,ach,1/1,,,0.00,PAID\n' +
         'INV-2025-44012,Mayo Clinical Systems,2025-09-05,2025-10-20,Net 45,65000.00,2025-10-10,65000.00,0.00,cash,1/1,,,0.00,PAID\n' +
         'INV-2025-55910,Nike Global Logistics,2025-09-12,2025-10-12,2/10 Net 30,32500.00,2025-09-20,31850.00,0.00,wire_transfer,1/1,,,0.00,PAID (2% Early Discount)\n' +
@@ -359,7 +359,7 @@ export default function FileDropzone({ companies, onBatchUpload, isUploading }) 
                       <th className="py-2.5 px-3 font-semibold">#</th>
                       <th className="py-2.5 px-3 font-semibold">Customer / Client Name</th>
                       {hasInvoiceData && <th className="py-2.5 px-3 font-semibold">Invoice #</th>}
-                      {hasInvoiceData && <th className="py-2.5 px-3 font-semibold">Due Date (Vade)</th>}
+                      {hasInvoiceData && <th className="py-2.5 px-3 font-semibold">Due Date</th>}
                       <th className="py-2.5 px-3 font-semibold">Payment Terms</th>
                       {hasInvoiceData && <th className="py-2.5 px-3 font-semibold">Method / Instrument</th>}
                       {hasInvoiceData && <th className="py-2.5 px-3 font-semibold">Installment</th>}

@@ -124,8 +124,8 @@ def simulate_customer_payment_history(
     Generate realistic Accounts Receivable (AR) payment timeline for a customer:
       - Realistic Invoice numbers, issue dates, and contract due dates
       - Multi-installment Split Payments (e.g. 50/50 partial settlements)
-      - Payment Methods: Wire Transfer, ACH, Vadeli Ticari Çek (Post-Dated Checks) & Cash
-      - Post-Dated Check maturity dates (çek vadesi) & Early Check Factoring (çek kırdırma / iskonto)
+      - Payment Methods: Wire Transfer, ACH, Post-Dated Checks & Cash
+      - Post-Dated Check maturity dates & Early Check Factoring (Discounting)
       - Cash Discounts under prompt payment terms (e.g. 2/10 Net 30)
       - Delinquency analytics (Days Past Due - DPD)
     """
