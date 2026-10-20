@@ -350,11 +350,11 @@ export function AuthProvider({ children }) {
   };
 
   // Direct Authorized Sign In for Merve & Prof. Sarah Zelikovitz
-  const signInAsAuthorized = (targetEmail = 'gaziimervee@gmail.com') => {
+  const signInAsAuthorized = (targetEmail = 'gazimervee@gmail.com') => {
     const isSarah = targetEmail.toLowerCase().includes('sarah') || targetEmail.toLowerCase().includes('zelikovitz');
     const authUser = {
       id: isSarah ? 'sarah-prof-uuid-002' : 'merve-owner-uuid-001',
-      email: isSarah ? 'sarah.zelikovitz@csi.cuny.edu' : 'gaziimervee@gmail.com',
+      email: isSarah ? 'sarah.zelikovitz@csi.cuny.edu' : 'gazimervee@gmail.com',
       user_metadata: {
         full_name: isSarah ? 'Prof. Sarah Zelikovitz' : 'Merve Gazi',
         role: isSarah ? 'Academic Sponsor & Reviewer' : 'Platform Owner / Executive',

@@ -107,7 +107,7 @@ export function getUserScope(user) {
     return {
       type: 'enterprise',
       key: 'merve_enterprise',
-      email: 'gaziimervee@gmail.com',
+      email: 'gazimervee@gmail.com',
       isEnterprise: true,
     };
   }
