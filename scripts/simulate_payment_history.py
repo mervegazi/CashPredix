@@ -99,6 +99,21 @@ def assign_customer_profile() -> str:
     return "STANDARD"
 
 
+def sample_payment_method() -> str:
+    """Sample enterprise B2B payment instrument based on market distributions."""
+    r = random.random()
+    if r < 0.45:
+        return "wire_transfer"
+    elif r < 0.75:
+        return "ach"
+    elif r < 0.90:
+        return "check"
+    elif r < 0.95:
+        return "credit_card"
+    else:
+        return "cash"
+
+
 def simulate_customer_payment_history(
     customer: dict,
     start_date: datetime,
@@ -106,8 +121,13 @@ def simulate_customer_payment_history(
     invoices_per_year: int = 12
 ) -> list:
     """
-    Generate realistic payment timeline for a single customer from customer creation date to end_date.
-    Applies Gaussian timing, Pareto amounts, and realistic anomaly states.
+    Generate realistic Accounts Receivable (AR) payment timeline for a customer:
+      - Realistic Invoice numbers, issue dates, and contract due dates
+      - Multi-installment Split Payments (e.g. 50/50 partial settlements)
+      - Payment Methods: Wire Transfer, ACH, Vadeli Ticari Çek (Post-Dated Checks) & Cash
+      - Post-Dated Check maturity dates (çek vadesi) & Early Check Factoring (çek kırdırma / iskonto)
+      - Cash Discounts under prompt payment terms (e.g. 2/10 Net 30)
+      - Delinquency analytics (Days Past Due - DPD)
     """
     customer_id = customer["id"]
     payment_terms_str = customer.get("payment_terms", "Net 30")
@@ -123,71 +143,283 @@ def simulate_customer_payment_history(
     today_dt = end_date
 
     while current_invoice_dt < today_dt:
-        invoice_id = str(uuid.uuid4())
-        
-        base_scale = random.choice([250.0, 500.0, 850.0, 1200.0, 2500.0])
-        amount = sample_pareto_amount(base_amount=base_scale, alpha=1.55)
+        inv_seq = random.randint(10000, 99999)
+        invoice_number = f"INV-{current_invoice_dt.year}-{inv_seq}"
+        invoice_date_str = current_invoice_dt.strftime("%Y-%m-%d")
+
+        base_scale = random.choice([350.0, 750.0, 1500.0, 3200.0, 8500.0, 24000.0])
+        invoice_amount = sample_pareto_amount(base_amount=base_scale, alpha=1.55)
 
         due_dt = current_invoice_dt + timedelta(days=term_days)
         due_date_str = due_dt.strftime("%Y-%m-%d")
 
+        # Future Invoice (Pending collection)
         if due_dt > today_dt:
-            # Future invoice (Receivable pending collection)
             records.append({
-                "id": invoice_id,
+                "id": str(uuid.uuid4()),
                 "customer_id": customer_id,
-                "vendor_id": customer_id,  # compatibility dual-key
-                "amount": amount,
+                "vendor_id": customer_id,  # backward compatibility alias
+                "invoice_number": invoice_number,
+                "invoice_date": invoice_date_str,
                 "due_date": due_date_str,
+                "invoice_amount": invoice_amount,
+                "amount": invoice_amount,
+                "amount_paid": 0.0,
+                "remaining_balance": invoice_amount,
                 "payment_date": None,
+                "payment_method": None,
+                "installment_number": 1,
+                "total_installments": 1,
+                "is_split_payment": False,
+                "check_number": None,
+                "check_issue_date": None,
+                "check_maturity_date": None,
+                "check_clearing_date": None,
+                "check_status": None,
+                "is_factored": False,
+                "factoring_date": None,
+                "factoring_fee": 0.0,
+                "net_cash_received": 0.0,
+                "early_discount_applied": False,
+                "discount_amount": 0.0,
+                "days_past_due": 0,
                 "status": "PENDING"
             })
         else:
             r = random.random()
 
+            # Case A: Defaulted / Uncollectible receivable
             if r < profile["missed_prob"] and (today_dt - due_dt).days > 45:
-                # ANOMALY: Missed / Defaulted receivable
                 records.append({
-                    "id": invoice_id,
+                    "id": str(uuid.uuid4()),
                     "customer_id": customer_id,
                     "vendor_id": customer_id,
-                    "amount": amount,
+                    "invoice_number": invoice_number,
+                    "invoice_date": invoice_date_str,
                     "due_date": due_date_str,
+                    "invoice_amount": invoice_amount,
+                    "amount": invoice_amount,
+                    "amount_paid": 0.0,
+                    "remaining_balance": invoice_amount,
                     "payment_date": None,
+                    "payment_method": None,
+                    "installment_number": 1,
+                    "total_installments": 1,
+                    "is_split_payment": False,
+                    "check_number": None,
+                    "check_issue_date": None,
+                    "check_maturity_date": None,
+                    "check_clearing_date": None,
+                    "check_status": None,
+                    "is_factored": False,
+                    "factoring_date": None,
+                    "factoring_fee": 0.0,
+                    "net_cash_received": 0.0,
+                    "early_discount_applied": False,
+                    "discount_amount": 0.0,
+                    "days_past_due": (today_dt - due_dt).days,
                     "status": "MISSED"
                 })
-            elif r < (profile["missed_prob"] + profile["partial_prob"]):
-                # ANOMALY: Partial payment settlement
-                delay_days = round(random.gauss(profile["mean_delay"] + 5.0, profile["std_delay"]))
-                pay_dt = max(current_invoice_dt + timedelta(days=1), due_dt + timedelta(days=delay_days))
-                pay_dt = min(pay_dt, today_dt)
+
+            # Case B: Split Payment (2-part installment settlement, ~20% of settled invoices)
+            elif (r < (profile["missed_prob"] + profile["partial_prob"])) or (random.random() < 0.18):
+                split_ratio = random.choice([0.40, 0.50, 0.60])
+                amount_part1 = round(invoice_amount * split_ratio, 2)
+                amount_part2 = round(invoice_amount - amount_part1, 2)
+
+                delay1 = round(random.gauss(profile["mean_delay"], profile["std_delay"]))
+                pay_dt1 = max(current_invoice_dt + timedelta(days=2), due_dt + timedelta(days=delay1))
+                pay_dt1 = min(pay_dt1, today_dt)
+
+                pay_dt2 = pay_dt1 + timedelta(days=random.randint(14, 35))
+
+                method1 = sample_payment_method()
+                method2 = sample_payment_method()
+
+                # Installment 1 row
                 records.append({
-                    "id": invoice_id,
+                    "id": str(uuid.uuid4()),
                     "customer_id": customer_id,
                     "vendor_id": customer_id,
-                    "amount": amount,
+                    "invoice_number": invoice_number,
+                    "invoice_date": invoice_date_str,
                     "due_date": due_date_str,
-                    "payment_date": pay_dt.strftime("%Y-%m-%d"),
+                    "invoice_amount": invoice_amount,
+                    "amount": amount_part1,
+                    "amount_paid": amount_part1,
+                    "remaining_balance": amount_part2,
+                    "payment_date": pay_dt1.strftime("%Y-%m-%d"),
+                    "payment_method": method1,
+                    "installment_number": 1,
+                    "total_installments": 2,
+                    "is_split_payment": True,
+                    "check_number": None,
+                    "check_issue_date": None,
+                    "check_maturity_date": None,
+                    "check_clearing_date": None,
+                    "check_status": None,
+                    "is_factored": False,
+                    "factoring_date": None,
+                    "factoring_fee": 0.0,
+                    "net_cash_received": amount_part1,
+                    "early_discount_applied": False,
+                    "discount_amount": 0.0,
+                    "days_past_due": (pay_dt1 - due_dt).days,
                     "status": "PARTIAL"
                 })
+
+                # Installment 2 row
+                if pay_dt2 <= today_dt:
+                    dpd2 = (pay_dt2 - due_dt).days
+                    records.append({
+                        "id": str(uuid.uuid4()),
+                        "customer_id": customer_id,
+                        "vendor_id": customer_id,
+                        "invoice_number": invoice_number,
+                        "invoice_date": invoice_date_str,
+                        "due_date": due_date_str,
+                        "invoice_amount": invoice_amount,
+                        "amount": amount_part2,
+                        "amount_paid": amount_part2,
+                        "remaining_balance": 0.0,
+                        "payment_date": pay_dt2.strftime("%Y-%m-%d"),
+                        "payment_method": method2,
+                        "installment_number": 2,
+                        "total_installments": 2,
+                        "is_split_payment": True,
+                        "check_number": None,
+                        "check_issue_date": None,
+                        "check_maturity_date": None,
+                        "check_clearing_date": None,
+                        "check_status": None,
+                        "is_factored": False,
+                        "factoring_date": None,
+                        "factoring_fee": 0.0,
+                        "net_cash_received": amount_part2,
+                        "early_discount_applied": False,
+                        "discount_amount": 0.0,
+                        "days_past_due": dpd2,
+                        "status": "PAID" if dpd2 <= 3 else "LATE"
+                    })
+                else:
+                    # Second part is pending future collection
+                    records.append({
+                        "id": str(uuid.uuid4()),
+                        "customer_id": customer_id,
+                        "vendor_id": customer_id,
+                        "invoice_number": invoice_number,
+                        "invoice_date": invoice_date_str,
+                        "due_date": due_date_str,
+                        "invoice_amount": invoice_amount,
+                        "amount": amount_part2,
+                        "amount_paid": 0.0,
+                        "remaining_balance": amount_part2,
+                        "payment_date": None,
+                        "payment_method": method2,
+                        "installment_number": 2,
+                        "total_installments": 2,
+                        "is_split_payment": True,
+                        "check_number": None,
+                        "check_issue_date": None,
+                        "check_maturity_date": None,
+                        "check_clearing_date": None,
+                        "check_status": None,
+                        "is_factored": False,
+                        "factoring_date": None,
+                        "factoring_fee": 0.0,
+                        "net_cash_received": 0.0,
+                        "early_discount_applied": False,
+                        "discount_amount": 0.0,
+                        "days_past_due": 0,
+                        "status": "PENDING"
+                    })
+
+            # Case C: Full Single-Payment Settlement (Wire, ACH, Check, or Factoring)
             else:
                 delay_days = round(random.gauss(profile["mean_delay"], profile["std_delay"]))
                 pay_dt = due_dt + timedelta(days=delay_days)
                 pay_dt = max(current_invoice_dt + timedelta(days=1), pay_dt)
                 pay_dt = min(pay_dt, today_dt)
 
-                if pay_dt > due_dt + timedelta(days=3):
-                    status = "LATE"
-                else:
-                    status = "PAID"
+                payment_method = sample_payment_method()
+
+                # Check / Post-Dated Check Specifics
+                check_number = None
+                check_issue_date = None
+                check_maturity_date = None
+                check_clearing_date = None
+                check_status = None
+                is_factored = False
+                factoring_date = None
+                factoring_fee = 0.0
+                net_cash_received = invoice_amount
+
+                if payment_method == "check":
+                    check_number = f"CHK-{random.randint(100000, 999999)}"
+                    check_issue_dt = current_invoice_dt + timedelta(days=random.randint(2, 10))
+                    check_issue_date = check_issue_dt.strftime("%Y-%m-%d")
+                    check_maturity_dt = due_dt + timedelta(days=random.randint(-3, 20))
+                    check_maturity_date = check_maturity_dt.strftime("%Y-%m-%d")
+
+                    # Check factoring / discounting (~20% of checks factored early for liquidity)
+                    if random.random() < 0.20 and check_maturity_dt > current_invoice_dt + timedelta(days=15):
+                        is_factored = True
+                        factoring_dt = min(today_dt, check_issue_dt + timedelta(days=random.randint(2, 6)))
+                        factoring_date = factoring_dt.strftime("%Y-%m-%d")
+                        fee_rate = round(random.uniform(0.025, 0.045), 4)  # 2.5% to 4.5% discount fee
+                        factoring_fee = round(invoice_amount * fee_rate, 2)
+                        net_cash_received = round(invoice_amount - factoring_fee, 2)
+                        check_status = "discounted_factored"
+                        check_clearing_date = factoring_date
+                        pay_dt = factoring_dt
+                    else:
+                        is_factored = False
+                        check_status = "cleared"
+                        check_clearing_date = check_maturity_date
+                        net_cash_received = invoice_amount
+
+                # Prompt Payment Discount (2/10 Net 30)
+                early_discount_applied = False
+                discount_amount = 0.0
+                amount_paid = invoice_amount
+
+                if payment_terms_str == "2/10 Net 30" and (pay_dt - current_invoice_dt).days <= 10:
+                    early_discount_applied = True
+                    discount_amount = round(invoice_amount * 0.02, 2)
+                    amount_paid = round(invoice_amount - discount_amount, 2)
+                    net_cash_received = amount_paid
+
+                dpd = (pay_dt - due_dt).days
+                status = "PAID" if dpd <= 3 else "LATE"
 
                 records.append({
-                    "id": invoice_id,
+                    "id": str(uuid.uuid4()),
                     "customer_id": customer_id,
                     "vendor_id": customer_id,
-                    "amount": amount,
+                    "invoice_number": invoice_number,
+                    "invoice_date": invoice_date_str,
                     "due_date": due_date_str,
+                    "invoice_amount": invoice_amount,
+                    "amount": amount_paid,
+                    "amount_paid": amount_paid,
+                    "remaining_balance": 0.0,
                     "payment_date": pay_dt.strftime("%Y-%m-%d"),
+                    "payment_method": payment_method,
+                    "installment_number": 1,
+                    "total_installments": 1,
+                    "is_split_payment": False,
+                    "check_number": check_number,
+                    "check_issue_date": check_issue_date,
+                    "check_maturity_date": check_maturity_date,
+                    "check_clearing_date": check_clearing_date,
+                    "check_status": check_status,
+                    "is_factored": is_factored,
+                    "factoring_date": factoring_date,
+                    "factoring_fee": factoring_fee,
+                    "net_cash_received": net_cash_received,
+                    "early_discount_applied": early_discount_applied,
+                    "discount_amount": discount_amount,
+                    "days_past_due": dpd,
                     "status": status
                 })
 
@@ -281,9 +513,38 @@ def save_payments_to_csv(data: dict, output_dir: Path):
     out_file = output_dir / "payment_history.csv"
 
     if data["payments"]:
-        keys = ["id", "customer_id", "vendor_id", "amount", "due_date", "payment_date", "status"]
+        keys = [
+            "id",
+            "customer_id",
+            "vendor_id",
+            "invoice_number",
+            "invoice_date",
+            "due_date",
+            "invoice_amount",
+            "amount",
+            "amount_paid",
+            "remaining_balance",
+            "payment_date",
+            "payment_method",
+            "installment_number",
+            "total_installments",
+            "is_split_payment",
+            "check_number",
+            "check_issue_date",
+            "check_maturity_date",
+            "check_clearing_date",
+            "check_status",
+            "is_factored",
+            "factoring_date",
+            "factoring_fee",
+            "net_cash_received",
+            "early_discount_applied",
+            "discount_amount",
+            "days_past_due",
+            "status",
+        ]
         with open(out_file, "w", newline="", encoding="utf-8") as f:
-            writer = csv.DictWriter(f, fieldnames=keys)
+            writer = csv.DictWriter(f, fieldnames=keys, extrasaction="ignore")
             writer.writeheader()
             writer.writerows(data["payments"])
 

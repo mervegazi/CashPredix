@@ -21,10 +21,12 @@ import {
   Search,
   ChevronLeft,
   ChevronRight,
-  Database
+  Database,
+  Receipt,
 } from 'lucide-react';
 import FileDropzone from '../../components/FileDropzone';
 import ConfirmationModal from '../../components/ConfirmationModal';
+import CustomerLedgerModal from '../../components/CustomerLedgerModal';
 import Tooltip from '../../components/Tooltip';
 import CompanyVendorSkeleton from '../../components/CompanyVendorSkeleton';
 import { INITIAL_SEED_COMPANIES, INITIAL_SEED_CUSTOMERS } from '../../data/seedData';
@@ -147,6 +149,9 @@ export default function CompanyVendorPage() {
     target: null,
     isDeleting: false,
   });
+
+  // Selected customer for AR Financial Ledger View
+  const [selectedCustomerForLedger, setSelectedCustomerForLedger] = useState(null);
 
   // Form states
   const [companyForm, setCompanyForm] = useState({
@@ -924,15 +929,26 @@ export default function CompanyVendorPage() {
                                                 </div>
                                               </Tooltip>
                                             </td>
-                                            <td className="py-3 px-3.5 text-right">
-                                              <button
-                                                type="button"
-                                                onClick={() => requestDeleteCustomer(customer)}
-                                                className="p-1 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors"
-                                                title="Delete customer"
-                                              >
-                                                <Trash2 className="w-3.5 h-3.5" />
-                                              </button>
+                                            <td className="py-3 px-3.5 text-right whitespace-nowrap">
+                                              <div className="flex items-center justify-end gap-1.5">
+                                                <button
+                                                  type="button"
+                                                  onClick={() => setSelectedCustomerForLedger({ customer, company })}
+                                                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/40 hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors text-[11px] font-semibold"
+                                                  title="View Financial AR Ledger, Invoices & Checks"
+                                                >
+                                                  <Receipt className="w-3.5 h-3.5" />
+                                                  <span>Ledger</span>
+                                                </button>
+                                                <button
+                                                  type="button"
+                                                  onClick={() => requestDeleteCustomer(customer)}
+                                                  className="p-1 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors"
+                                                  title="Delete customer"
+                                                >
+                                                  <Trash2 className="w-3.5 h-3.5" />
+                                                </button>
+                                              </div>
                                             </td>
                                           </tr>
                                         );
@@ -1283,6 +1299,14 @@ export default function CompanyVendorPage() {
         isDeleting={modalState.isDeleting}
         onConfirm={handleConfirmDelete}
         onClose={() => setModalState({ isOpen: false, type: null, target: null, isDeleting: false })}
+      />
+
+      {/* Customer Financial AR Ledger & Invoices Modal */}
+      <CustomerLedgerModal
+        isOpen={Boolean(selectedCustomerForLedger)}
+        customer={selectedCustomerForLedger?.customer}
+        company={selectedCustomerForLedger?.company}
+        onClose={() => setSelectedCustomerForLedger(null)}
       />
     </div>
   );

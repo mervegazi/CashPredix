@@ -36,9 +36,15 @@ export default function FileDropzone({ companies, onBatchUpload, isUploading }) 
     const rawHeaders = lines[0].split(',').map((h) => h.replace(/^["']|["']$/g, '').trim().toLowerCase());
 
     const nameIdx = rawHeaders.findIndex((h) => h.includes('customer') || h.includes('client') || h.includes('vendor') || h.includes('name'));
-    const termsIdx = rawHeaders.findIndex((h) => h.includes('term') || h.includes('payment'));
+    const termsIdx = rawHeaders.findIndex((h) => h.includes('term'));
     const categoryIdx = rawHeaders.findIndex((h) => h.includes('category') || h.includes('industry') || h.includes('type'));
-    const amountIdx = rawHeaders.findIndex((h) => h.includes('amount') || h.includes('balance') || h.includes('invoice') || h.includes('inflow') || h.includes('receivable'));
+    const amountIdx = rawHeaders.findIndex((h) => h.includes('invoice amount') || h.includes('amount') || h.includes('balance') || h.includes('inflow') || h.includes('receivable'));
+    const invNoIdx = rawHeaders.findIndex((h) => h.includes('invoice number') || h.includes('invoice #') || h.includes('inv_number') || h.includes('invoice_no') || h.includes('inv'));
+    const invDateIdx = rawHeaders.findIndex((h) => h.includes('invoice date') || h.includes('issue date'));
+    const dueDateIdx = rawHeaders.findIndex((h) => h.includes('due date') || h.includes('maturity date') || h.includes('vade'));
+    const methodIdx = rawHeaders.findIndex((h) => h.includes('method') || h.includes('payment method') || h.includes('instrument'));
+    const checkNoIdx = rawHeaders.findIndex((h) => h.includes('check number') || h.includes('check #') || h.includes('chk'));
+    const installmentIdx = rawHeaders.findIndex((h) => h.includes('installment') || h.includes('split') || h.includes('part'));
 
     if (nameIdx === -1) {
       throw new Error('Could not find a "Customer Name", "Client Name", or "Name" header column');
@@ -68,6 +74,12 @@ export default function FileDropzone({ companies, onBatchUpload, isUploading }) 
         payment_terms: paymentTerms,
         category,
         amount: isNaN(amount) ? null : amount,
+        invoice_number: invNoIdx !== -1 ? cleanValues[invNoIdx] : null,
+        invoice_date: invDateIdx !== -1 ? cleanValues[invDateIdx] : null,
+        due_date: dueDateIdx !== -1 ? cleanValues[dueDateIdx] : null,
+        payment_method: methodIdx !== -1 ? cleanValues[methodIdx] : null,
+        check_number: checkNoIdx !== -1 ? cleanValues[checkNoIdx] : null,
+        installment: installmentIdx !== -1 ? cleanValues[installmentIdx] : null,
         status: 'Valid',
       });
     }
@@ -134,26 +146,43 @@ export default function FileDropzone({ companies, onBatchUpload, isUploading }) 
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
-  const handleDownloadSample = () => {
-    const sampleContent =
-      'Customer Name,Payment Terms,Category,Estimated Monthly Inflow\n' +
-      'JPMorgan Chase Treasury,Net 30,FinTech & Banking,45000.00\n' +
-      'Shopify Plus Merchant,Net 15,SaaS & Digital Platforms,18200.00\n' +
-      'Walmart eCommerce,Net 60,Retail & Wholesale Chains,84000.00\n' +
-      'Mayo Clinical Systems,Net 45,Healthcare & Clinical,65000.00\n' +
-      'Nike Global Logistics,2/10 Net 30,Logistics & Transit,32500.00\n' +
-      'State Research Institute,Net 90,Public Sector & Education,19500.00\n';
+  const handleDownloadSample = (type = 'ledger') => {
+    let sampleContent = '';
+    let fileName = '';
+
+    if (type === 'ledger') {
+      fileName = 'cashpredix_ar_financial_ledger_sample.csv';
+      sampleContent =
+        'Invoice Number,Customer Name,Invoice Date,Due Date,Payment Terms,Invoice Amount,Payment Date,Amount Paid,Remaining Balance,Payment Method,Installment,Check Number,Check Maturity Date,Factoring Fee,Status\n' +
+        'INV-2025-10482,JPMorgan Chase Treasury,2025-06-20,2025-07-20,Net 30,12500.00,2025-07-18,6250.00,6250.00,wire_transfer,1/2,,,0.00,PARTIAL\n' +
+        'INV-2025-10482,JPMorgan Chase Treasury,2025-06-20,2025-07-20,Net 30,12500.00,2025-07-28,6250.00,0.00,check,2/2,CHK-884120,2025-07-28,0.00,PAID\n' +
+        'INV-2025-22415,Walmart eCommerce,2025-08-01,2025-09-30,Net 60,45000.00,2025-08-15,45000.00,0.00,check,1/1,CHK-441209,2025-09-30,1125.00,PAID (Factored / Kırdırıldı)\n' +
+        'INV-2025-33190,Shopify Plus Merchant,2025-08-10,2025-08-25,Net 15,18200.00,2025-08-23,18200.00,0.00,ach,1/1,,,0.00,PAID\n' +
+        'INV-2025-44012,Mayo Clinical Systems,2025-09-05,2025-10-20,Net 45,65000.00,2025-10-10,65000.00,0.00,cash,1/1,,,0.00,PAID\n' +
+        'INV-2025-55910,Nike Global Logistics,2025-09-12,2025-10-12,2/10 Net 30,32500.00,2025-09-20,31850.00,0.00,wire_transfer,1/1,,,0.00,PAID (2% Early Discount)\n' +
+        'INV-2025-66120,State Research Institute,2025-09-20,2025-12-19,Net 90,19500.00,,,19500.00,,1/1,,,0.00,PENDING\n';
+    } else {
+      fileName = 'cashpredix_customer_sample.csv';
+      sampleContent =
+        'Customer Name,Payment Terms,Category,Estimated Monthly Inflow\n' +
+        'JPMorgan Chase Treasury,Net 30,FinTech & Banking,45000.00\n' +
+        'Shopify Plus Merchant,Net 15,SaaS & Digital Platforms,18200.00\n' +
+        'Walmart eCommerce,Net 60,Retail & Wholesale Chains,84000.00\n' +
+        'Mayo Clinical Systems,Net 45,Healthcare & Clinical,65000.00\n' +
+        'Nike Global Logistics,2/10 Net 30,Logistics & Transit,32500.00\n' +
+        'State Research Institute,Net 90,Public Sector & Education,19500.00\n';
+    }
 
     const blob = new Blob([sampleContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.setAttribute('download', 'cashpredix_customer_sample.csv');
+    link.setAttribute('download', fileName);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
-    toast.success('Sample customer CSV template downloaded!');
+    toast.success(`Downloaded ${fileName}!`);
   };
 
   const handleConfirmBatchUpload = () => {
@@ -178,22 +207,34 @@ export default function FileDropzone({ companies, onBatchUpload, isUploading }) 
           </div>
           <div>
             <h4 className="text-sm font-bold text-gray-900 dark:text-white">
-              Batch Customer & Receivables Ingestion
+              Batch Customer & Accounts Receivable Ingestion
             </h4>
             <p className="text-xs text-gray-500 dark:text-gray-400">
-              Bulk upload corporate customer ledgers and incoming invoices with client-side header mapping.
+              Bulk upload corporate customer ledgers, invoices, split payments, checks, and maturity dates.
             </p>
           </div>
         </div>
 
-        <button
-          type="button"
-          onClick={handleDownloadSample}
-          className="inline-flex items-center justify-center gap-2 px-3.5 py-2 text-xs font-semibold rounded-xl bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/80 transition-all shadow-sm self-start sm:self-auto"
-        >
-          <Download className="w-4 h-4 text-blue-500" />
-          <span>Download Sample CSV</span>
-        </button>
+        <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
+          <button
+            type="button"
+            onClick={() => handleDownloadSample('ledger')}
+            className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-xl bg-blue-600 text-white hover:bg-blue-700 transition-all shadow-sm"
+            title="Download full AR ledger template with invoices, due dates, and check details"
+          >
+            <Download className="w-3.5 h-3.5" />
+            <span>AR Ledger Template (CSV)</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => handleDownloadSample('customers')}
+            className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-xl bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/80 transition-all shadow-sm"
+            title="Download simple customer directory template"
+          >
+            <Download className="w-3.5 h-3.5 text-gray-400" />
+            <span>Customer Directory (CSV)</span>
+          </button>
+        </div>
       </div>
 
       {/* Dropzone Area */}
@@ -307,41 +348,78 @@ export default function FileDropzone({ companies, onBatchUpload, isUploading }) 
           )}
 
           {/* Table Preview */}
-          <div className="overflow-x-auto max-h-64 rounded-xl border border-gray-100 dark:border-gray-800">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-gray-50 dark:bg-gray-800/60 text-gray-500 dark:text-gray-400 sticky top-0">
-                <tr>
-                  <th className="py-2.5 px-3 font-semibold">#</th>
-                  <th className="py-2.5 px-3 font-semibold">Customer / Client Name</th>
-                  <th className="py-2.5 px-3 font-semibold">Payment Terms</th>
-                  <th className="py-2.5 px-3 font-semibold">Category</th>
-                  <th className="py-2.5 px-3 font-semibold">Est. Monthly Inflow</th>
-                  <th className="py-2.5 px-3 font-semibold">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100 dark:divide-gray-800 text-gray-700 dark:text-gray-300">
-                {parsedRows.slice(0, 10).map((row, idx) => (
-                  <tr key={row.id} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/40">
-                    <td className="py-2 px-3 text-gray-400">{idx + 1}</td>
-                    <td className="py-2 px-3 font-medium text-gray-900 dark:text-white">
-                      {row.name}
-                    </td>
-                    <td className="py-2 px-3">{row.payment_terms}</td>
-                    <td className="py-2 px-3">{row.category}</td>
-                    <td className="py-2 px-3 font-mono">
-                      {row.amount ? `$${row.amount.toLocaleString()}` : '—'}
-                    </td>
-                    <td className="py-2 px-3">
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
-                        <CheckCircle2 className="w-3 h-3" />
-                        Valid
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          {(() => {
+            const hasInvoiceData = parsedRows.some((r) => r.invoice_number || r.due_date || r.payment_method);
+
+            return (
+              <div className="overflow-x-auto max-h-64 rounded-xl border border-gray-100 dark:border-gray-800">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-gray-50 dark:bg-gray-800/60 text-gray-500 dark:text-gray-400 sticky top-0">
+                    <tr>
+                      <th className="py-2.5 px-3 font-semibold">#</th>
+                      <th className="py-2.5 px-3 font-semibold">Customer / Client Name</th>
+                      {hasInvoiceData && <th className="py-2.5 px-3 font-semibold">Invoice #</th>}
+                      {hasInvoiceData && <th className="py-2.5 px-3 font-semibold">Due Date (Vade)</th>}
+                      <th className="py-2.5 px-3 font-semibold">Payment Terms</th>
+                      {hasInvoiceData && <th className="py-2.5 px-3 font-semibold">Method / Instrument</th>}
+                      {hasInvoiceData && <th className="py-2.5 px-3 font-semibold">Installment</th>}
+                      {!hasInvoiceData && <th className="py-2.5 px-3 font-semibold">Category</th>}
+                      <th className="py-2.5 px-3 font-semibold">Amount</th>
+                      <th className="py-2.5 px-3 font-semibold">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100 dark:divide-gray-800 text-gray-700 dark:text-gray-300">
+                    {parsedRows.slice(0, 10).map((row, idx) => (
+                      <tr key={row.id} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/40">
+                        <td className="py-2 px-3 text-gray-400">{idx + 1}</td>
+                        <td className="py-2 px-3 font-medium text-gray-900 dark:text-white">
+                          {row.name}
+                        </td>
+                        {hasInvoiceData && (
+                          <td className="py-2 px-3 font-mono text-[11px] text-blue-600 dark:text-blue-400">
+                            {row.invoice_number || '—'}
+                          </td>
+                        )}
+                        {hasInvoiceData && (
+                          <td className="py-2 px-3 font-mono text-[11px]">
+                            {row.due_date || '—'}
+                          </td>
+                        )}
+                        <td className="py-2 px-3">{row.payment_terms}</td>
+                        {hasInvoiceData && (
+                          <td className="py-2 px-3">
+                            {row.payment_method ? (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
+                                {row.payment_method.toUpperCase()}
+                                {row.check_number && ` (${row.check_number})`}
+                              </span>
+                            ) : (
+                              '—'
+                            )}
+                          </td>
+                        )}
+                        {hasInvoiceData && (
+                          <td className="py-2 px-3 text-gray-400 font-mono text-[11px]">
+                            {row.installment || '1/1'}
+                          </td>
+                        )}
+                        {!hasInvoiceData && <td className="py-2 px-3">{row.category}</td>}
+                        <td className="py-2 px-3 font-mono font-semibold text-gray-900 dark:text-white">
+                          {row.amount ? `$${row.amount.toLocaleString()}` : '—'}
+                        </td>
+                        <td className="py-2 px-3">
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+                            <CheckCircle2 className="w-3 h-3" />
+                            Valid
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            );
+          })()}
 
           {parsedRows.length > 10 && (
             <p className="text-[11px] text-gray-400 text-center">

@@ -35,14 +35,35 @@ CREATE TABLE IF NOT EXISTS vendors (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
--- 4. Customer payment history (Receivables & Invoices)
+-- 4. Customer payment history (Accounts Receivable, Invoices & Split Payments)
 CREATE TABLE IF NOT EXISTS payment_history (
     id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
     customer_id UUID REFERENCES customers(id) ON DELETE CASCADE,
     vendor_id UUID REFERENCES vendors(id) ON DELETE CASCADE,
-    amount NUMERIC NOT NULL,
+    invoice_number TEXT,
+    invoice_date DATE,
     due_date DATE,
+    invoice_amount NUMERIC NOT NULL,
+    amount NUMERIC NOT NULL,
+    amount_paid NUMERIC,
+    remaining_balance NUMERIC DEFAULT 0.0,
     payment_date DATE,
+    payment_method TEXT,
+    installment_number INT DEFAULT 1,
+    total_installments INT DEFAULT 1,
+    is_split_payment BOOLEAN DEFAULT false,
+    check_number TEXT,
+    check_issue_date DATE,
+    check_maturity_date DATE,
+    check_clearing_date DATE,
+    check_status TEXT,
+    is_factored BOOLEAN DEFAULT false,
+    factoring_date DATE,
+    factoring_fee NUMERIC DEFAULT 0.0,
+    net_cash_received NUMERIC,
+    early_discount_applied BOOLEAN DEFAULT false,
+    discount_amount NUMERIC DEFAULT 0.0,
+    days_past_due INT DEFAULT 0,
     status TEXT
 );
 
@@ -251,3 +272,29 @@ DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created
     AFTER INSERT ON auth.users
     FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+
+-- ==========================================
+-- MIGRATION HELPERS (FOR EXISTING DATABASES)
+-- ==========================================
+ALTER TABLE payment_history ADD COLUMN IF NOT EXISTS invoice_number TEXT;
+ALTER TABLE payment_history ADD COLUMN IF NOT EXISTS invoice_date DATE;
+ALTER TABLE payment_history ADD COLUMN IF NOT EXISTS invoice_amount NUMERIC;
+ALTER TABLE payment_history ADD COLUMN IF NOT EXISTS amount_paid NUMERIC;
+ALTER TABLE payment_history ADD COLUMN IF NOT EXISTS remaining_balance NUMERIC DEFAULT 0.0;
+ALTER TABLE payment_history ADD COLUMN IF NOT EXISTS payment_method TEXT;
+ALTER TABLE payment_history ADD COLUMN IF NOT EXISTS installment_number INT DEFAULT 1;
+ALTER TABLE payment_history ADD COLUMN IF NOT EXISTS total_installments INT DEFAULT 1;
+ALTER TABLE payment_history ADD COLUMN IF NOT EXISTS is_split_payment BOOLEAN DEFAULT false;
+ALTER TABLE payment_history ADD COLUMN IF NOT EXISTS check_number TEXT;
+ALTER TABLE payment_history ADD COLUMN IF NOT EXISTS check_issue_date DATE;
+ALTER TABLE payment_history ADD COLUMN IF NOT EXISTS check_maturity_date DATE;
+ALTER TABLE payment_history ADD COLUMN IF NOT EXISTS check_clearing_date DATE;
+ALTER TABLE payment_history ADD COLUMN IF NOT EXISTS check_status TEXT;
+ALTER TABLE payment_history ADD COLUMN IF NOT EXISTS is_factored BOOLEAN DEFAULT false;
+ALTER TABLE payment_history ADD COLUMN IF NOT EXISTS factoring_date DATE;
+ALTER TABLE payment_history ADD COLUMN IF NOT EXISTS factoring_fee NUMERIC DEFAULT 0.0;
+ALTER TABLE payment_history ADD COLUMN IF NOT EXISTS net_cash_received NUMERIC;
+ALTER TABLE payment_history ADD COLUMN IF NOT EXISTS early_discount_applied BOOLEAN DEFAULT false;
+ALTER TABLE payment_history ADD COLUMN IF NOT EXISTS discount_amount NUMERIC DEFAULT 0.0;
+ALTER TABLE payment_history ADD COLUMN IF NOT EXISTS days_past_due INT DEFAULT 0;
+
