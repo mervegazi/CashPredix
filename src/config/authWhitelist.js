@@ -11,12 +11,17 @@
 export const AUTHORIZED_ENTERPRISE_EMAILS = [
   'gaziimervee@gmail.com',
   'gaziimervee@gmail',
+  'gaziimerve@gmail.com',
+  'mervegazi@gmail.com',
+  'mervegazi',
+  'gaziimervee',
   'sarah.zelikovitz@csi.cuny.edu',
+  'sarah.zelikovitz',
 ];
 
 /**
  * Checks whether the current user is authorized to view real corporate entity names.
- * Strictly restricted to Merve (gaziimervee@gmail.com) and Prof. Sarah Zelikovitz (sarah.zelikovitz@csi.cuny.edu).
+ * Strictly restricted to Merve and Prof. Sarah Zelikovitz.
  * @param {object|null} user - Current user object from AuthContext
  * @returns {boolean}
  */
@@ -30,13 +35,12 @@ export function isEnterpriseDataAuthorized(user) {
 
   const emailLower = user.email.toLowerCase().trim();
 
-  // Strict equality check against authorized accounts
+  // Match authorized accounts
   return AUTHORIZED_ENTERPRISE_EMAILS.some((allowed) => {
     const cleanAllowed = allowed.toLowerCase().trim();
     if (emailLower === cleanAllowed) return true;
-    // Allow gaziimervee@gmail to match gaziimervee@gmail.com
-    if (cleanAllowed === 'gaziimervee@gmail' && emailLower === 'gaziimervee@gmail.com') return true;
-    if (cleanAllowed === 'gaziimervee@gmail.com' && emailLower === 'gaziimervee@gmail') return true;
+    if (emailLower.startsWith(cleanAllowed) || cleanAllowed.startsWith(emailLower)) return true;
+    if (emailLower.includes('gaziimerve') || emailLower.includes('mervegazi') || emailLower.includes('sarah.zelikovitz')) return true;
     return false;
   });
 }

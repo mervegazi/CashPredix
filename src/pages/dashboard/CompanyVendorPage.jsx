@@ -119,75 +119,91 @@ export default function CompanyVendorPage() {
   const [customerPages, setCustomerPages] = useState({});
   const isAuthorized = isEnterpriseDataAuthorized(user);
 
-  // Entities state
-  const [companies, setCompanies] = useState(() => {
-    try {
-      const storageKey = isAuthorized ? 'cashpredix_companies_v2' : 'cashpredix_demo_companies_v2';
-      const saved = localStorage.getItem(storageKey);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          const clean = isAuthorized ? parsed.filter((c) => !isTestCompany(c)) : parsed;
-          return clean.length > 0 ? clean : (isAuthorized ? CANONICAL_ENTERPRISE_COMPANIES : DEMO_ANONYMIZED_COMPANIES);
+  const getInitialCompanies = (isAuth) => {
+    if (isAuth) {
+      try {
+        const saved = localStorage.getItem('cashpredix_companies_v2');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            const isContaminated = parsed.some((c) => c.name === 'Atlas Horizon Freight Corp.' || c.name === 'Aegis Healthcare Systems Network');
+            if (!isContaminated) {
+              const clean = parsed.filter((c) => !isTestCompany(c));
+              return clean.length > 0 ? clean : CANONICAL_ENTERPRISE_COMPANIES;
+            }
+          }
         }
+      } catch (e) {
+        console.warn(e);
       }
-      return isAuthorized ? CANONICAL_ENTERPRISE_COMPANIES : DEMO_ANONYMIZED_COMPANIES;
-    } catch {
-      return isAuthorized ? CANONICAL_ENTERPRISE_COMPANIES : DEMO_ANONYMIZED_COMPANIES;
+      return CANONICAL_ENTERPRISE_COMPANIES;
+    } else {
+      try {
+        const saved = localStorage.getItem('cashpredix_demo_companies_v2');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        }
+      } catch (e) {
+        console.warn(e);
+      }
+      return DEMO_ANONYMIZED_COMPANIES;
     }
-  });
+  };
 
-  const [customers, setCustomers] = useState(() => {
-    try {
-      const storageKey = isAuthorized ? 'cashpredix_customers_v2' : 'cashpredix_demo_customers_v2';
-      const savedCust = localStorage.getItem(storageKey);
-      if (savedCust) {
-        const parsed = JSON.parse(savedCust);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+  const getInitialCustomers = (isAuth) => {
+    if (isAuth) {
+      try {
+        const saved = localStorage.getItem('cashpredix_customers_v2');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            const hasReal = parsed.some((c) => c.name.includes('JPMorgan') || c.name.includes('Bank of America'));
+            if (hasReal) {
+              return parsed;
+            }
+          }
+        }
+      } catch (e) {
+        console.warn(e);
       }
-      return isAuthorized ? CANONICAL_ENTERPRISE_CUSTOMERS : DEMO_ANONYMIZED_CUSTOMERS;
-    } catch {
-      return isAuthorized ? CANONICAL_ENTERPRISE_CUSTOMERS : DEMO_ANONYMIZED_CUSTOMERS;
+      return CANONICAL_ENTERPRISE_CUSTOMERS;
+    } else {
+      try {
+        const saved = localStorage.getItem('cashpredix_demo_customers_v2');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        }
+      } catch (e) {
+        console.warn(e);
+      }
+      return DEMO_ANONYMIZED_CUSTOMERS;
     }
-  });
+  };
+
+  // Entities state
+  const [companies, setCompanies] = useState(() => getInitialCompanies(isAuthorized));
+  const [customers, setCustomers] = useState(() => getInitialCustomers(isAuthorized));
 
   // Re-evaluate data when authenticated user changes (Authorized vs Demo Privacy mode)
   useEffect(() => {
     const isAuth = isEnterpriseDataAuthorized(user);
-    const companyKey = isAuth ? 'cashpredix_companies_v2' : 'cashpredix_demo_companies_v2';
-    const customerKey = isAuth ? 'cashpredix_customers_v2' : 'cashpredix_demo_customers_v2';
+    const comps = getInitialCompanies(isAuth);
+    const custs = getInitialCustomers(isAuth);
+    setCompanies(comps);
+    setCustomers(custs);
 
     try {
-      const saved = localStorage.getItem(companyKey);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          const clean = isAuth ? parsed.filter((c) => !isTestCompany(c)) : parsed;
-          setCompanies(clean.length > 0 ? clean : (isAuth ? CANONICAL_ENTERPRISE_COMPANIES : DEMO_ANONYMIZED_COMPANIES));
-        } else {
-          setCompanies(isAuth ? CANONICAL_ENTERPRISE_COMPANIES : DEMO_ANONYMIZED_COMPANIES);
-        }
-      } else {
-        setCompanies(isAuth ? CANONICAL_ENTERPRISE_COMPANIES : DEMO_ANONYMIZED_COMPANIES);
+      const compKey = isAuth ? 'cashpredix_companies_v2' : 'cashpredix_demo_companies_v2';
+      const custKey = isAuth ? 'cashpredix_customers_v2' : 'cashpredix_demo_customers_v2';
+      localStorage.setItem(compKey, JSON.stringify(comps));
+      localStorage.setItem(custKey, JSON.stringify(custs));
+      if (isAuth) {
+        localStorage.setItem('cashpredix_vendors_v2', JSON.stringify(custs));
       }
-    } catch {
-      setCompanies(isAuth ? CANONICAL_ENTERPRISE_COMPANIES : DEMO_ANONYMIZED_COMPANIES);
-    }
-
-    try {
-      const savedCust = localStorage.getItem(customerKey);
-      if (savedCust) {
-        const parsedCust = JSON.parse(savedCust);
-        if (Array.isArray(parsedCust) && parsedCust.length > 0) {
-          setCustomers(parsedCust);
-        } else {
-          setCustomers(isAuth ? CANONICAL_ENTERPRISE_CUSTOMERS : DEMO_ANONYMIZED_CUSTOMERS);
-        }
-      } else {
-        setCustomers(isAuth ? CANONICAL_ENTERPRISE_CUSTOMERS : DEMO_ANONYMIZED_CUSTOMERS);
-      }
-    } catch {
-      setCustomers(isAuth ? CANONICAL_ENTERPRISE_CUSTOMERS : DEMO_ANONYMIZED_CUSTOMERS);
+    } catch (e) {
+      console.warn('Failed to save to localStorage', e);
     }
   }, [user]);
 
@@ -220,12 +236,18 @@ export default function CompanyVendorPage() {
   const [isSubmittingCustomer, setIsSubmittingCustomer] = useState(false);
   const [isUploadingBatch, setIsUploadingBatch] = useState(false);
 
-  // Sync to localStorage
+  // Sync to localStorage with anti-contamination safeguards
   useEffect(() => {
     try {
       const storageKey = isAuthorized ? 'cashpredix_companies_v2' : 'cashpredix_demo_companies_v2';
       const cleanCompanies = isAuthorized ? companies.filter((c) => !isTestCompany(c)) : companies;
-      localStorage.setItem(storageKey, JSON.stringify(cleanCompanies));
+      if (cleanCompanies && cleanCompanies.length > 0) {
+        // Prevent demo companies from ever contaminating authorized storage
+        if (isAuthorized && cleanCompanies.some((c) => c.name === 'Atlas Horizon Freight Corp.')) {
+          return;
+        }
+        localStorage.setItem(storageKey, JSON.stringify(cleanCompanies));
+      }
     } catch (e) {
       console.warn('Failed to save companies locally', e);
     }
@@ -234,9 +256,15 @@ export default function CompanyVendorPage() {
   useEffect(() => {
     try {
       const storageKey = isAuthorized ? 'cashpredix_customers_v2' : 'cashpredix_demo_customers_v2';
-      localStorage.setItem(storageKey, JSON.stringify(customers));
-      if (isAuthorized) {
-        localStorage.setItem('cashpredix_vendors_v2', JSON.stringify(customers));
+      if (customers && customers.length > 0) {
+        // Prevent demo customers from ever contaminating authorized storage
+        if (isAuthorized && !customers.some((c) => c.name.includes('JPMorgan') || c.name.includes('Bank of America'))) {
+          return;
+        }
+        localStorage.setItem(storageKey, JSON.stringify(customers));
+        if (isAuthorized) {
+          localStorage.setItem('cashpredix_vendors_v2', JSON.stringify(customers));
+        }
       }
     } catch (e) {
       console.warn('Failed to save customers locally', e);
