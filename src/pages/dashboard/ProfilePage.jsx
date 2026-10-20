@@ -340,7 +340,7 @@ export default function ProfilePage() {
               <ShieldCheck className="w-3.5 h-3.5" />
               Synced with Supabase Auth Metadata
             </span>
-            <span>Week 3 Verified</span>
+            <span>Identity Verified</span>
           </div>
         </div>
 

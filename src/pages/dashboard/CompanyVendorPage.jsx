@@ -9,7 +9,6 @@ import {
   Plus,
   AlertCircle,
   Loader2,
-  Sparkles,
   Clock,
   ShieldCheck,
   Briefcase,
@@ -500,11 +499,6 @@ export default function CompanyVendorPage() {
           >
             <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin text-blue-500' : ''}`} />
           </button>
-
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800/40 text-xs font-semibold">
-            <Sparkles className="w-4 h-4 text-blue-500" />
-            <span>Week 3 Feature Sprint</span>
-          </div>
         </div>
       </div>
 

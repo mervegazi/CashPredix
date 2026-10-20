@@ -36,7 +36,7 @@ const NAV_ITEMS = [
     name: 'Create Company & Vendor',
     path: '/dashboard/company-vendor',
     icon: Building2,
-    badge: 'Week 3',
+    badge: null,
   },
   {
     name: 'Cashflow Predicts',

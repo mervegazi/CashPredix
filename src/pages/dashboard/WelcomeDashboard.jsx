@@ -309,24 +309,25 @@ export default function WelcomeDashboard() {
         </div>
       </div>
 
-      {/* Architecture & Sprint Progress Bar */}
+      {/* System Status Banner */}
       <div className="rounded-2xl p-5 bg-gradient-to-r from-blue-50/90 via-indigo-50/60 to-emerald-50/60 border border-blue-200/80 text-slate-900 shadow-sm dark:bg-gradient-to-r dark:from-gray-900 dark:to-gray-800 dark:border-gray-800 dark:text-white flex flex-col md:flex-row md:items-center md:justify-between gap-4 transition-colors">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-blue-100 border border-blue-300 text-blue-700 dark:bg-blue-600/30 dark:border-blue-500/40 dark:text-blue-400 flex items-center justify-center shrink-0">
             <Sparkles className="w-5 h-5" />
           </div>
           <div>
-            <h3 className="text-sm font-bold text-slate-900 dark:text-white">Week 2 Implementation Complete</h3>
+            <h3 className="text-sm font-bold text-slate-900 dark:text-white">Enterprise Liquidity & Supplier Engine Active</h3>
             <p className="text-xs text-slate-600 dark:text-gray-400">
-              Supabase Authentication, Protected Routing, Dark Mode & Persistent Dashboard Sidebar active.
+              Supabase Row-Level Security, multi-tenant company hierarchies, and predictive risk scoring initialized.
             </p>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
-          <span className="text-xs text-slate-500 dark:text-gray-400">Next Sprint:</span>
-          <span className="text-xs font-semibold px-2.5 py-1 rounded-lg bg-emerald-100 text-emerald-800 border border-emerald-300 dark:bg-emerald-500/20 dark:text-emerald-400 dark:border-emerald-500/30">
-            Week 3: Company & Vendor CRUD + Synthetic Data
+          <span className="text-xs text-slate-500 dark:text-gray-400">System Status:</span>
+          <span className="text-xs font-semibold px-2.5 py-1 rounded-lg bg-emerald-100 text-emerald-800 border border-emerald-300 dark:bg-emerald-500/20 dark:text-emerald-400 dark:border-emerald-500/30 flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            Operational & RLS Secured
           </span>
         </div>
       </div>

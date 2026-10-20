@@ -27,7 +27,7 @@ export default function CashflowPredictsPlaceholder() {
 
         <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800/40 text-xs font-semibold self-start sm:self-auto">
           <BrainCircuit className="w-4 h-4 text-purple-500" />
-          <span>Week 4-6 ML Sprint</span>
+          <span>AI Predictive Engine</span>
         </div>
       </div>
 
@@ -120,7 +120,7 @@ export default function CashflowPredictsPlaceholder() {
           <div className="text-center px-4">
             <LineChart className="w-10 h-10 text-blue-600 dark:text-blue-400 mx-auto mb-2 animate-bounce" />
             <p className="text-sm font-semibold text-slate-800 dark:text-gray-200">
-              Machine Learning Model Pipeline will connect in Week 4 & Week 5
+              Machine Learning Model Pipeline Integration In Progress
             </p>
             <p className="text-xs text-slate-500 dark:text-gray-400 mt-1 max-w-lg mx-auto">
               Synthetic payment datasets and ML regression models will feed directly into this interactive dashboard canvas.
