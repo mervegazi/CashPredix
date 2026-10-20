@@ -38,56 +38,72 @@ export function formatAuthError(err) {
 }
 
 
+function getInitialUserAndSession() {
+  // 1. Check persistent user session
+  try {
+    const savedUserStr = localStorage.getItem('cashpredix_user_session');
+    if (savedUserStr) {
+      const parsed = JSON.parse(savedUserStr);
+      if (parsed && (parsed.email || parsed.id)) {
+        return {
+          user: parsed,
+          session: { user: parsed, access_token: 'user-session-token' },
+        };
+      }
+    }
+  } catch {}
+
+  // 2. Check enterprise authorized session (Merve / Prof. Sarah)
+  try {
+    const savedAuth = localStorage.getItem('cashpredix_auth_session');
+    if (savedAuth) {
+      const parsed = JSON.parse(savedAuth);
+      if (parsed && isEnterpriseDataAuthorized(parsed)) {
+        return {
+          user: parsed,
+          session: { user: parsed, access_token: 'auth-session-token' },
+        };
+      }
+    }
+  } catch {}
+
+  // 3. Check Supabase client cached token
+  try {
+    const sbToken = localStorage.getItem('sb-fvppactxgsfqhwariqxh-auth-token');
+    if (sbToken) {
+      const parsedSb = JSON.parse(sbToken);
+      if (parsedSb?.user) {
+        return {
+          user: parsedSb.user,
+          session: parsedSb,
+        };
+      }
+    }
+  } catch {}
+
+  // 4. Fallback to demo session only if explicitly saved and no real session exists
+  try {
+    const savedDemo = localStorage.getItem('cashpredix_demo_session');
+    if (savedDemo) {
+      const parsed = JSON.parse(savedDemo);
+      if (parsed) {
+        return {
+          user: parsed,
+          session: { user: parsed, access_token: 'demo-token' },
+        };
+      }
+    }
+  } catch {}
+
+  return { user: null, session: null };
+}
+
 const AuthContext = createContext();
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(() => {
-    // Check persistent authorized enterprise session first
-    const savedAuth = localStorage.getItem('cashpredix_auth_session');
-    if (savedAuth) {
-      try {
-        const parsed = JSON.parse(savedAuth);
-        if (parsed && isEnterpriseDataAuthorized(parsed)) {
-          return parsed;
-        }
-      } catch {
-        // ignore
-      }
-    }
-    const savedDemo = localStorage.getItem('cashpredix_demo_session');
-    if (savedDemo) {
-      try {
-        return JSON.parse(savedDemo);
-      } catch {
-        return null;
-      }
-    }
-    return null;
-  });
-
-  const [session, setSession] = useState(() => {
-    const savedAuth = localStorage.getItem('cashpredix_auth_session');
-    if (savedAuth) {
-      try {
-        const parsed = JSON.parse(savedAuth);
-        if (parsed && isEnterpriseDataAuthorized(parsed)) {
-          return { user: parsed, access_token: 'auth-session-token' };
-        }
-      } catch {
-        // ignore
-      }
-    }
-    const savedDemo = localStorage.getItem('cashpredix_demo_session');
-    if (savedDemo) {
-      try {
-        const parsed = JSON.parse(savedDemo);
-        return { user: parsed, access_token: 'demo-token' };
-      } catch {
-        return null;
-      }
-    }
-    return null;
-  });
+  const initialAuthState = getInitialUserAndSession();
+  const [user, setUser] = useState(initialAuthState.user);
+  const [session, setSession] = useState(initialAuthState.session);
 
   const [loading, setLoading] = useState(true);
   const [supabaseStatus, setSupabaseStatus] = useState('checking'); // 'connected' | 'paused' | 'error'
@@ -152,11 +168,15 @@ export function AuthProvider({ children }) {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, newSession) => {
       if (!isMounted) return;
-      if (newSession) {
+      if (newSession?.user) {
         setSession(newSession);
         setUser(newSession.user);
         setSupabaseStatus('connected');
         localStorage.removeItem('cashpredix_demo_session');
+        localStorage.setItem('cashpredix_user_session', JSON.stringify(newSession.user));
+        if (isEnterpriseDataAuthorized(newSession.user)) {
+          localStorage.setItem('cashpredix_auth_session', JSON.stringify(newSession.user));
+        }
 
         // Redirect to change-password if recovery link triggered
         if (event === 'PASSWORD_RECOVERY') {
@@ -165,7 +185,9 @@ export function AuthProvider({ children }) {
             window.location.replace(target);
           }
         }
-      } else if (!localStorage.getItem('cashpredix_demo_session') && !localStorage.getItem('cashpredix_auth_session')) {
+      } else if (!localStorage.getItem('cashpredix_demo_session')) {
+        localStorage.removeItem('cashpredix_user_session');
+        localStorage.removeItem('cashpredix_auth_session');
         setSession(null);
         setUser(null);
       }
@@ -187,8 +209,11 @@ export function AuthProvider({ children }) {
       if (error) throw error;
       setSupabaseStatus('connected');
       localStorage.removeItem('cashpredix_demo_session');
-      if (data?.user && isEnterpriseDataAuthorized(data.user)) {
-        localStorage.setItem('cashpredix_auth_session', JSON.stringify(data.user));
+      if (data?.user) {
+        localStorage.setItem('cashpredix_user_session', JSON.stringify(data.user));
+        if (isEnterpriseDataAuthorized(data.user)) {
+          localStorage.setItem('cashpredix_auth_session', JSON.stringify(data.user));
+        }
       }
       return data;
     } catch (err) {
@@ -222,6 +247,10 @@ export function AuthProvider({ children }) {
       });
       if (error) throw error;
       setSupabaseStatus('connected');
+      if (data?.session?.user) {
+        localStorage.removeItem('cashpredix_demo_session');
+        localStorage.setItem('cashpredix_user_session', JSON.stringify(data.session.user));
+      }
       return data;
     } catch (err) {
       if (err.status === 502 || err.message?.includes('502') || err.message?.includes('Failed to fetch')) {
@@ -236,6 +265,7 @@ export function AuthProvider({ children }) {
     try {
       localStorage.removeItem('cashpredix_demo_session');
       localStorage.removeItem('cashpredix_auth_session');
+      localStorage.removeItem('cashpredix_user_session');
       await supabase.auth.signOut().catch(() => {});
     } finally {
       setUser(null);
@@ -332,6 +362,7 @@ export function AuthProvider({ children }) {
       },
     };
     localStorage.removeItem('cashpredix_demo_session');
+    localStorage.setItem('cashpredix_user_session', JSON.stringify(authUser));
     localStorage.setItem('cashpredix_auth_session', JSON.stringify(authUser));
     setUser(authUser);
     setSession({ user: authUser, access_token: 'auth-session-token' });
@@ -348,6 +379,7 @@ export function AuthProvider({ children }) {
       if (error) throw error;
       localStorage.removeItem('cashpredix_demo_session');
       localStorage.removeItem('cashpredix_auth_session');
+      localStorage.removeItem('cashpredix_user_session');
       return data;
     } catch {
       // If Supabase is paused or credentials not found, activate local demo session
@@ -364,6 +396,7 @@ export function AuthProvider({ children }) {
       },
     };
     localStorage.removeItem('cashpredix_auth_session');
+    localStorage.removeItem('cashpredix_user_session');
     localStorage.setItem('cashpredix_demo_session', JSON.stringify(demoUser));
     setUser(demoUser);
     setSession({ user: demoUser, access_token: 'mock-session-token' });

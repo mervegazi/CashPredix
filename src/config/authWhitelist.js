@@ -26,23 +26,83 @@ export const AUTHORIZED_ENTERPRISE_EMAILS = [
  * @returns {boolean}
  */
 export function isEnterpriseDataAuthorized(user) {
-  if (!user || !user.email) return false;
+  if (!user) return false;
 
   // Unauthenticated / Quick Demo session without password is never authorized
   if (user.email === 'demo@cashpredix.com' || user.id === 'demo-exec-uuid-999') {
     return false;
   }
 
-  const emailLower = user.email.toLowerCase().trim();
+  if (user.user_metadata?.is_authorized_enterprise === true) {
+    return true;
+  }
+
+  if (user.id === 'merve-owner-uuid-001' || user.id === 'f1fca857-ef42-40ae-8537-2daf6ba7c937' || user.id === 'sarah-prof-uuid-002') {
+    return true;
+  }
+
+  const email = (user.email || user.user_metadata?.email || '').toLowerCase().trim();
+  if (!email) return false;
 
   // Match authorized accounts
   return AUTHORIZED_ENTERPRISE_EMAILS.some((allowed) => {
     const cleanAllowed = allowed.toLowerCase().trim();
-    if (emailLower === cleanAllowed) return true;
-    if (emailLower.startsWith(cleanAllowed) || cleanAllowed.startsWith(emailLower)) return true;
-    if (emailLower.includes('gaziimerve') || emailLower.includes('mervegazi') || emailLower.includes('sarah.zelikovitz')) return true;
+    if (email === cleanAllowed) return true;
+    if (email.startsWith(cleanAllowed) || cleanAllowed.startsWith(email)) return true;
+    if (email.includes('gaziimerve') || email.includes('mervegazi') || email.includes('sarah.zelikovitz')) return true;
     return false;
   });
+}
+
+/**
+ * Resolves the isolated data tenant scope for the current user.
+ * Guarantees that:
+ * 1. Merve and Prof. Sarah access their enterprise corporate portfolio.
+ * 2. Every other / new user receives their own isolated blank/custom dataset.
+ * 3. Demo users operate in their synthetic sandbox.
+ * @param {object|null} user
+ * @returns {{ type: 'enterprise'|'regular'|'demo', key: string, email: string, isEnterprise: boolean }}
+ */
+export function getUserScope(user) {
+  if (!user || (!user.email && !user.id)) {
+    return { type: 'demo', key: 'demo', email: 'demo@cashpredix.com', isEnterprise: false };
+  }
+
+  const email = (user.email || user.user_metadata?.email || '').toLowerCase().trim();
+
+  // Explicit demo session
+  if (email === 'demo@cashpredix.com' || user.id === 'demo-exec-uuid-999') {
+    return { type: 'demo', key: 'demo', email: 'demo@cashpredix.com', isEnterprise: false };
+  }
+
+  // Enterprise Authorized: Merve Gazi or Prof. Sarah Zelikovitz
+  if (isEnterpriseDataAuthorized(user)) {
+    const isSarah = email.includes('sarah.zelikovitz') || email.includes('zelikovitz') || user.id === 'sarah-prof-uuid-002';
+    if (isSarah) {
+      return {
+        type: 'enterprise',
+        key: 'sarah_enterprise',
+        email: 'sarah.zelikovitz@csi.cuny.edu',
+        isEnterprise: true,
+      };
+    }
+    return {
+      type: 'enterprise',
+      key: 'merve_enterprise',
+      email: 'gaziimervee@gmail.com',
+      isEnterprise: true,
+    };
+  }
+
+  // Regular / New Registered User: completely isolated storage
+  const rawId = email || user.id || 'anonymous_user';
+  const sanitized = rawId.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+  return {
+    type: 'regular',
+    key: `usr_${sanitized}`,
+    email,
+    isEnterprise: false,
+  };
 }
 
 /**

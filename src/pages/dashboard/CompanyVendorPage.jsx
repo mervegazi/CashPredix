@@ -33,7 +33,7 @@ import {
   DEMO_ANONYMIZED_COMPANIES,
   DEMO_ANONYMIZED_CUSTOMERS,
 } from '../../data/seedData';
-import { isEnterpriseDataAuthorized, isTestCompany } from '../../config/authWhitelist';
+import { isTestCompany, getUserScope } from '../../config/authWhitelist';
 
 const DEFAULT_INDUSTRIES = [
   'Technology & SaaS',
@@ -117,19 +117,33 @@ export default function CompanyVendorPage() {
   const [customerSearches, setCustomerSearches] = useState({});
   const [customerCategories, setCustomerCategories] = useState({});
   const [customerPages, setCustomerPages] = useState({});
-  const isAuthorized = isEnterpriseDataAuthorized(user);
 
-  const getInitialCompanies = (isAuth) => {
-    if (isAuth) {
+  /**
+   * Resolves initial companies based on user tenant scope:
+   * - Enterprise (Merve & Prof. Sarah): Full 4 canonical companies (CashPredix, Apex, Vanguard, Quantum).
+   * - Demo: Anonymized synthetic companies.
+   * - New Registered Users: EMPTY array ([]) so they start fresh with their own company data.
+   */
+  const getInitialCompaniesForUser = (currentUser) => {
+    const scope = getUserScope(currentUser);
+    const storageKey = `cashpredix_companies_${scope.key}`;
+
+    if (scope.isEnterprise) {
       try {
-        const saved = localStorage.getItem('cashpredix_companies_v2');
+        const saved = localStorage.getItem(storageKey) || localStorage.getItem('cashpredix_companies_v2');
         if (saved) {
           const parsed = JSON.parse(saved);
           if (Array.isArray(parsed) && parsed.length > 0) {
-            const isContaminated = parsed.some((c) => c.name === 'Atlas Horizon Freight Corp.' || c.name === 'Aegis Healthcare Systems Network' || c.name === 'Cobalt Capital & Asset Management');
+            const isContaminated = parsed.some(
+              (c) =>
+                c.name === 'Atlas Horizon Freight Corp.' ||
+                c.name === 'Aegis Healthcare Systems Network' ||
+                c.name === 'Cobalt Capital & Asset Management'
+            );
             if (!isContaminated) {
-              const clean = parsed.filter((c) => !isTestCompany(c));
-              return clean.length > 0 ? clean : CANONICAL_ENTERPRISE_COMPANIES;
+              const canonicalIds = new Set(CANONICAL_ENTERPRISE_COMPANIES.map((c) => c.id));
+              const userAdded = parsed.filter((c) => !canonicalIds.has(c.id) && !isTestCompany(c));
+              return [...CANONICAL_ENTERPRISE_COMPANIES, ...userAdded];
             }
           }
         }
@@ -137,9 +151,11 @@ export default function CompanyVendorPage() {
         console.warn(e);
       }
       return CANONICAL_ENTERPRISE_COMPANIES;
-    } else {
+    }
+
+    if (scope.type === 'demo') {
       try {
-        const saved = localStorage.getItem('cashpredix_demo_companies_v2');
+        const saved = localStorage.getItem(storageKey) || localStorage.getItem('cashpredix_demo_companies_v2');
         if (saved) {
           const parsed = JSON.parse(saved);
           if (Array.isArray(parsed) && parsed.length > 0) return parsed;
@@ -149,18 +165,46 @@ export default function CompanyVendorPage() {
       }
       return DEMO_ANONYMIZED_COMPANIES;
     }
+
+    // Regular / New User: defaults to empty array
+    try {
+      const saved = localStorage.getItem(storageKey);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) return parsed;
+      }
+    } catch (e) {
+      console.warn(e);
+    }
+    return [];
   };
 
-  const getInitialCustomers = (isAuth) => {
-    if (isAuth) {
+  /**
+   * Resolves initial customers based on user tenant scope:
+   * - Enterprise (Merve & Prof. Sarah): Full 280 corporate counterparties (JPMorgan Chase, Bank of America, Goldman Sachs).
+   * - Demo: Anonymized synthetic customers.
+   * - New Registered Users: EMPTY array ([]) so they start fresh with their own customer ledger.
+   */
+  const getInitialCustomersForUser = (currentUser) => {
+    const scope = getUserScope(currentUser);
+    const storageKey = `cashpredix_customers_${scope.key}`;
+
+    if (scope.isEnterprise) {
       try {
-        const saved = localStorage.getItem('cashpredix_customers_v2');
+        const saved = localStorage.getItem(storageKey) || localStorage.getItem('cashpredix_customers_v2');
         if (saved) {
           const parsed = JSON.parse(saved);
           if (Array.isArray(parsed) && parsed.length > 0) {
-            const hasReal = parsed.some((c) => c.name.includes('JPMorgan') || c.name.includes('Bank of America'));
+            const hasReal = parsed.some(
+              (c) =>
+                c.name?.includes('JPMorgan') ||
+                c.name?.includes('Bank of America') ||
+                c.name?.includes('Goldman Sachs')
+            );
             if (hasReal) {
-              return parsed;
+              const canonicalIds = new Set(CANONICAL_ENTERPRISE_CUSTOMERS.map((c) => c.id));
+              const userAdded = parsed.filter((c) => !canonicalIds.has(c.id));
+              return [...CANONICAL_ENTERPRISE_CUSTOMERS, ...userAdded];
             }
           }
         }
@@ -168,9 +212,11 @@ export default function CompanyVendorPage() {
         console.warn(e);
       }
       return CANONICAL_ENTERPRISE_CUSTOMERS;
-    } else {
+    }
+
+    if (scope.type === 'demo') {
       try {
-        const saved = localStorage.getItem('cashpredix_demo_customers_v2');
+        const saved = localStorage.getItem(storageKey) || localStorage.getItem('cashpredix_demo_customers_v2');
         if (saved) {
           const parsed = JSON.parse(saved);
           if (Array.isArray(parsed) && parsed.length > 0) return parsed;
@@ -180,64 +226,42 @@ export default function CompanyVendorPage() {
       }
       return DEMO_ANONYMIZED_CUSTOMERS;
     }
+
+    // Regular / New User: defaults to empty array
+    try {
+      const saved = localStorage.getItem(storageKey);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) return parsed;
+      }
+    } catch (e) {
+      console.warn(e);
+    }
+    return [];
   };
 
-  // Entities state
-  const [companies, setCompanies] = useState(() => getInitialCompanies(isAuthorized));
-  const [customers, setCustomers] = useState(() => getInitialCustomers(isAuthorized));
+  // Entities state scoped to current user
+  const [companies, setCompanies] = useState(() => getInitialCompaniesForUser(user));
+  const [customers, setCustomers] = useState(() => getInitialCustomersForUser(user));
 
-  // Re-evaluate data when authenticated user changes (Authorized vs Demo Privacy mode)
+  // Re-evaluate data immediately whenever authenticated user changes
   useEffect(() => {
-    const isAuth = isEnterpriseDataAuthorized(user);
-    if (isAuth) {
-      try {
-        const savedComps = localStorage.getItem('cashpredix_companies_v2');
-        let authComps = CANONICAL_ENTERPRISE_COMPANIES;
-        if (savedComps) {
-          const parsed = JSON.parse(savedComps);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            const isContaminated = parsed.some((c) => c.name === 'Atlas Horizon Freight Corp.' || c.name === 'Aegis Healthcare Systems Network' || c.name === 'Cobalt Capital & Asset Management');
-            if (!isContaminated) {
-              const userAdded = parsed.filter((c) => !['comp-cashpredix', 'comp-apex', 'comp-vanguard', 'comp-quantum'].includes(c.id) && !isTestCompany(c));
-              authComps = [...CANONICAL_ENTERPRISE_COMPANIES, ...userAdded];
-            }
-          }
-        }
+    const initialComps = getInitialCompaniesForUser(user);
+    const initialCusts = getInitialCustomersForUser(user);
+    setCompanies(initialComps);
+    setCustomers(initialCusts);
 
-        const savedCusts = localStorage.getItem('cashpredix_customers_v2');
-        let authCusts = CANONICAL_ENTERPRISE_CUSTOMERS;
-        if (savedCusts) {
-          const parsed = JSON.parse(savedCusts);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            const hasReal = parsed.some((c) => c.name.includes('JPMorgan') || c.name.includes('Bank of America'));
-            if (hasReal) {
-              const canonicalIds = new Set(CANONICAL_ENTERPRISE_CUSTOMERS.map((c) => c.id));
-              const userAdded = parsed.filter((c) => !canonicalIds.has(c.id));
-              authCusts = [...CANONICAL_ENTERPRISE_CUSTOMERS, ...userAdded];
-            }
-          }
-        }
-
-        setCompanies(authComps);
-        setCustomers(authCusts);
-        localStorage.setItem('cashpredix_companies_v2', JSON.stringify(authComps));
-        localStorage.setItem('cashpredix_customers_v2', JSON.stringify(authCusts));
-        localStorage.setItem('cashpredix_vendors_v2', JSON.stringify(authCusts));
-      } catch {
-        setCompanies(CANONICAL_ENTERPRISE_COMPANIES);
-        setCustomers(CANONICAL_ENTERPRISE_CUSTOMERS);
+    const scope = getUserScope(user);
+    try {
+      localStorage.setItem(`cashpredix_companies_${scope.key}`, JSON.stringify(initialComps));
+      localStorage.setItem(`cashpredix_customers_${scope.key}`, JSON.stringify(initialCusts));
+      if (scope.isEnterprise) {
+        localStorage.setItem('cashpredix_companies_v2', JSON.stringify(initialComps));
+        localStorage.setItem('cashpredix_customers_v2', JSON.stringify(initialCusts));
+        localStorage.setItem('cashpredix_vendors_v2', JSON.stringify(initialCusts));
       }
-    } else {
-      const demoComps = getInitialCompanies(false);
-      const demoCusts = getInitialCustomers(false);
-      setCompanies(demoComps);
-      setCustomers(demoCusts);
-      try {
-        localStorage.setItem('cashpredix_demo_companies_v2', JSON.stringify(demoComps));
-        localStorage.setItem('cashpredix_demo_customers_v2', JSON.stringify(demoCusts));
-      } catch (e) {
-        console.warn(e);
-      }
+    } catch (e) {
+      console.warn(e);
     }
   }, [user]);
 
@@ -270,43 +294,37 @@ export default function CompanyVendorPage() {
   const [isSubmittingCustomer, setIsSubmittingCustomer] = useState(false);
   const [isUploadingBatch, setIsUploadingBatch] = useState(false);
 
-  // Sync to localStorage with anti-contamination safeguards
+  // Sync to user-isolated localStorage whenever companies change
   useEffect(() => {
     try {
-      const storageKey = isAuthorized ? 'cashpredix_companies_v2' : 'cashpredix_demo_companies_v2';
-      const cleanCompanies = isAuthorized ? companies.filter((c) => !isTestCompany(c)) : companies;
-      if (cleanCompanies && cleanCompanies.length > 0) {
-        // Prevent demo companies from ever contaminating authorized storage
-        if (isAuthorized && cleanCompanies.some((c) => c.name === 'Atlas Horizon Freight Corp.')) {
-          return;
-        }
-        localStorage.setItem(storageKey, JSON.stringify(cleanCompanies));
+      const scope = getUserScope(user);
+      const storageKey = `cashpredix_companies_${scope.key}`;
+      const cleanCompanies = scope.isEnterprise ? companies.filter((c) => !isTestCompany(c)) : companies;
+      localStorage.setItem(storageKey, JSON.stringify(cleanCompanies));
+      if (scope.isEnterprise) {
+        localStorage.setItem('cashpredix_companies_v2', JSON.stringify(cleanCompanies));
       }
     } catch (e) {
       console.warn('Failed to save companies locally', e);
     }
-  }, [companies, isAuthorized]);
+  }, [companies, user]);
 
+  // Sync to user-isolated localStorage whenever customers change
   useEffect(() => {
     try {
-      const storageKey = isAuthorized ? 'cashpredix_customers_v2' : 'cashpredix_demo_customers_v2';
-      if (customers && customers.length > 0) {
-        // Prevent demo customers from ever contaminating authorized storage
-        if (isAuthorized && !customers.some((c) => c.name.includes('JPMorgan') || c.name.includes('Bank of America'))) {
-          return;
-        }
-        localStorage.setItem(storageKey, JSON.stringify(customers));
-        if (isAuthorized) {
-          localStorage.setItem('cashpredix_vendors_v2', JSON.stringify(customers));
-        }
+      const scope = getUserScope(user);
+      const storageKey = `cashpredix_customers_${scope.key}`;
+      localStorage.setItem(storageKey, JSON.stringify(customers));
+      if (scope.isEnterprise) {
+        localStorage.setItem('cashpredix_customers_v2', JSON.stringify(customers));
+        localStorage.setItem('cashpredix_vendors_v2', JSON.stringify(customers));
       }
     } catch (e) {
       console.warn('Failed to save customers locally', e);
     }
-  }, [customers, isAuthorized]);
+  }, [customers, user]);
 
-  // Ingest Enterprise Dataset into Supabase (4 Companies, 280 Customers)
-  // Fetch real data from Supabase if connected
+  // Fetch real data from Supabase if connected and tables exist
   const loadSupabaseData = async () => {
     if (!user?.id) return;
     setIsLoading(true);
@@ -314,6 +332,7 @@ export default function CompanyVendorPage() {
       const { data: dbCompanies, error: compErr } = await supabase
         .from('companies')
         .select('*')
+        .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
       if (dbCompanies && !compErr && dbCompanies.length > 0) {
@@ -323,7 +342,6 @@ export default function CompanyVendorPage() {
           return [...dbCompanies, ...localOnly];
         });
         
-        // Try customers table first, fallback to vendors table
         let { data: dbCustomers, error: custErr } = await supabase
           .from('customers')
           .select('*')
@@ -452,10 +470,11 @@ export default function CompanyVendorPage() {
     }
 
     setIsSubmittingCompany(true);
+    const scope = getUserScope(user);
     const newCompanyId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `comp-${Date.now()}`;
     const newCompany = {
       id: newCompanyId,
-      user_id: user?.id || 'demo-user-id',
+      user_id: user?.id || scope.key,
       name: companyForm.name.trim(),
       industry: companyForm.industry,
       created_at: new Date().toISOString(),
