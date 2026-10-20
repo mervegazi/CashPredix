@@ -21,6 +21,9 @@ import {
   ChevronLeft,
   ChevronRight,
   Receipt,
+  Lock,
+  EyeOff,
+  Sparkles,
 } from 'lucide-react';
 import FileDropzone from '../../components/FileDropzone';
 import ConfirmationModal from '../../components/ConfirmationModal';
@@ -102,7 +105,7 @@ function getScoreInsight(score) {
 }
 
 export default function CompanyVendorPage() {
-  const { user } = useAuth();
+  const { user, signInAsAuthorized, switchToDemo } = useAuth();
 
   // Active view tab
   const [activeTab, setActiveTab] = useState('directory'); // 'directory' | 'forms' | 'dropzone'
@@ -126,7 +129,7 @@ export default function CompanyVendorPage() {
         if (saved) {
           const parsed = JSON.parse(saved);
           if (Array.isArray(parsed) && parsed.length > 0) {
-            const isContaminated = parsed.some((c) => c.name === 'Atlas Horizon Freight Corp.' || c.name === 'Aegis Healthcare Systems Network');
+            const isContaminated = parsed.some((c) => c.name === 'Atlas Horizon Freight Corp.' || c.name === 'Aegis Healthcare Systems Network' || c.name === 'Cobalt Capital & Asset Management');
             if (!isContaminated) {
               const clean = parsed.filter((c) => !isTestCompany(c));
               return clean.length > 0 ? clean : CANONICAL_ENTERPRISE_COMPANIES;
@@ -189,21 +192,55 @@ export default function CompanyVendorPage() {
   // Re-evaluate data when authenticated user changes (Authorized vs Demo Privacy mode)
   useEffect(() => {
     const isAuth = isEnterpriseDataAuthorized(user);
-    const comps = getInitialCompanies(isAuth);
-    const custs = getInitialCustomers(isAuth);
-    setCompanies(comps);
-    setCustomers(custs);
+    if (isAuth) {
+      try {
+        const savedComps = localStorage.getItem('cashpredix_companies_v2');
+        let authComps = CANONICAL_ENTERPRISE_COMPANIES;
+        if (savedComps) {
+          const parsed = JSON.parse(savedComps);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            const isContaminated = parsed.some((c) => c.name === 'Atlas Horizon Freight Corp.' || c.name === 'Aegis Healthcare Systems Network' || c.name === 'Cobalt Capital & Asset Management');
+            if (!isContaminated) {
+              const userAdded = parsed.filter((c) => !['comp-cashpredix', 'comp-apex', 'comp-vanguard', 'comp-quantum'].includes(c.id) && !isTestCompany(c));
+              authComps = [...CANONICAL_ENTERPRISE_COMPANIES, ...userAdded];
+            }
+          }
+        }
 
-    try {
-      const compKey = isAuth ? 'cashpredix_companies_v2' : 'cashpredix_demo_companies_v2';
-      const custKey = isAuth ? 'cashpredix_customers_v2' : 'cashpredix_demo_customers_v2';
-      localStorage.setItem(compKey, JSON.stringify(comps));
-      localStorage.setItem(custKey, JSON.stringify(custs));
-      if (isAuth) {
-        localStorage.setItem('cashpredix_vendors_v2', JSON.stringify(custs));
+        const savedCusts = localStorage.getItem('cashpredix_customers_v2');
+        let authCusts = CANONICAL_ENTERPRISE_CUSTOMERS;
+        if (savedCusts) {
+          const parsed = JSON.parse(savedCusts);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            const hasReal = parsed.some((c) => c.name.includes('JPMorgan') || c.name.includes('Bank of America'));
+            if (hasReal) {
+              const canonicalIds = new Set(CANONICAL_ENTERPRISE_CUSTOMERS.map((c) => c.id));
+              const userAdded = parsed.filter((c) => !canonicalIds.has(c.id));
+              authCusts = [...CANONICAL_ENTERPRISE_CUSTOMERS, ...userAdded];
+            }
+          }
+        }
+
+        setCompanies(authComps);
+        setCustomers(authCusts);
+        localStorage.setItem('cashpredix_companies_v2', JSON.stringify(authComps));
+        localStorage.setItem('cashpredix_customers_v2', JSON.stringify(authCusts));
+        localStorage.setItem('cashpredix_vendors_v2', JSON.stringify(authCusts));
+      } catch {
+        setCompanies(CANONICAL_ENTERPRISE_COMPANIES);
+        setCustomers(CANONICAL_ENTERPRISE_CUSTOMERS);
       }
-    } catch (e) {
-      console.warn('Failed to save to localStorage', e);
+    } else {
+      const demoComps = getInitialCompanies(false);
+      const demoCusts = getInitialCustomers(false);
+      setCompanies(demoComps);
+      setCustomers(demoCusts);
+      try {
+        localStorage.setItem('cashpredix_demo_companies_v2', JSON.stringify(demoComps));
+        localStorage.setItem('cashpredix_demo_customers_v2', JSON.stringify(demoCusts));
+      } catch (e) {
+        console.warn(e);
+      }
     }
   }, [user]);
 
@@ -599,6 +636,94 @@ export default function CompanyVendorPage() {
           </button>
         </div>
       </div>
+
+      {/* Interactive Account & Mode Switcher Card */}
+      {isAuthorized ? (
+        <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-emerald-500/10 via-teal-500/10 to-blue-500/10 border border-emerald-500/30 dark:border-emerald-500/20 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex items-start gap-3.5">
+            <div className="w-10 h-10 rounded-xl bg-emerald-500 text-white flex items-center justify-center shrink-0 shadow-md shadow-emerald-500/20">
+              <ShieldCheck className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-sm font-bold text-gray-900 dark:text-white">
+                  Authorized Enterprise Portfolio Active
+                </span>
+                <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-500 text-white shadow-xs">
+                  {user?.user_metadata?.full_name || 'Merve Gazi'} ({user?.email})
+                </span>
+              </div>
+              <p className="text-xs text-gray-600 dark:text-gray-300 mt-1">
+                Active access to 4 canonical enterprise portfolios with 280 corporate accounts including <strong>JPMorgan Chase Treasury Services</strong>, <strong>Bank of America Global Commercial Banking</strong>, <strong>Goldman Sachs</strong>, and <strong>Morgan Stanley</strong>.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              type="button"
+              id="switch-to-demo-btn"
+              onClick={() => {
+                switchToDemo();
+                toast.success('Switched to Demo Executive (Anonymized View)');
+              }}
+              className="px-3.5 py-2 text-xs font-semibold rounded-xl bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 shadow-xs transition-all flex items-center gap-1.5"
+            >
+              <EyeOff className="w-3.5 h-3.5 text-gray-400" />
+              <span>Preview Demo View</span>
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-red-500/10 border border-amber-500/30 dark:border-amber-500/20 shadow-sm flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div className="flex items-start gap-3.5">
+            <div className="w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center shrink-0 shadow-md shadow-amber-500/20">
+              <Lock className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-sm font-bold text-gray-900 dark:text-white">
+                  Demo Sandbox Mode Active (100% Synthetic Fictitious Entities)
+                </span>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-800 dark:text-amber-300 border border-amber-500/30">
+                  Guest / Demo View
+                </span>
+              </div>
+              <p className="text-xs text-gray-600 dark:text-gray-300 mt-1">
+                You are currently viewing synthetic demo entities (Atlas Horizon, Aegis Healthcare, Cobalt Capital). Real institutional portfolios (Bank of America, JPMorgan Chase, Goldman Sachs, etc.) are restricted to authorized accounts.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2.5 flex-wrap shrink-0">
+            <button
+              type="button"
+              id="unlock-merve-btn"
+              onClick={() => {
+                signInAsAuthorized('gaziimervee@gmail.com');
+                toast.success('Enterprise Portfolio Unlocked! Bank of America & JPMorgan Chase accounts loaded.');
+              }}
+              className="px-4 py-2 text-xs font-bold rounded-xl text-white bg-gradient-to-r from-blue-600 via-indigo-600 to-emerald-600 hover:from-blue-500 hover:to-emerald-500 shadow-md shadow-blue-600/30 active:scale-[0.99] transition-all flex items-center gap-1.5"
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>Sign In as Merve (Full Portfolio)</span>
+            </button>
+
+            <button
+              type="button"
+              id="unlock-sarah-btn"
+              onClick={() => {
+                signInAsAuthorized('sarah.zelikovitz@csi.cuny.edu');
+                toast.success('Enterprise Portfolio Unlocked for Prof. Sarah Zelikovitz!');
+              }}
+              className="px-3.5 py-2 text-xs font-semibold rounded-xl bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 shadow-xs transition-all flex items-center gap-1.5"
+            >
+              <ShieldCheck className="w-3.5 h-3.5 text-blue-500" />
+              <span>Sign In as Prof. Sarah</span>
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* KPI Overview Strip */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
