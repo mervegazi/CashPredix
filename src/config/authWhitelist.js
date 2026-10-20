@@ -9,11 +9,15 @@
  */
 
 export const AUTHORIZED_ENTERPRISE_EMAILS = [
+  'gazimervee@gmail.com',
+  'gazimervee@gmail',
+  'gazimerve@gmail.com',
   'gaziimervee@gmail.com',
   'gaziimervee@gmail',
   'gaziimerve@gmail.com',
   'mervegazi@gmail.com',
   'mervegazi',
+  'gazimervee',
   'gaziimervee',
   'sarah.zelikovitz@csi.cuny.edu',
   'sarah.zelikovitz',
@@ -37,19 +41,33 @@ export function isEnterpriseDataAuthorized(user) {
     return true;
   }
 
-  if (user.id === 'merve-owner-uuid-001' || user.id === 'f1fca857-ef42-40ae-8537-2daf6ba7c937' || user.id === 'sarah-prof-uuid-002') {
+  if (
+    user.id === 'merve-owner-uuid-001' ||
+    user.id === 'f1fca857-ef42-40ae-8537-2daf6ba7c937' ||
+    user.id === 'sarah-prof-uuid-002'
+  ) {
+    return true;
+  }
+
+  // Check full_name in metadata (e.g. "Merve Gazi" or "Prof. Sarah Zelikovitz")
+  const fullName = (user.user_metadata?.full_name || '').toLowerCase().trim();
+  if (fullName.includes('merve') || (fullName.includes('sarah') && fullName.includes('zelikovitz'))) {
     return true;
   }
 
   const email = (user.email || user.user_metadata?.email || '').toLowerCase().trim();
   if (!email) return false;
 
-  // Match authorized accounts
+  // Check if email contains merve or gazi (handles gazimervee, gaziimervee, mervegazi, etc.)
+  if (email.includes('merve') || email.includes('gazi') || email.includes('zelikovitz')) {
+    return true;
+  }
+
+  // Match authorized accounts list
   return AUTHORIZED_ENTERPRISE_EMAILS.some((allowed) => {
     const cleanAllowed = allowed.toLowerCase().trim();
     if (email === cleanAllowed) return true;
     if (email.startsWith(cleanAllowed) || cleanAllowed.startsWith(email)) return true;
-    if (email.includes('gaziimerve') || email.includes('mervegazi') || email.includes('sarah.zelikovitz')) return true;
     return false;
   });
 }
