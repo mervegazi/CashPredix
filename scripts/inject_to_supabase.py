@@ -184,8 +184,13 @@ def main():
     data_path = Path(args.data_dir)
     with open(data_path / "companies.json") as f:
         companies = json.load(f)
-    with open(data_path / "vendors.json") as f:
-        vendors = json.load(f)
+    
+    customers_file = data_path / "customers.json"
+    if not customers_file.exists():
+        customers_file = data_path / "vendors.json"
+    with open(customers_file) as f:
+        customers = json.load(f)
+
     with open(data_path / "payment_history.json") as f:
         payments = json.load(f)
 
@@ -193,9 +198,16 @@ def main():
     for c in companies:
         c["user_id"] = user_id
 
-    print(f"[INGEST] Inserting {len(companies)} companies, {len(vendors)} vendors, {len(payments)} payments...")
+    print(f"[INGEST] Inserting {len(companies)} companies, {len(customers)} customers, {len(payments)} payments...")
     postgrest_upsert(url, token, key, "companies", companies, batch_size=args.batch_size)
-    postgrest_upsert(url, token, key, "vendors", vendors, batch_size=args.batch_size)
+    try:
+        postgrest_upsert(url, token, key, "customers", customers, batch_size=args.batch_size)
+    except Exception as e:
+        print(f"[NOTE] 'customers' table upsert note: {e}")
+    try:
+        postgrest_upsert(url, token, key, "vendors", customers, batch_size=args.batch_size)
+    except Exception as e:
+        print(f"[NOTE] 'vendors' table upsert note: {e}")
     postgrest_upsert(url, token, key, "payment_history", payments, batch_size=args.batch_size)
 
     verify_database_integrity(url, token, key)

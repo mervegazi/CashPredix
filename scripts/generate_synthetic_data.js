@@ -1,14 +1,16 @@
 #!/usr/bin/env node
 /**
  * CashPredix - Synthetic Data Generation Script (Node.js)
- * Week 3: Task #42 - Programmatic generation of realistic company profiles and vendor records.
+ * Week 3: Task #42 - Programmatic generation of realistic company profiles and customer/client records.
+ * Models Inbound Cash Flow & Accounts Receivable (AR).
  *
  * Schema Compatibility:
  *   companies (id, user_id, name, industry, created_at)
- *   vendors (id, company_id, name, payment_terms, created_at)
+ *   customers (id, company_id, name, payment_terms, created_at)
+ *   vendors   (id, company_id, name, payment_terms, created_at) [backward-compatible alias]
  *
  * Usage:
- *   node scripts/generate_synthetic_data.js --companies 10 --vendors 100 --format both
+ *   node scripts/generate_synthetic_data.js --companies 4 --customers-per-company 100 --format both
  */
 
 import fs from 'node:fs';
@@ -49,41 +51,42 @@ const COMPANY_SUFFIXES = [
   'Inc.', 'Corp.', 'LLC', 'Group', 'Enterprises', 'International', 'GmbH', 'Limited',
 ];
 
-const VENDOR_CATEGORIES = {
-  'Cloud & Infrastructure': {
-    prefixes: ['CloudScale', 'DataWeave', 'ByteStream', 'ServerGrid', 'NetCore', 'InfraVault', 'LatencyLess'],
-    middles: ['Hosting', 'Compute', 'Cloud', 'Data Systems', 'DevOps', 'Networks'],
-    terms_bias: ['Net 30', 'Net 15', 'Due on Receipt'],
-  },
-  'Logistics & Shipping': {
-    prefixes: ['GlobalFreight', 'SwiftHaul', 'NordicCargo', 'SeaBridge', 'InterstateExpress', 'AtlasTrans', 'PrimeRoute'],
-    middles: ['Logistics', 'Freight', 'Courier', 'Carriers', 'Transport', 'Supply Chain'],
+// Customer / Client Industry Categories (B2B Payers generating Cash Inflows)
+const CUSTOMER_CATEGORIES = {
+  'Enterprise Corporate': {
+    prefixes: ['Global Holdings', 'Apex Capital', 'Pinnacle Enterprises', 'Summit Corporate', 'Matrix Global', 'Vanguard Trust'],
+    middles: ['Enterprises', 'Holdings', 'Corporation', 'Global Group', 'Ventures'],
     terms_bias: ['Net 30', 'Net 45', 'Net 60'],
   },
-  'Hardware & Electronics': {
-    prefixes: ['SiliconEdge', 'MicroChip', 'PrecisionTech', 'CircuitWorks', 'OptiSensor', 'NanoLogic'],
-    middles: ['Components', 'Hardware', 'Semiconductors', 'Devices', 'Electronics'],
+  'FinTech & Banking': {
+    prefixes: ['Horizon FinTech', 'JPMorgan Corporate', 'Goldman Institutional', 'Morgan Stanley Asset', 'Citigroup Treasury'],
+    middles: ['Financial Services', 'Capital Markets', 'Wealth Solutions', 'Trading Group'],
+    terms_bias: ['Net 15', 'Net 30', 'Due on Receipt'],
+  },
+  'Retail & Wholesale Chains': {
+    prefixes: ['OmniMarket', 'PrimeRetail', 'Walmart eCommerce', 'Target Logistics', 'Costco Commercial', 'Shopify Plus'],
+    middles: ['Wholesale', 'Commerce', 'Supply Alliance', 'Brands', 'Distributors'],
     terms_bias: ['Net 30', 'Net 60', '2/10 Net 30'],
   },
-  'Raw Materials & Manufacturing': {
-    prefixes: ['TitanAlloy', 'ApexPolymer', 'VulcanMetals', 'CoreTimber', 'PureChem', 'PolyMatrix'],
-    middles: ['Materials', 'Refineries', 'Smelting', 'Polymers', 'Industries', 'Foundry'],
-    terms_bias: ['Net 60', 'Net 90', 'Net 45'],
+  'Healthcare & Clinical Systems': {
+    prefixes: ['Mayo Clinical', 'Johns Hopkins Health', 'Cleveland Medical', 'Kaiser Alliance', 'Mount Sinai Network'],
+    middles: ['Healthcare Network', 'Medical Centers', 'Hospital Systems', 'Clinical Labs'],
+    terms_bias: ['Net 30', 'Net 45', 'Net 60'],
   },
-  'Legal & Professional Services': {
-    prefixes: ['Sterling & Associates', 'Vanguard Advisory', 'Blackwood Legal', 'Apex Compliance', 'AuditCore', 'Kroll'],
-    middles: ['Consulting', 'Partners', 'Legal Group', 'Auditors', 'Risk Advisors'],
-    terms_bias: ['Net 30', 'Due on Receipt', 'Net 15'],
+  'Logistics & Transit Shippers': {
+    prefixes: ['SwiftLogix', 'Nordic Freight', 'Atlas Transit', 'SeaBridge Cargo', 'Maersk Line Payer'],
+    middles: ['Freight Transit', 'Supply Shippers', 'Carrier Services', 'Logistics Alliance'],
+    terms_bias: ['Net 30', 'Net 45', 'Net 15'],
   },
-  'Marketing & Creative Media': {
-    prefixes: ['PixelCraft', 'VividReach', 'OmniMarketing', 'AdVantage', 'PrismMedia', 'BrandVelocity'],
-    middles: ['Media', 'Agency', 'Interactive', 'Digital Labs', 'Creative'],
-    terms_bias: ['Net 30', 'Net 15', '2/10 Net 30'],
+  'SaaS & Digital Platforms': {
+    prefixes: ['CloudPulse', 'ByteStream', 'DataWeave Labs', 'Stripe Billing', 'Uber Corporate', 'Airbnb Treasury'],
+    middles: ['Technologies', 'Digital Platforms', 'Cloud Solutions', 'Software Labs'],
+    terms_bias: ['Due on Receipt', 'Net 15', 'Net 30'],
   },
-  'Facilities & Office Maintenance': {
-    prefixes: ['EnviroClean', 'SafeGuard Security', 'MetroPower', 'Apex HVAC', 'EcoWaste', 'ProFacility'],
-    middles: ['Services', 'Solutions', 'Operations', 'Maintenance', 'Management'],
-    terms_bias: ['Net 30', 'Net 15', 'Net 45'],
+  'Public Sector & Education': {
+    prefixes: ['State Endowment', 'Metro Municipal', 'Federal Research', 'University System', 'Civil Authority'],
+    middles: ['Agency', 'District', 'Authority', 'Institute', 'Council'],
+    terms_bias: ['Net 45', 'Net 60', 'Net 90'],
   },
 };
 
@@ -114,8 +117,8 @@ function generateCompanyName(existingNames) {
   return fallback;
 }
 
-function generateVendorName(category, existingNames) {
-  const catData = VENDOR_CATEGORIES[category] || Object.values(VENDOR_CATEGORIES)[0];
+function generateCustomerName(category, existingNames) {
+  const catData = CUSTOMER_CATEGORIES[category] || Object.values(CUSTOMER_CATEGORIES)[0];
   const suffixes = ['Inc.', 'Corp.', 'LLC', 'Ltd.', 'GmbH', 'Co.'];
   for (let i = 0; i < 200; i++) {
     const name = `${pickRandom(catData.prefixes)} ${pickRandom(catData.middles)} ${pickRandom(suffixes)}`;
@@ -133,52 +136,62 @@ export const CANONICAL_FOUR_COMPANIES = [
   {
     name: 'CashPredix Technologies Inc.',
     industry: 'Technology & SaaS',
-    vendorCount: 160,
+    customerCount: 160,
     isFlagship: true,
     specializedPrefixes: [
-      'AWS Cloud', 'Azure Infra', 'Google Cloud', 'Snowflake Data', 'Datadog Observability',
-      'OpenAI API', 'Anthropic AI', 'GitHub Enterprise', 'Stripe Global', 'Twilio Messaging',
-      'Supabase DB', 'Vercel Edge', 'Cloudflare Security', 'MongoDB Atlas', 'Redis Enterprise',
-      'SentinelOne', 'CrowdStrike', 'Elasticsearch', 'Atlassian', 'Figma Design', 'Slack Enterprise',
-      'Zoom Communications', 'Confluent Kafka', 'Docker Hub', 'HashiCorp', 'Databricks Analytics',
-      'PagerDuty', 'Postman Enterprise', 'Linear Systems', 'Notion Labs',
+      'JPMorgan Chase Treasury', 'Bank of America Enterprise', 'Goldman Sachs Asset', 'Morgan Stanley Wealth',
+      'Citigroup Solutions', 'Wells Fargo Commercial', 'Barclays Banking', 'HSBC Trade',
+      'BNP Paribas Institutional', 'UBS Americas', 'Deutsche Bank Transaction', 'Standard Chartered Markets',
+      'Santander Commercial', 'Capital One Enterprise', 'PNC Financial Services', 'US Bancorp Banking',
+      'Shopify Plus Merchant', 'Uber Technologies Treasury', 'Airbnb Global Payments', 'DoorDash Financial',
+      'Snowflake Corporate Ops', 'Stripe Billing Partner', 'Block Square Network', 'Salesforce Analytics',
+      'HubSpot Growth Systems', 'ServiceNow Cloud', 'Intuit Quickbooks', 'Workday Enterprise',
+      'Walmart eCommerce', 'Target Logistics', 'Home Depot Merchant', 'Costco Wholesale Corp',
+      'General Electric Treasury', 'Boeing Aviation Services', 'Lockheed Martin Systems', 'Siemens Industrial',
+      'UnitedHealth Group', 'CVS Health Pharmacy', 'Johnson & Johnson Health', 'Pfizer BioPharma',
     ],
   },
   {
     name: 'Apex Horizon Logistics Corp.',
     industry: 'Logistics & Freight',
-    vendorCount: 45,
+    customerCount: 45,
     isFlagship: false,
     specializedPrefixes: [
-      'Maersk Maritime', 'Swift Haulage', 'Nordic Freight', 'DHL Supply', 'FedEx Corporate',
-      'Shell Commercial Fuel', 'Volvo Fleet Maintenance', 'Caterpillar Equipment', 'Kuehne+Nagel Transit',
+      'Nike Global Footwear Supply', 'Apple Worldwide Distribution', 'Samsung Electronics Americas',
+      'Tesla Motors Gigafactory Parts', 'Procter & Gamble Consumer Goods', 'Unilever North America Transit',
+      'Sony Corporation Electronics', 'Ford Motor Company Assembly', 'General Motors Components',
+      'IKEA Supply AG Furniture', 'Adidas Sports Apparel', 'LG Electronics Transport',
     ],
   },
   {
     name: 'Vanguard Healthcare Systems Enterprises',
     industry: 'Healthcare & Pharmaceuticals',
-    vendorCount: 40,
+    customerCount: 40,
     isFlagship: false,
     specializedPrefixes: [
-      'Pfizer BioPharmaceuticals', 'Siemens Healthineers', 'Medtronic Devices', 'Quest Diagnostics',
-      'Abbott Laboratories', 'McKesson Medical Supply', 'Roche Diagnostics', 'Thermo Fisher Scientific',
+      'Mayo Clinic Health System', 'Cleveland Clinic Foundation', 'Johns Hopkins Medicine Center',
+      'Kaiser Permanente Medical', 'Mount Sinai Health System', 'Mass General Brigham Alliance',
+      'Stanford Health Care', 'Cedars-Sinai Medical Center', 'Northwell Health Hospital Group',
+      'UPMC Health System', 'MD Anderson Cancer Foundation', 'Geisinger Health Network',
     ],
   },
   {
     name: 'Quantum Capital & Financial Holdings',
     industry: 'Financial Services & FinTech',
-    vendorCount: 35,
+    customerCount: 35,
     isFlagship: false,
     specializedPrefixes: [
-      'Bloomberg Financial', 'Moody\'s Risk Analytics', 'S&P Global Market', 'Refinitiv Data',
-      'SWIFT Interbank', 'State Street Custody', 'FactSet Research', 'Fitch Ratings Global',
+      'BlackRock Global Investment', 'Vanguard Group Institutional', 'Fidelity Investments Asset',
+      'Citadel Securities Liquidity', 'Bridgewater Associates Macro', 'Millennium Management Strategy',
+      'Point72 Asset Management', 'Two Sigma Investments Fund', 'D.E. Shaw Computational Capital',
+      'CalPERS Public Employees Fund', 'Texas Teacher Retirement System', 'AQR Capital Systematic',
     ],
   },
 ];
 
 export function generateSyntheticDataset({
   numCompanies = 4,
-  vendorsPerCompany = 100,
+  customersPerCompany = 100,
   userId = null,
   useCanonicalFour = true,
 } = {}) {
@@ -186,10 +199,10 @@ export function generateSyntheticDataset({
   const now = new Date();
 
   const companies = [];
-  const vendors = [];
+  const customers = [];
   const existingCompanyNames = new Set();
-  const existingVendorNames = new Set();
-  const categoryKeys = Object.keys(VENDOR_CATEGORIES);
+  const existingCustomerNames = new Set();
+  const categoryKeys = Object.keys(CUSTOMER_CATEGORIES);
 
   if (useCanonicalFour) {
     for (const compSpec of CANONICAL_FOUR_COMPANIES) {
@@ -212,31 +225,31 @@ export function generateSyntheticDataset({
       const maxOffsetDays = Math.max(1, Math.floor((now.getTime() - companyDate.getTime()) / 86400000) - 10);
       const prefixesPool = compSpec.specializedPrefixes || [];
 
-      for (let v = 0; v < compSpec.vendorCount; v++) {
-        const vendorId = crypto.randomUUID();
+      for (let v = 0; v < compSpec.customerCount; v++) {
+        const customerId = crypto.randomUUID();
         const category = pickRandom(categoryKeys);
 
-        let vendorName;
+        let customerName;
         if (v < prefixesPool.length) {
           const prefix = prefixesPool[v];
-          vendorName = `${prefix} ${pickRandom(['Systems', 'Technologies', 'Services', 'Corp.', 'LLC'])}`;
-          existingVendorNames.add(vendorName);
+          customerName = `${prefix} ${pickRandom(['Corporate', 'Enterprises', 'Operations', 'Holdings', 'LLC', 'Inc.'])}`;
+          existingCustomerNames.add(customerName);
         } else {
-          vendorName = generateVendorName(category, existingVendorNames);
+          customerName = generateCustomerName(category, existingCustomerNames);
         }
 
-        const termsBias = VENDOR_CATEGORIES[category].terms_bias;
+        const termsBias = CUSTOMER_CATEGORIES[category].terms_bias;
         const paymentTerm = Math.random() < 0.75 ? pickRandom(termsBias) : pickRandom(PAYMENT_TERMS_ALL);
 
         const offsetDays = Math.floor(Math.random() * maxOffsetDays) + 1;
-        const vendorCreatedAt = new Date(companyDate.getTime() + (offsetDays * 86400000 + Math.random() * 86400000)).toISOString();
+        const customerCreatedAt = new Date(companyDate.getTime() + (offsetDays * 86400000 + Math.random() * 86400000)).toISOString();
 
-        vendors.push({
-          id: vendorId,
+        customers.push({
+          id: customerId,
           company_id: companyId,
-          name: vendorName,
+          name: customerName,
           payment_terms: paymentTerm,
-          created_at: vendorCreatedAt,
+          created_at: customerCreatedAt,
         });
       }
     }
@@ -244,11 +257,13 @@ export function generateSyntheticDataset({
     return {
       user_id: baseUserId,
       companies,
-      vendors,
+      customers,
+      vendors: customers, // backward-compatible alias
       summary: {
         total_companies: companies.length,
-        total_vendors: vendors.length,
-        flagship_vendors: CANONICAL_FOUR_COMPANIES[0].vendorCount,
+        total_customers: customers.length,
+        total_vendors: customers.length,
+        flagship_customers: CANONICAL_FOUR_COMPANIES[0].customerCount,
         generated_at: now.toISOString(),
       },
     };
@@ -273,23 +288,23 @@ export function generateSyntheticDataset({
     const companyDate = new Date(companyCreatedAt);
     const maxOffsetDays = Math.max(1, Math.floor((now.getTime() - companyDate.getTime()) / 86400000) - 10);
 
-    for (let v = 0; v < vendorsPerCompany; v++) {
-      const vendorId = crypto.randomUUID();
+    for (let v = 0; v < customersPerCompany; v++) {
+      const customerId = crypto.randomUUID();
       const category = pickRandom(categoryKeys);
-      const vendorName = generateVendorName(category, existingVendorNames);
+      const customerName = generateCustomerName(category, existingCustomerNames);
 
-      const termsBias = VENDOR_CATEGORIES[category].terms_bias;
+      const termsBias = CUSTOMER_CATEGORIES[category].terms_bias;
       const paymentTerm = Math.random() < 0.75 ? pickRandom(termsBias) : pickRandom(PAYMENT_TERMS_ALL);
 
       const offsetDays = Math.floor(Math.random() * maxOffsetDays) + 1;
-      const vendorCreatedAt = new Date(companyDate.getTime() + (offsetDays * 86400000 + Math.random() * 86400000)).toISOString();
+      const customerCreatedAt = new Date(companyDate.getTime() + (offsetDays * 86400000 + Math.random() * 86400000)).toISOString();
 
-      vendors.push({
-        id: vendorId,
+      customers.push({
+        id: customerId,
         company_id: companyId,
-        name: vendorName,
+        name: customerName,
         payment_terms: paymentTerm,
-        created_at: vendorCreatedAt,
+        created_at: customerCreatedAt,
       });
     }
   }
@@ -297,11 +312,13 @@ export function generateSyntheticDataset({
   return {
     user_id: baseUserId,
     companies,
-    vendors,
+    customers,
+    vendors: customers,
     summary: {
       total_companies: companies.length,
-      total_vendors: vendors.length,
-      vendors_per_company: vendorsPerCompany,
+      total_customers: customers.length,
+      total_vendors: customers.length,
+      customers_per_company: customersPerCompany,
       generated_at: now.toISOString(),
     },
   };
@@ -325,16 +342,18 @@ function toCSV(records) {
 // CLI Execution
 if (process.argv[1] && process.argv[1].endsWith('generate_synthetic_data.js')) {
   const args = process.argv.slice(2);
-  let numCompanies = 10;
-  let vendorsPerCompany = 100;
+  let numCompanies = 4;
+  let customersPerCompany = 100;
   let outputDir = 'data/synthetic';
   let format = 'both';
+  let useCanonical = true;
 
   for (let i = 0; i < args.length; i++) {
     if (args[i] === '--companies' && args[i + 1]) numCompanies = parseInt(args[++i], 10);
-    else if ((args[i] === '--vendors' || args[i] === '--vendors-per-company') && args[i + 1]) {
-      vendorsPerCompany = parseInt(args[++i], 10);
-    } else if (args[i] === '--output-dir' && args[i + 1]) outputDir = args[++i];
+    else if ((args[i] === '--customers' || args[i] === '--customers-per-company' || args[i] === '--vendors' || args[i] === '--vendors-per-company') && args[i + 1]) {
+      customersPerCompany = parseInt(args[++i], 10);
+    } else if (args[i] === '--custom-companies') useCanonical = false;
+    else if (args[i] === '--output-dir' && args[i + 1]) outputDir = args[++i];
     else if (args[i] === '--format' && args[i + 1]) format = args[++i];
   }
 
@@ -342,30 +361,32 @@ if (process.argv[1] && process.argv[1].endsWith('generate_synthetic_data.js')) {
   fs.mkdirSync(resolvedOutputDir, { recursive: true });
 
   console.log('='.repeat(60));
-  console.log(' CashPredix - Node.js Synthetic Data Generator (Week 3 / #42)');
+  console.log(' CashPredix - Accounts Receivable Synthetic Generator (Week 3)');
   console.log('='.repeat(60));
+  console.log(` Mode:                     ${useCanonical ? 'Canonical 4 Preset (280 Customers, 160 for CashPredix)' : 'Custom Generation'}`);
   console.log(` Target Companies:         ${numCompanies}`);
-  console.log(` Target Vendors / Company: ${vendorsPerCompany}`);
-  console.log(` Total Vendors to Create:  ${numCompanies * vendorsPerCompany}`);
+  console.log(` Target Customers / Comp:  ${customersPerCompany}`);
   console.log(` Output Directory:         ${resolvedOutputDir}`);
   console.log('='.repeat(60));
 
-  const dataset = generateSyntheticDataset({ numCompanies, vendorsPerCompany });
+  const dataset = generateSyntheticDataset({ numCompanies, customersPerCompany, useCanonicalFour: useCanonical });
 
   if (format === 'json' || format === 'both') {
     fs.writeFileSync(path.join(resolvedOutputDir, 'companies.json'), JSON.stringify(dataset.companies, null, 2));
-    fs.writeFileSync(path.join(resolvedOutputDir, 'vendors.json'), JSON.stringify(dataset.vendors, null, 2));
+    fs.writeFileSync(path.join(resolvedOutputDir, 'customers.json'), JSON.stringify(dataset.customers, null, 2));
+    fs.writeFileSync(path.join(resolvedOutputDir, 'vendors.json'), JSON.stringify(dataset.customers, null, 2));
     fs.writeFileSync(path.join(resolvedOutputDir, 'synthetic_dataset_bundle.json'), JSON.stringify(dataset, null, 2));
-    console.log('[✓] Successfully generated JSON datasets.');
+    console.log('[✓] Successfully generated JSON datasets (companies.json, customers.json, vendors.json).');
   }
 
   if (format === 'csv' || format === 'both') {
     fs.writeFileSync(path.join(resolvedOutputDir, 'companies.csv'), toCSV(dataset.companies));
-    fs.writeFileSync(path.join(resolvedOutputDir, 'vendors.csv'), toCSV(dataset.vendors));
-    console.log('[✓] Successfully generated CSV datasets.');
+    fs.writeFileSync(path.join(resolvedOutputDir, 'customers.csv'), toCSV(dataset.customers));
+    fs.writeFileSync(path.join(resolvedOutputDir, 'vendors.csv'), toCSV(dataset.customers));
+    console.log('[✓] Successfully generated CSV datasets (companies.csv, customers.csv, vendors.csv).');
   }
 
   console.log('='.repeat(60));
-  console.log(`[SUCCESS] Generated ${dataset.companies.length} companies and ${dataset.vendors.length} vendors!`);
+  console.log(`[SUCCESS] Generated ${dataset.companies.length} companies and ${dataset.customers.length} customer records (AR inflows)!`);
   console.log('='.repeat(60));
 }

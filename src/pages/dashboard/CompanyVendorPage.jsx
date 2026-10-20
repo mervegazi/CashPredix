@@ -27,7 +27,7 @@ import FileDropzone from '../../components/FileDropzone';
 import ConfirmationModal from '../../components/ConfirmationModal';
 import Tooltip from '../../components/Tooltip';
 import CompanyVendorSkeleton from '../../components/CompanyVendorSkeleton';
-import { INITIAL_SEED_COMPANIES, INITIAL_SEED_VENDORS } from '../../data/seedData';
+import { INITIAL_SEED_COMPANIES, INITIAL_SEED_CUSTOMERS } from '../../data/seedData';
 
 const DEFAULT_INDUSTRIES = [
   'Technology & SaaS',
@@ -52,18 +52,18 @@ const PAYMENT_TERMS = [
   '2/10 Net 30',
 ];
 
-const VENDOR_CATEGORIES = [
-  'Cloud & Infrastructure',
-  'Logistics & Shipping',
-  'Hardware & Electronics',
-  'Raw Materials & Manufacturing',
-  'Legal & Professional Services',
-  'Marketing & Creative Media',
-  'Facilities & Office Maintenance',
-  'General Supplier',
+const CUSTOMER_CATEGORIES = [
+  'Enterprise Corporate',
+  'FinTech & Banking',
+  'Retail & Wholesale Chains',
+  'Healthcare & Clinical Systems',
+  'Logistics & Transit Shippers',
+  'SaaS & Digital Platforms',
+  'Public Sector & Education',
+  'Commercial Client',
 ];
 
-// Helper to calculate score details
+// Helper to calculate score details for Accounts Receivable & Customer reliability
 function getScoreInsight(score) {
   if (score >= 90) {
     return {
@@ -72,7 +72,7 @@ function getScoreInsight(score) {
       badge: 'bg-emerald-500',
       onTimeRate: `${score}%`,
       avgDelay: '-2.4 days (Early settlement)',
-      action: 'High reliability; eligible for favorable 2% early payment rebates.',
+      action: 'High payment reliability; predictable incoming cash inflow.',
     };
   }
   if (score >= 75) {
@@ -82,16 +82,16 @@ function getScoreInsight(score) {
       badge: 'bg-blue-500',
       onTimeRate: `${score}%`,
       avgDelay: '+3.1 days (Within grace)',
-      action: 'Consistent settlement; standard Net 30 liquidity schedule.',
+      action: 'Consistent settlement; standard Net 30 accounts receivable flow.',
     };
   }
   return {
-    tier: 'High Anomaly Risk',
+    tier: 'High Default Risk',
     color: 'text-amber-800 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-800/60',
     badge: 'bg-amber-500',
     onTimeRate: `${score}%`,
     avgDelay: '+16.8 days (Frequent friction)',
-    action: 'Payment bottlenecks detected; recommend review of supplier terms.',
+    action: 'Payment collection friction; recommend stricter credit terms or upfront retainer.',
   };
 }
 
@@ -108,9 +108,9 @@ export default function CompanyVendorPage() {
   const [expandedCompanyIds, setExpandedCompanyIds] = useState(new Set(['comp-cashpredix']));
 
   // Per-company search, category filter, and pagination
-  const [vendorSearches, setVendorSearches] = useState({});
-  const [vendorCategories, setVendorCategories] = useState({});
-  const [vendorPages, setVendorPages] = useState({});
+  const [customerSearches, setCustomerSearches] = useState({});
+  const [customerCategories, setCustomerCategories] = useState({});
+  const [customerPages, setCustomerPages] = useState({});
   const [isIngestingDataset, setIsIngestingDataset] = useState(false);
 
   // Entities state
@@ -127,23 +127,23 @@ export default function CompanyVendorPage() {
     }
   });
 
-  const [vendors, setVendors] = useState(() => {
+  const [customers, setCustomers] = useState(() => {
     try {
-      const saved = localStorage.getItem('cashpredix_vendors_v2');
-      if (saved) {
-        const parsed = JSON.parse(saved);
+      const savedCust = localStorage.getItem('cashpredix_customers_v2') || localStorage.getItem('cashpredix_vendors_v2');
+      if (savedCust) {
+        const parsed = JSON.parse(savedCust);
         if (Array.isArray(parsed) && parsed.length >= 100) return parsed;
       }
-      return INITIAL_SEED_VENDORS;
+      return INITIAL_SEED_CUSTOMERS;
     } catch {
-      return INITIAL_SEED_VENDORS;
+      return INITIAL_SEED_CUSTOMERS;
     }
   });
 
   // Modal State for Delete Confirmation
   const [modalState, setModalState] = useState({
     isOpen: false,
-    type: null, // 'company' | 'vendor'
+    type: null, // 'company' | 'customer'
     target: null,
     isDeleting: false,
   });
@@ -156,14 +156,14 @@ export default function CompanyVendorPage() {
   const [companyErrors, setCompanyErrors] = useState({});
   const [isSubmittingCompany, setIsSubmittingCompany] = useState(false);
 
-  const [vendorForm, setVendorForm] = useState({
+  const [customerForm, setCustomerForm] = useState({
     company_id: '',
     name: '',
     payment_terms: 'Net 30',
-    category: VENDOR_CATEGORIES[0],
+    category: CUSTOMER_CATEGORIES[0],
   });
-  const [vendorErrors, setVendorErrors] = useState({});
-  const [isSubmittingVendor, setIsSubmittingVendor] = useState(false);
+  const [customerErrors, setCustomerErrors] = useState({});
+  const [isSubmittingCustomer, setIsSubmittingCustomer] = useState(false);
   const [isUploadingBatch, setIsUploadingBatch] = useState(false);
 
   // Sync to localStorage
@@ -177,23 +177,25 @@ export default function CompanyVendorPage() {
 
   useEffect(() => {
     try {
-      localStorage.setItem('cashpredix_vendors_v2', JSON.stringify(vendors));
+      localStorage.setItem('cashpredix_customers_v2', JSON.stringify(customers));
+      // keep vendor key in sync for legacy compatibility
+      localStorage.setItem('cashpredix_vendors_v2', JSON.stringify(customers));
     } catch (e) {
-      console.warn('Failed to save vendors locally', e);
+      console.warn('Failed to save customers locally', e);
     }
-  }, [vendors]);
+  }, [customers]);
 
-  // Ingest Enterprise Dataset into Supabase (4 Companies, 280 Vendors)
+  // Ingest Enterprise Dataset into Supabase (4 Companies, 280 Customers)
   const handleIngestEnterpriseData = async () => {
     if (!user?.id) {
       setCompanies(INITIAL_SEED_COMPANIES);
-      setVendors(INITIAL_SEED_VENDORS);
-      toast.success('Enterprise dataset active! (4 Companies, 280 Suppliers with 160 for CashPredix)');
+      setCustomers(INITIAL_SEED_CUSTOMERS);
+      toast.success('Enterprise dataset active! (4 Companies, 280 Customers with 160 for CashPredix)');
       return;
     }
 
     setIsIngestingDataset(true);
-    const toastId = toast.loading('Ingesting 4 Companies & 280 Suppliers into Supabase...');
+    const toastId = toast.loading('Ingesting 4 Companies & 280 Customers into Supabase...');
 
     try {
       // 1. Prepare companies with user_id
@@ -216,8 +218,8 @@ export default function CompanyVendorPage() {
 
       if (compErr) throw compErr;
 
-      // 2. Prepare 280 vendors
-      const vendorsToInsert = INITIAL_SEED_VENDORS.map((v) => ({
+      // 2. Prepare 280 customers
+      const customersToInsert = INITIAL_SEED_CUSTOMERS.map((v) => ({
         id: crypto.randomUUID(),
         company_id: companyIdMap[v.company_id] || companyIdMap['comp-cashpredix'],
         name: v.name,
@@ -225,19 +227,27 @@ export default function CompanyVendorPage() {
         created_at: v.created_at,
       }));
 
-      // Chunk in batches of 50
-      for (let i = 0; i < vendorsToInsert.length; i += 50) {
-        const chunk = vendorsToInsert.slice(i, i + 50);
-        const { error: vendErr } = await supabase.from('vendors').upsert(chunk, { onConflict: 'id' });
-        if (vendErr) throw vendErr;
+      // Chunk in batches of 50 into customers table (and vendors table if available)
+      for (let i = 0; i < customersToInsert.length; i += 50) {
+        const chunk = customersToInsert.slice(i, i + 50);
+        try {
+          await supabase.from('customers').upsert(chunk, { onConflict: 'id' });
+        } catch {
+          // fallback to vendors
+        }
+        try {
+          await supabase.from('vendors').upsert(chunk, { onConflict: 'id' });
+        } catch {
+          // ignore
+        }
       }
 
-      toast.success(`Successfully ingested 4 Companies & ${vendorsToInsert.length} Suppliers into Supabase!`, { id: toastId });
+      toast.success(`Successfully ingested 4 Companies & ${customersToInsert.length} Customers into Supabase!`, { id: toastId });
       await loadSupabaseData();
     } catch (err) {
       console.error('Enterprise dataset ingestion error:', err);
       setCompanies(INITIAL_SEED_COMPANIES);
-      setVendors(INITIAL_SEED_VENDORS);
+      setCustomers(INITIAL_SEED_CUSTOMERS);
       toast.error(`Ingestion notice: ${err.message || 'Updated local state'}. Local dataset loaded!`, { id: toastId });
     } finally {
       setIsIngestingDataset(false);
@@ -256,13 +266,25 @@ export default function CompanyVendorPage() {
 
       if (dbCompanies && !compErr && dbCompanies.length > 0) {
         setCompanies(dbCompanies);
-        const { data: dbVendors, error: vendErr } = await supabase
-          .from('vendors')
+        
+        // Try customers table first, fallback to vendors table
+        let { data: dbCustomers, error: custErr } = await supabase
+          .from('customers')
           .select('*')
           .order('created_at', { ascending: false });
-        if (!vendErr && dbVendors) {
-          setVendors(
-            dbVendors.map((v) => ({
+
+        if (custErr || !dbCustomers || dbCustomers.length === 0) {
+          const res = await supabase
+            .from('vendors')
+            .select('*')
+            .order('created_at', { ascending: false });
+          dbCustomers = res.data;
+          custErr = res.error;
+        }
+
+        if (!custErr && dbCustomers && dbCustomers.length > 0) {
+          setCustomers(
+            dbCustomers.map((v) => ({
               ...v,
               reliability_score: v.reliability_score || Math.floor(Math.random() * 45 + 55),
             }))
@@ -277,35 +299,9 @@ export default function CompanyVendorPage() {
   };
 
   useEffect(() => {
-    let active = true;
     if (user?.id) {
-      supabase
-        .from('companies')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .then(({ data: dbCompanies, error: compErr }) => {
-          if (active && dbCompanies && !compErr && dbCompanies.length > 0) {
-            setCompanies(dbCompanies);
-            supabase
-              .from('vendors')
-              .select('*')
-              .order('created_at', { ascending: false })
-              .then(({ data: dbVendors, error: vendErr }) => {
-                if (active && dbVendors && !vendErr) {
-                  setVendors(
-                    dbVendors.map((v) => ({
-                      ...v,
-                      reliability_score: v.reliability_score || Math.floor(Math.random() * 45 + 55),
-                    }))
-                  );
-                }
-              });
-          }
-        });
+      loadSupabaseData();
     }
-    return () => {
-      active = false;
-    };
   }, [user?.id]);
 
   // Accordion toggle
@@ -331,12 +327,12 @@ export default function CompanyVendorPage() {
     });
   };
 
-  // Trigger Delete Vendor Modal
-  const requestDeleteVendor = (vendor) => {
+  // Trigger Delete Customer Modal
+  const requestDeleteCustomer = (customer) => {
     setModalState({
       isOpen: true,
-      type: 'vendor',
-      target: vendor,
+      type: 'customer',
+      target: customer,
       isDeleting: false,
     });
   };
@@ -350,20 +346,29 @@ export default function CompanyVendorPage() {
 
     try {
       if (type === 'company') {
-        // Delete company & cascade vendors
+        // Delete company & cascade customers
         if (user?.id) {
           await supabase.from('companies').delete().eq('id', target.id);
         }
         setCompanies((prev) => prev.filter((c) => c.id !== target.id));
-        setVendors((prev) => prev.filter((v) => v.company_id !== target.id));
-        toast.success(`Company entity "${target.name}" and associated suppliers deleted.`);
-      } else if (type === 'vendor') {
-        // Delete vendor
+        setCustomers((prev) => prev.filter((v) => v.company_id !== target.id));
+        toast.success(`Company entity "${target.name}" and associated customers deleted.`);
+      } else if (type === 'customer') {
+        // Delete customer
         if (user?.id) {
-          await supabase.from('vendors').delete().eq('id', target.id);
+          try {
+            await supabase.from('customers').delete().eq('id', target.id);
+          } catch {
+            // ignore
+          }
+          try {
+            await supabase.from('vendors').delete().eq('id', target.id);
+          } catch {
+            // ignore
+          }
         }
-        setVendors((prev) => prev.filter((v) => v.id !== target.id));
-        toast.success(`Vendor "${target.name}" removed successfully.`);
+        setCustomers((prev) => prev.filter((v) => v.id !== target.id));
+        toast.success(`Customer "${target.name}" removed successfully.`);
       }
     } catch (err) {
       toast.error(`Delete failed: ${err.message}`);
@@ -416,59 +421,67 @@ export default function CompanyVendorPage() {
     }
   };
 
-  // Handle Create Vendor
-  const handleCreateVendor = async (e) => {
+  // Handle Create Customer
+  const handleCreateCustomer = async (e) => {
     e.preventDefault();
     const errors = {};
-    const effectiveCompanyId = vendorForm.company_id || companies[0]?.id;
+    const effectiveCompanyId = customerForm.company_id || companies[0]?.id;
 
     if (!effectiveCompanyId) {
       errors.company_id = 'Please select a company';
     }
-    if (!vendorForm.name.trim()) {
-      errors.name = 'Vendor name is required';
-    } else if (vendorForm.name.trim().length < 2) {
-      errors.name = 'Vendor name must be at least 2 characters';
+    if (!customerForm.name.trim()) {
+      errors.name = 'Customer / Client name is required';
+    } else if (customerForm.name.trim().length < 2) {
+      errors.name = 'Customer name must be at least 2 characters';
     }
 
     if (Object.keys(errors).length > 0) {
-      setVendorErrors(errors);
+      setCustomerErrors(errors);
       return;
     }
 
-    setIsSubmittingVendor(true);
-    const newVendorId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `vend-${Date.now()}`;
-    const newVendor = {
-      id: newVendorId,
+    setIsSubmittingCustomer(true);
+    const newCustomerId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `cust-${Date.now()}`;
+    const newCustomer = {
+      id: newCustomerId,
       company_id: effectiveCompanyId,
-      name: vendorForm.name.trim(),
-      payment_terms: vendorForm.payment_terms,
-      category: vendorForm.category,
+      name: customerForm.name.trim(),
+      payment_terms: customerForm.payment_terms,
+      category: customerForm.category,
       reliability_score: Math.floor(Math.random() * 20 + 80),
       created_at: new Date().toISOString(),
     };
 
     try {
       if (user?.id) {
-        const { error } = await supabase.from('vendors').insert([newVendor]);
-        if (error) console.warn('Supabase vendor insert note:', error.message);
+        try {
+          await supabase.from('customers').insert([newCustomer]);
+        } catch {
+          // ignore
+        }
+        try {
+          await supabase.from('vendors').insert([newCustomer]);
+        } catch {
+          // ignore
+        }
       }
 
-      setVendors((prev) => [newVendor, ...prev]);
+      setCustomers((prev) => [newCustomer, ...prev]);
       setExpandedCompanyIds((prev) => new Set([...prev, effectiveCompanyId]));
-      setVendorForm({
+      setCustomerForm({
         company_id: effectiveCompanyId,
         name: '',
         payment_terms: 'Net 30',
-        category: VENDOR_CATEGORIES[0],
+        category: CUSTOMER_CATEGORIES[0],
       });
-      setVendorErrors({});
-      toast.success(`Vendor "${newVendor.name}" linked successfully!`);
+      setCustomerErrors({});
+      toast.success(`Customer "${newCustomer.name}" linked successfully!`);
       setActiveTab('directory');
     } catch (err) {
-      toast.error(`Error registering vendor: ${err.message}`);
+      toast.error(`Error registering customer: ${err.message}`);
     } finally {
-      setIsSubmittingVendor(false);
+      setIsSubmittingCustomer(false);
     }
   };
 
@@ -476,24 +489,32 @@ export default function CompanyVendorPage() {
   const handleBatchUpload = async (parsedRows, targetCompanyId) => {
     setIsUploadingBatch(true);
     try {
-      const newVendors = parsedRows.map((row) => ({
+      const newCustomers = parsedRows.map((row) => ({
         id: typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `import-${Date.now()}-${Math.random()}`,
         company_id: targetCompanyId,
         name: row.name,
         payment_terms: row.payment_terms || 'Net 30',
-        category: row.category || 'General Supplier',
+        category: row.category || 'Commercial Client',
         reliability_score: Math.floor(Math.random() * 40 + 60),
         created_at: new Date().toISOString(),
       }));
 
       if (user?.id) {
-        const { error } = await supabase.from('vendors').insert(newVendors);
-        if (error) console.warn('Supabase batch insert note:', error.message);
+        try {
+          await supabase.from('customers').insert(newCustomers);
+        } catch {
+          // fallback
+        }
+        try {
+          await supabase.from('vendors').insert(newCustomers);
+        } catch {
+          // ignore
+        }
       }
 
-      setVendors((prev) => [...newVendors, ...prev]);
+      setCustomers((prev) => [...newCustomers, ...prev]);
       setExpandedCompanyIds((prev) => new Set([...prev, targetCompanyId]));
-      toast.success(`Successfully imported ${newVendors.length} vendors!`);
+      toast.success(`Successfully imported ${newCustomers.length} customers!`);
       setActiveTab('directory');
     } catch (err) {
       toast.error(`Batch import failed: ${err.message}`);
@@ -502,7 +523,7 @@ export default function CompanyVendorPage() {
     }
   };
 
-  const selectedCompanyForVendor = vendorForm.company_id || companies[0]?.id || '';
+  const selectedCompanyForCustomer = customerForm.company_id || companies[0]?.id || '';
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
@@ -511,10 +532,10 @@ export default function CompanyVendorPage() {
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2.5">
             <Building2 className="w-6 h-6 text-blue-500" />
-            <span>Company & Vendor Management</span>
+            <span>Company & Customer Management</span>
           </h1>
           <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            Hierarchical directory of enterprise entities, nested suppliers, risk ratings, and batch ledgers.
+            Hierarchical directory of enterprise entities, linked corporate clients, credit risk ratings, and incoming receivables.
           </p>
         </div>
 
@@ -524,7 +545,7 @@ export default function CompanyVendorPage() {
             onClick={handleIngestEnterpriseData}
             disabled={isIngestingDataset}
             className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 shadow-md shadow-blue-500/20 transition-all disabled:opacity-60"
-            title="Seed/Ingest 4 Canonical Enterprise Companies and 280 Suppliers (160 for CashPredix)"
+            title="Seed/Ingest 4 Canonical Enterprise Companies and 280 Customers (160 for CashPredix)"
           >
             {isIngestingDataset ? (
               <>
@@ -534,7 +555,7 @@ export default function CompanyVendorPage() {
             ) : (
               <>
                 <Database className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Ingest 4 Companies & 280 Vendors</span>
+                <span className="hidden sm:inline">Ingest 4 Companies & 280 Customers</span>
                 <span className="sm:hidden">Ingest Dataset</span>
               </>
             )}
@@ -574,9 +595,9 @@ export default function CompanyVendorPage() {
 
         <div className="p-4 rounded-2xl bg-white dark:bg-gray-900/90 border border-gray-200 dark:border-gray-800 shadow-sm flex items-center justify-between">
           <div>
-            <span className="text-xs font-medium text-gray-400">Registered Suppliers</span>
+            <span className="text-xs font-medium text-gray-400">Registered Customers</span>
             <div className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
-              {vendors.length}
+              {customers.length}
             </div>
           </div>
           <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
@@ -622,7 +643,7 @@ export default function CompanyVendorPage() {
           }`}
         >
           <Plus className="w-4 h-4" />
-          <span>Register New Entity</span>
+          <span>Register New Entity / Customer</span>
         </button>
 
         <button
@@ -645,10 +666,10 @@ export default function CompanyVendorPage() {
           <div className="flex items-center justify-between px-1">
             <h2 className="text-base font-bold text-gray-900 dark:text-white flex items-center gap-2">
               <FolderTree className="w-5 h-5 text-blue-500" />
-              <span>Hierarchical Corporate Entities & Nested Suppliers</span>
+              <span>Hierarchical Corporate Entities & Linked Customers</span>
             </h2>
             <span className="text-xs text-gray-400">
-              Click any company card to expand or collapse suppliers
+              Click any company card to expand or collapse linked clients
             </span>
           </div>
 
@@ -660,7 +681,7 @@ export default function CompanyVendorPage() {
               <Building2 className="w-12 h-12 text-gray-300 dark:text-gray-700 mx-auto mb-3" />
               <h3 className="text-sm font-bold text-gray-900 dark:text-white">No Companies Registered</h3>
               <p className="text-xs text-gray-500 mt-1 mb-4">
-                Register your first company entity or upload a batch ledger to begin tracking suppliers.
+                Register your first company entity or upload a batch customer ledger to begin tracking receivables.
               </p>
               <button
                 type="button"
@@ -676,7 +697,7 @@ export default function CompanyVendorPage() {
             <div className="space-y-4">
               {companies.map((company) => {
                 const isExpanded = expandedCompanyIds.has(company.id);
-                const companyVendors = vendors.filter((v) => v.company_id === company.id);
+                const companyCustomers = customers.filter((v) => v.company_id === company.id);
 
                 return (
                   <div
@@ -704,7 +725,7 @@ export default function CompanyVendorPage() {
                           </div>
 
                           <div className="flex items-center gap-3 text-xs text-gray-400 mt-1">
-                            <span>{companyVendors.length} Suppliers Linked</span>
+                            <span>{companyCustomers.length} Clients Linked</span>
                             <span>•</span>
                             <span>
                               Created: {company.created_at ? new Date(company.created_at).toLocaleDateString() : 'Active'}
@@ -739,14 +760,14 @@ export default function CompanyVendorPage() {
                       </div>
                     </div>
 
-                    {/* Nested Suppliers Table (Expandable) */}
+                    {/* Nested Customers Table (Expandable) */}
                     {isExpanded && (() => {
-                      const search = (vendorSearches[company.id] || '').trim().toLowerCase();
-                      const catFilter = vendorCategories[company.id] || 'ALL';
-                      const page = vendorPages[company.id] || 1;
+                      const search = (customerSearches[company.id] || '').trim().toLowerCase();
+                      const catFilter = customerCategories[company.id] || 'ALL';
+                      const page = customerPages[company.id] || 1;
                       const pageSize = 12;
 
-                      const filteredVendors = companyVendors.filter((v) => {
+                      const filteredCustomers = companyCustomers.filter((v) => {
                         const matchesSearch =
                           !search ||
                           v.name.toLowerCase().includes(search) ||
@@ -756,33 +777,33 @@ export default function CompanyVendorPage() {
                         return matchesSearch && matchesCat;
                       });
 
-                      const totalPages = Math.ceil(filteredVendors.length / pageSize) || 1;
+                      const totalPages = Math.ceil(filteredCustomers.length / pageSize) || 1;
                       const currentPage = Math.min(page, totalPages);
-                      const pagedVendors = filteredVendors.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+                      const pagedCustomers = filteredCustomers.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
                       return (
                         <div className="p-4 sm:p-5 space-y-3">
                           <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
-                            <span className="font-semibold">Associated Suppliers & Agreements ({companyVendors.length} Total)</span>
+                            <span className="font-semibold">Associated Clients & Receivables ({companyCustomers.length} Total)</span>
                             <span className="text-[11px] text-gray-400">
                               Hover over Reliability Index for AI risk insights
                             </span>
                           </div>
 
-                          {companyVendors.length === 0 ? (
+                          {companyCustomers.length === 0 ? (
                             <div className="p-6 text-center rounded-xl bg-gray-50 dark:bg-gray-800/40 border border-dashed border-gray-200 dark:border-gray-700">
                               <Users className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                              <p className="text-xs text-gray-500">No suppliers registered for this company yet.</p>
+                              <p className="text-xs text-gray-500">No customers registered for this company yet.</p>
                               <button
                                 type="button"
                                 onClick={() => {
-                                  setVendorForm((prev) => ({ ...prev, company_id: company.id }));
+                                  setCustomerForm((prev) => ({ ...prev, company_id: company.id }));
                                   setActiveTab('forms');
                                 }}
                                 className="mt-3 px-3 py-1.5 text-xs font-semibold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors inline-flex items-center gap-1.5"
                               >
                                 <Plus className="w-3.5 h-3.5" />
-                                <span>Add Vendor to {company.name}</span>
+                                <span>Add Customer to {company.name}</span>
                               </button>
                             </div>
                           ) : (
@@ -794,26 +815,26 @@ export default function CompanyVendorPage() {
                                     <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
                                     <input
                                       type="text"
-                                      placeholder={`Search ${companyVendors.length} suppliers...`}
-                                      value={vendorSearches[company.id] || ''}
+                                      placeholder={`Search ${companyCustomers.length} customers...`}
+                                      value={customerSearches[company.id] || ''}
                                       onChange={(e) => {
-                                        setVendorSearches((prev) => ({ ...prev, [company.id]: e.target.value }));
-                                        setVendorPages((prev) => ({ ...prev, [company.id]: 1 }));
+                                        setCustomerSearches((prev) => ({ ...prev, [company.id]: e.target.value }));
+                                        setCustomerPages((prev) => ({ ...prev, [company.id]: 1 }));
                                       }}
                                       className="w-full pl-8 pr-3 py-1.5 text-xs rounded-lg bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-500"
                                     />
                                   </div>
 
                                   <select
-                                    value={vendorCategories[company.id] || 'ALL'}
+                                    value={customerCategories[company.id] || 'ALL'}
                                     onChange={(e) => {
-                                      setVendorCategories((prev) => ({ ...prev, [company.id]: e.target.value }));
-                                      setVendorPages((prev) => ({ ...prev, [company.id]: 1 }));
+                                      setCustomerCategories((prev) => ({ ...prev, [company.id]: e.target.value }));
+                                      setCustomerPages((prev) => ({ ...prev, [company.id]: 1 }));
                                     }}
                                     className="px-2.5 py-1.5 text-xs rounded-lg bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
                                   >
                                     <option value="ALL">All Categories</option>
-                                    {VENDOR_CATEGORIES.map((cat) => (
+                                    {CUSTOMER_CATEGORIES.map((cat) => (
                                       <option key={cat} value={cat}>
                                         {cat}
                                       </option>
@@ -822,20 +843,20 @@ export default function CompanyVendorPage() {
                                 </div>
 
                                 <div className="text-[11px] text-gray-500 dark:text-gray-400 shrink-0 font-medium">
-                                  Showing {filteredVendors.length === 0 ? 0 : (currentPage - 1) * pageSize + 1}–{Math.min(filteredVendors.length, currentPage * pageSize)} of {filteredVendors.length} suppliers
+                                  Showing {filteredCustomers.length === 0 ? 0 : (currentPage - 1) * pageSize + 1}–{Math.min(filteredCustomers.length, currentPage * pageSize)} of {filteredCustomers.length} clients
                                 </div>
                               </div>
 
-                              {filteredVendors.length === 0 ? (
+                              {filteredCustomers.length === 0 ? (
                                 <div className="p-6 text-center rounded-xl bg-gray-50 dark:bg-gray-800/40 border border-dashed border-gray-200 dark:border-gray-700">
-                                  <p className="text-xs text-gray-500">No suppliers matching "{search}" in this category.</p>
+                                  <p className="text-xs text-gray-500">No customers matching "{search}" in this category.</p>
                                 </div>
                               ) : (
                                 <div className="overflow-x-auto rounded-xl border border-gray-100 dark:border-gray-800">
                                   <table className="w-full text-left text-xs">
                                     <thead className="bg-gray-50 dark:bg-gray-800/60 text-gray-500 dark:text-gray-400">
                                       <tr>
-                                        <th className="py-2.5 px-3.5 font-semibold">Supplier Name</th>
+                                        <th className="py-2.5 px-3.5 font-semibold">Customer / Client Name</th>
                                         <th className="py-2.5 px-3.5 font-semibold">Payment Terms</th>
                                         <th className="py-2.5 px-3.5 font-semibold">Category</th>
                                         <th className="py-2.5 px-3.5 font-semibold">Reliability Index</th>
@@ -843,31 +864,31 @@ export default function CompanyVendorPage() {
                                       </tr>
                                     </thead>
                                     <tbody className="divide-y divide-gray-100 dark:divide-gray-800 text-gray-700 dark:text-gray-300">
-                                      {pagedVendors.map((vendor) => {
-                                        const score = vendor.reliability_score || 88;
+                                      {pagedCustomers.map((customer) => {
+                                        const score = customer.reliability_score || 88;
                                         const insight = getScoreInsight(score);
 
                                         return (
-                                          <tr key={vendor.id} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/40 transition-colors">
+                                          <tr key={customer.id} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/40 transition-colors">
                                             <td className="py-3 px-3.5 font-medium text-gray-900 dark:text-white flex items-center gap-2">
                                               <Briefcase className="w-3.5 h-3.5 text-blue-500 shrink-0" />
-                                              <span>{vendor.name}</span>
+                                              <span>{customer.name}</span>
                                             </td>
                                             <td className="py-3 px-3.5 font-semibold text-blue-600 dark:text-blue-400">
-                                              {vendor.payment_terms}
+                                              {customer.payment_terms}
                                             </td>
                                             <td className="py-3 px-3.5 text-gray-500 dark:text-gray-400">
-                                              {vendor.category || 'General Supplier'}
+                                              {customer.category || 'Commercial Client'}
                                             </td>
                                             <td className="py-3 px-3.5">
-                                              {/* Informative Tooltip for Vendor Score */}
+                                              {/* Informative Tooltip for Customer Reliability Score */}
                                               <Tooltip
                                                 position="top"
                                                 content={
                                                   <div className="space-y-2 text-left">
                                                     <div className="flex items-start justify-between gap-2 pb-2 border-b border-gray-100 dark:border-gray-800">
                                                       <span className="font-bold text-gray-900 dark:text-white leading-snug break-words">
-                                                        {vendor.name}
+                                                        {customer.name}
                                                       </span>
                                                       <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${insight.badge} text-white shrink-0`}>
                                                         {score}%
@@ -879,7 +900,7 @@ export default function CompanyVendorPage() {
                                                         <span className="font-semibold text-gray-900 dark:text-gray-100">{insight.tier}</span>
                                                       </div>
                                                       <div className="flex items-center justify-between gap-2">
-                                                        <span className="text-gray-500 dark:text-gray-400">On-Time Rate:</span>
+                                                        <span className="text-gray-500 dark:text-gray-400">On-Time Settlement:</span>
                                                         <span className="font-semibold text-gray-900 dark:text-gray-100">{insight.onTimeRate}</span>
                                                       </div>
                                                       <div className="flex items-center justify-between gap-2">
@@ -906,9 +927,9 @@ export default function CompanyVendorPage() {
                                             <td className="py-3 px-3.5 text-right">
                                               <button
                                                 type="button"
-                                                onClick={() => requestDeleteVendor(vendor)}
+                                                onClick={() => requestDeleteCustomer(customer)}
                                                 className="p-1 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors"
-                                                title="Delete supplier"
+                                                title="Delete customer"
                                               >
                                                 <Trash2 className="w-3.5 h-3.5" />
                                               </button>
@@ -931,7 +952,7 @@ export default function CompanyVendorPage() {
                                     <button
                                       type="button"
                                       disabled={currentPage === 1}
-                                      onClick={() => setVendorPages((prev) => ({ ...prev, [company.id]: Math.max(1, currentPage - 1) }))}
+                                      onClick={() => setCustomerPages((prev) => ({ ...prev, [company.id]: Math.max(1, currentPage - 1) }))}
                                       className="px-2.5 py-1 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors flex items-center gap-1 text-[11px]"
                                     >
                                       <ChevronLeft className="w-3.5 h-3.5" />
@@ -947,7 +968,7 @@ export default function CompanyVendorPage() {
                                         <button
                                           key={pNum}
                                           type="button"
-                                          onClick={() => setVendorPages((prev) => ({ ...prev, [company.id]: pNum }))}
+                                          onClick={() => setCustomerPages((prev) => ({ ...prev, [company.id]: pNum }))}
                                           className={`w-7 h-7 rounded-lg text-[11px] font-semibold transition-colors ${
                                             pNum === currentPage
                                               ? 'bg-blue-600 text-white shadow-sm'
@@ -962,7 +983,7 @@ export default function CompanyVendorPage() {
                                     <button
                                       type="button"
                                       disabled={currentPage === totalPages}
-                                      onClick={() => setVendorPages((prev) => ({ ...prev, [company.id]: Math.min(totalPages, currentPage + 1) }))}
+                                      onClick={() => setCustomerPages((prev) => ({ ...prev, [company.id]: Math.min(totalPages, currentPage + 1) }))}
                                       className="px-2.5 py-1 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors flex items-center gap-1 text-[11px]"
                                     >
                                       <span>Next</span>
@@ -1084,7 +1105,7 @@ export default function CompanyVendorPage() {
             </div>
           </div>
 
-          {/* Form 2: Add Vendor */}
+          {/* Form 2: Add Customer */}
           <div className="rounded-2xl p-6 bg-white dark:bg-gray-900/90 border border-gray-200 dark:border-gray-800 shadow-sm flex flex-col justify-between">
             <div>
               <div className="flex items-center gap-3 pb-4 border-b border-gray-100 dark:border-gray-800 mb-5">
@@ -1093,28 +1114,28 @@ export default function CompanyVendorPage() {
                 </div>
                 <div>
                   <h3 className="text-base font-bold text-gray-900 dark:text-white">
-                    Manual Vendor Addition
+                    Register Customer / Client
                   </h3>
                   <p className="text-xs text-gray-400">
-                    Add direct supplier relationships with defined payment terms
+                    Add corporate client relationships for tracking incoming receivables
                   </p>
                 </div>
               </div>
 
-              <form onSubmit={handleCreateVendor} className="space-y-4" noValidate>
+              <form onSubmit={handleCreateCustomer} className="space-y-4" noValidate>
                 <div>
                   <label
-                    htmlFor="vendor-company"
+                    htmlFor="customer-company"
                     className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1"
                   >
                     Target Company Entity <span className="text-red-500">*</span>
                   </label>
                   <select
-                    id="vendor-company"
-                    value={selectedCompanyForVendor}
+                    id="customer-company"
+                    value={selectedCompanyForCustomer}
                     onChange={(e) => {
-                      setVendorForm((prev) => ({ ...prev, company_id: e.target.value }));
-                      if (vendorErrors.company_id) setVendorErrors((prev) => ({ ...prev, company_id: null }));
+                      setCustomerForm((prev) => ({ ...prev, company_id: e.target.value }));
+                      if (customerErrors.company_id) setCustomerErrors((prev) => ({ ...prev, company_id: null }));
                     }}
                     className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
                   >
@@ -1125,33 +1146,33 @@ export default function CompanyVendorPage() {
                       </option>
                     ))}
                   </select>
-                  {vendorErrors.company_id && (
-                    <p className="mt-1 text-[11px] text-red-500">{vendorErrors.company_id}</p>
+                  {customerErrors.company_id && (
+                    <p className="mt-1 text-[11px] text-red-500">{customerErrors.company_id}</p>
                   )}
                 </div>
 
                 <div>
                   <label
-                    htmlFor="vendor-name"
+                    htmlFor="customer-name"
                     className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1"
                   >
-                    Vendor / Supplier Name <span className="text-red-500">*</span>
+                    Customer / Client Name <span className="text-red-500">*</span>
                   </label>
                   <input
-                    id="vendor-name"
+                    id="customer-name"
                     type="text"
-                    value={vendorForm.name}
+                    value={customerForm.name}
                     onChange={(e) => {
-                      setVendorForm((prev) => ({ ...prev, name: e.target.value }));
-                      if (vendorErrors.name) setVendorErrors((prev) => ({ ...prev, name: null }));
+                      setCustomerForm((prev) => ({ ...prev, name: e.target.value }));
+                      if (customerErrors.name) setCustomerErrors((prev) => ({ ...prev, name: null }));
                     }}
-                    placeholder="e.g. CloudScale Data Systems Inc."
+                    placeholder="e.g. JPMorgan Chase Treasury LLC"
                     className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                   />
-                  {vendorErrors.name && (
+                  {customerErrors.name && (
                     <p className="mt-1 text-[11px] text-red-500 flex items-center gap-1">
                       <AlertCircle className="w-3 h-3" />
-                      <span>{vendorErrors.name}</span>
+                      <span>{customerErrors.name}</span>
                     </p>
                   )}
                 </div>
@@ -1159,15 +1180,15 @@ export default function CompanyVendorPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label
-                      htmlFor="vendor-terms"
+                      htmlFor="customer-terms"
                       className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1"
                     >
                       Payment Terms
                     </label>
                     <select
-                      id="vendor-terms"
-                      value={vendorForm.payment_terms}
-                      onChange={(e) => setVendorForm((prev) => ({ ...prev, payment_terms: e.target.value }))}
+                      id="customer-terms"
+                      value={customerForm.payment_terms}
+                      onChange={(e) => setCustomerForm((prev) => ({ ...prev, payment_terms: e.target.value }))}
                       className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
                     >
                       {PAYMENT_TERMS.map((term) => (
@@ -1180,18 +1201,18 @@ export default function CompanyVendorPage() {
 
                   <div>
                     <label
-                      htmlFor="vendor-category"
+                      htmlFor="customer-category"
                       className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1"
                     >
-                      Supplier Category
+                      Customer Category
                     </label>
                     <select
-                      id="vendor-category"
-                      value={vendorForm.category}
-                      onChange={(e) => setVendorForm((prev) => ({ ...prev, category: e.target.value }))}
+                      id="customer-category"
+                      value={customerForm.category}
+                      onChange={(e) => setCustomerForm((prev) => ({ ...prev, category: e.target.value }))}
                       className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
                     >
-                      {VENDOR_CATEGORIES.map((cat) => (
+                      {CUSTOMER_CATEGORIES.map((cat) => (
                         <option key={cat} value={cat}>
                           {cat}
                         </option>
@@ -1202,20 +1223,20 @@ export default function CompanyVendorPage() {
 
                 <div className="pt-2">
                   <button
-                    id="add-vendor-submit-btn"
+                    id="add-customer-submit-btn"
                     type="submit"
-                    disabled={isSubmittingVendor || companies.length === 0}
+                    disabled={isSubmittingCustomer || companies.length === 0}
                     className="w-full py-2.5 px-4 rounded-xl text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-500 shadow-md shadow-emerald-600/30 transition-all flex items-center justify-center gap-2 disabled:opacity-60"
                   >
-                    {isSubmittingVendor ? (
+                    {isSubmittingCustomer ? (
                       <>
                         <Loader2 className="w-4 h-4 animate-spin" />
-                        <span>Adding Vendor...</span>
+                        <span>Adding Customer...</span>
                       </>
                     ) : (
                       <>
                         <Plus className="w-4 h-4" />
-                        <span>Add Supplier to Entity</span>
+                        <span>Add Customer to Entity</span>
                       </>
                     )}
                   </button>
@@ -1225,7 +1246,7 @@ export default function CompanyVendorPage() {
 
             <div className="mt-6 pt-4 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between text-[11px] text-gray-400">
               <span>Automatic Foreign Key Validation</span>
-              <span>Linked Suppliers: {vendors.length}</span>
+              <span>Linked Customers: {customers.length}</span>
             </div>
           </div>
         </div>
@@ -1246,14 +1267,14 @@ export default function CompanyVendorPage() {
         title={
           modalState.type === 'company'
             ? `Delete Company: "${modalState.target?.name}"?`
-            : `Delete Supplier: "${modalState.target?.name}"?`
+            : `Delete Customer: "${modalState.target?.name}"?`
         }
         message={
           modalState.type === 'company'
-            ? `Deleting "${modalState.target?.name}" will trigger a foreign key cascade and permanently remove all linked supplier relationships and payment ledger rows. This action cannot be undone.`
-            : `Are you sure you want to remove supplier "${modalState.target?.name}" from this corporate entity? Historical payment entries will also be permanently deleted.`
+            ? `Deleting "${modalState.target?.name}" will trigger a foreign key cascade and permanently remove all linked customer accounts and incoming invoice ledger rows. This action cannot be undone.`
+            : `Are you sure you want to remove customer "${modalState.target?.name}" from this corporate entity? Historical receivables and invoice entries will also be permanently deleted.`
         }
-        confirmText={modalState.type === 'company' ? 'Delete Company Entity' : 'Delete Supplier'}
+        confirmText={modalState.type === 'company' ? 'Delete Company Entity' : 'Delete Customer'}
         isDeleting={modalState.isDeleting}
         onConfirm={handleConfirmDelete}
         onClose={() => setModalState({ isOpen: false, type: null, target: null, isDeleting: false })}

@@ -17,7 +17,16 @@ CREATE TABLE IF NOT EXISTS companies (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
--- 3. Vendors table
+-- 3. Customers table (Accounts Receivable - Inbound Cash Flow & Counterparties)
+CREATE TABLE IF NOT EXISTS customers (
+    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+    company_id UUID REFERENCES companies(id) ON DELETE CASCADE NOT NULL,
+    name TEXT NOT NULL,
+    payment_terms TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+-- Legacy compatibility table for vendors
 CREATE TABLE IF NOT EXISTS vendors (
     id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
     company_id UUID REFERENCES companies(id) ON DELETE CASCADE NOT NULL,
@@ -26,10 +35,11 @@ CREATE TABLE IF NOT EXISTS vendors (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
--- 4. Vendor payment history
+-- 4. Customer payment history (Receivables & Invoices)
 CREATE TABLE IF NOT EXISTS payment_history (
     id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
-    vendor_id UUID REFERENCES vendors(id) ON DELETE CASCADE NOT NULL,
+    customer_id UUID REFERENCES customers(id) ON DELETE CASCADE,
+    vendor_id UUID REFERENCES vendors(id) ON DELETE CASCADE,
     amount NUMERIC NOT NULL,
     due_date DATE,
     payment_date DATE,
@@ -43,6 +53,7 @@ CREATE TABLE IF NOT EXISTS payment_history (
 -- Enable RLS on all application tables
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE companies ENABLE ROW LEVEL SECURITY;
+ALTER TABLE customers ENABLE ROW LEVEL SECURITY;
 ALTER TABLE vendors ENABLE ROW LEVEL SECURITY;
 ALTER TABLE payment_history ENABLE ROW LEVEL SECURITY;
 
@@ -81,7 +92,42 @@ CREATE POLICY "Users can delete their own companies"
     USING (auth.uid() = user_id);
 
 -- ------------------------------------------
--- VENDORS POLICIES
+-- CUSTOMERS POLICIES
+-- ------------------------------------------
+CREATE POLICY "Users can view customers for their companies"
+    ON customers FOR SELECT
+    USING (
+        company_id IN (
+            SELECT id FROM companies WHERE user_id = auth.uid()
+        )
+    );
+
+CREATE POLICY "Users can insert customers for their companies"
+    ON customers FOR INSERT
+    WITH CHECK (
+        company_id IN (
+            SELECT id FROM companies WHERE user_id = auth.uid()
+        )
+    );
+
+CREATE POLICY "Users can update customers for their companies"
+    ON customers FOR UPDATE
+    USING (
+        company_id IN (
+            SELECT id FROM companies WHERE user_id = auth.uid()
+        )
+    );
+
+CREATE POLICY "Users can delete customers for their companies"
+    ON customers FOR DELETE
+    USING (
+        company_id IN (
+            SELECT id FROM companies WHERE user_id = auth.uid()
+        )
+    );
+
+-- ------------------------------------------
+-- VENDORS POLICIES (LEGACY COMPATIBILITY)
 -- ------------------------------------------
 CREATE POLICY "Users can view vendors for their companies"
     ON vendors FOR SELECT
@@ -118,9 +164,15 @@ CREATE POLICY "Users can delete vendors for their companies"
 -- ------------------------------------------
 -- PAYMENT HISTORY POLICIES
 -- ------------------------------------------
-CREATE POLICY "Users can view payment history for their vendors"
+CREATE POLICY "Users can view payment history for their customers"
     ON payment_history FOR SELECT
     USING (
+        customer_id IN (
+            SELECT cust.id FROM customers cust
+            JOIN companies c ON cust.company_id = c.id
+            WHERE c.user_id = auth.uid()
+        )
+        OR
         vendor_id IN (
             SELECT v.id FROM vendors v
             JOIN companies c ON v.company_id = c.id
@@ -128,9 +180,15 @@ CREATE POLICY "Users can view payment history for their vendors"
         )
     );
 
-CREATE POLICY "Users can insert payment history for their vendors"
+CREATE POLICY "Users can insert payment history for their customers"
     ON payment_history FOR INSERT
     WITH CHECK (
+        customer_id IN (
+            SELECT cust.id FROM customers cust
+            JOIN companies c ON cust.company_id = c.id
+            WHERE c.user_id = auth.uid()
+        )
+        OR
         vendor_id IN (
             SELECT v.id FROM vendors v
             JOIN companies c ON v.company_id = c.id
@@ -138,9 +196,15 @@ CREATE POLICY "Users can insert payment history for their vendors"
         )
     );
 
-CREATE POLICY "Users can update payment history for their vendors"
+CREATE POLICY "Users can update payment history for their customers"
     ON payment_history FOR UPDATE
     USING (
+        customer_id IN (
+            SELECT cust.id FROM customers cust
+            JOIN companies c ON cust.company_id = c.id
+            WHERE c.user_id = auth.uid()
+        )
+        OR
         vendor_id IN (
             SELECT v.id FROM vendors v
             JOIN companies c ON v.company_id = c.id
@@ -148,9 +212,15 @@ CREATE POLICY "Users can update payment history for their vendors"
         )
     );
 
-CREATE POLICY "Users can delete payment history for their vendors"
+CREATE POLICY "Users can delete payment history for their customers"
     ON payment_history FOR DELETE
     USING (
+        customer_id IN (
+            SELECT cust.id FROM customers cust
+            JOIN companies c ON cust.company_id = c.id
+            WHERE c.user_id = auth.uid()
+        )
+        OR
         vendor_id IN (
             SELECT v.id FROM vendors v
             JOIN companies c ON v.company_id = c.id

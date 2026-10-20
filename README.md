@@ -10,17 +10,17 @@
 
 ## About the Project
 
-CashPredix is a machine learning-driven web application focusing on **Autonomous Liquidity Prediction and Behavioral Scoring**. The system predicts company cash flows and scores vendor reliability using realistic synthetic financial data.
+CashPredix is a machine learning-driven web application focusing on **Autonomous Liquidity Prediction and Customer Behavioral Scoring**. The system predicts company incoming cash flows (Accounts Receivable) and scores customer payment reliability using realistic synthetic financial data.
 
 ### Key Features
 
 - 🏠 **Landing Page** — Introductory page explaining the platform's purpose
 - 🔐 **Authentication** — Login, Sign Up, Logout, and Change Password via Supabase Auth
-- 🏢 **Company & Vendor Management** — Create companies, add vendors (manual + Excel upload), and manage them
-- 🤖 **ML-Powered Vendor Scoring** — Analyze vendor payment histories and assign behavioral reliability scores
+- 🏢 **Company & Customer Management** — Create companies, add customers/clients (manual + CSV/Excel upload), and manage them
+- 🤖 **ML-Powered Customer Scoring** — Analyze customer payment histories and assign behavioral reliability scores
 - 📈 **Cash Flow Prediction** — Forecast company cash flows using time-series ML models
-- 📊 **Dashboard** — View active companies with weekly cash flow summaries
-- 📅 **Cashflow Predicts** — Filter predictions by date range with detailed vendor breakdowns
+- 📊 **Dashboard** — View active companies with incoming cash flow summaries
+- 📅 **Cashflow Predicts** — Filter predictions by date range with detailed customer breakdowns
 
 ## Tech Stack
 
@@ -97,7 +97,7 @@ This project uses **Kanban** methodology managed through [GitHub Projects](https
 | 1 | Project Setup & Landing Page |
 | 2 | Auth & Base Navigation |
 | 3 | Synthetic Data Generation & Management UI |
-| 4 | ML - Vendor Scoring |
+| 4 | ML - Customer Scoring |
 | 5 | ML - Cash Flow Prediction |
 | 6 | ML Integration & Backend Logic |
 | 7 | Dashboard UI (Home Screen) |

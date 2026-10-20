@@ -33,8 +33,8 @@ const NAV_ITEMS = [
     badge: null,
   },
   {
-    name: 'Create Company & Vendor',
-    path: '/dashboard/company-vendor',
+    name: 'Companies & Customers',
+    path: '/dashboard/company-customer',
     icon: Building2,
     badge: null,
   },
@@ -260,7 +260,7 @@ export default function DashboardLayout() {
               <Search className="w-4 h-4 absolute left-3 text-gray-400" />
               <input
                 type="text"
-                placeholder="Search vendors, predictions..."
+                placeholder="Search customers, predictions..."
                 className="pl-9 pr-3 py-1.5 text-xs rounded-xl bg-gray-100 dark:bg-gray-800/80 border border-transparent dark:border-gray-700/60 text-gray-900 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 w-52 focus:w-64 transition-all"
               />
             </div>

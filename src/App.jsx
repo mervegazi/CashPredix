@@ -104,6 +104,7 @@ function App() {
               }
             >
               <Route index element={<WelcomeDashboard />} />
+              <Route path="company-customer" element={<CompanyVendorPage />} />
               <Route path="company-vendor" element={<CompanyVendorPage />} />
               <Route path="cashflow-predicts" element={<CashflowPredictsPlaceholder />} />
               <Route path="profile" element={<ProfilePage />} />

@@ -137,7 +137,7 @@ export default function SignUpPage() {
             Create your account
           </h2>
           <p className="mt-2 text-sm text-slate-500 dark:text-gray-400">
-            Forecast cashflow dynamics and mitigate vendor liquidity risk
+            Forecast incoming cashflow dynamics and mitigate customer receivable risk
           </p>
         </div>
 

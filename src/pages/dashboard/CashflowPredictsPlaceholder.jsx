@@ -21,7 +21,7 @@ export default function CashflowPredictsPlaceholder() {
             <span>Cashflow Predicts</span>
           </h1>
           <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            Intelligent machine learning algorithms projecting net working capital and supplier liquidity risk.
+            Intelligent machine learning algorithms projecting net working capital and customer cash inflow timing.
           </p>
         </div>
 
@@ -71,7 +71,7 @@ export default function CashflowPredictsPlaceholder() {
             Time-Series Decomposition
           </h3>
           <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
-            Deconstructs recurring revenue and invoice payment cycles to establish baseline cash velocity per supplier cluster.
+            Deconstructs recurring revenue and invoice payment cycles to establish baseline cash velocity per customer cohort.
           </p>
         </div>
 
@@ -83,7 +83,7 @@ export default function CashflowPredictsPlaceholder() {
             Behavioral Delay Scoring
           </h3>
           <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
-            Calculates dynamic probability of late payments based on historic delays, macroeconomic indicators, and vendor profiles.
+            Calculates dynamic probability of late payments based on historic delays, macroeconomic indicators, and customer profiles.
           </p>
         </div>
 

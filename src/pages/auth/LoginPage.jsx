@@ -150,7 +150,7 @@ export default function LoginPage() {
             Sign in to your account
           </h2>
           <p className="mt-2 text-sm text-slate-500 dark:text-gray-400">
-            AI-driven cashflow forecasting and vendor behavioral risk scoring
+            AI-driven incoming cashflow forecasting and customer credit risk scoring
           </p>
         </div>
 

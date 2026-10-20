@@ -1,14 +1,14 @@
 #!/usr/bin/env node
 /**
  * CashPredix - Payment Anomalies & Statistical Distributions Simulation Script (Node.js)
- * Week 3: Task #43 - Generate synthetic payment history timelines for vendors with
- * Pareto amount distributions, Gaussian payment timing, and realistic anomalies.
+ * Week 3: Task #43 - Generate synthetic customer payment history timelines for accounts receivable (AR)
+ * with Pareto amount distributions, Gaussian payment timing, and realistic anomalies (delays, defaults).
  *
  * Schema Compatibility:
- *   payment_history (id, vendor_id, amount, due_date, payment_date, status)
+ *   payment_history (id, customer_id, vendor_id, amount, due_date, payment_date, status)
  *
  * Usage:
- *   node scripts/simulate_payment_history.js --vendors-file data/synthetic/vendors.json --output-dir data/synthetic --format both
+ *   node scripts/simulate_payment_history.js --customers-file data/synthetic/customers.json --output-dir data/synthetic --format both
  */
 
 import fs from 'node:fs';
@@ -29,24 +29,25 @@ const TERMS_MAP = {
   '2/10 Net 30': 30,
 };
 
-const VENDOR_PROFILES = {
+// Customer / Payer behavioral risk profiles (Predicting Cash Inflows)
+const CUSTOMER_PROFILES = {
   PRIME: {
     weight: 0.60,
-    meanDelay: -2.0,
+    meanDelay: -2.0, // Settles 2 days early on average (e.g. captures 2% prompt discount)
     stdDelay: 2.5,
     missedProb: 0.01,
     partialProb: 0.02,
   },
   STANDARD: {
     weight: 0.25,
-    meanDelay: 3.0,
+    meanDelay: 3.0, // Settles 3 days past due date within standard grace period
     stdDelay: 5.0,
     missedProb: 0.04,
     partialProb: 0.08,
   },
   VOLATILE: {
     weight: 0.15,
-    meanDelay: 18.0,
+    meanDelay: 18.0, // Chronic delinquent payer, ~18 days late
     stdDelay: 12.0,
     missedProb: 0.12,
     partialProb: 0.22,
@@ -63,7 +64,7 @@ function sampleGaussian(mean, stdDev) {
   return mean + z0 * stdDev;
 }
 
-// Pareto distribution (Inverse transform sampling)
+// Pareto distribution (Inverse transform sampling) for B2B invoice amounts
 function samplePareto(baseAmount = 350.0, alpha = 1.55, maxAmount = 250000.0) {
   const u = Math.max(1e-9, 1.0 - Math.random());
   const val = baseAmount / Math.pow(u, 1.0 / alpha);
@@ -73,26 +74,27 @@ function samplePareto(baseAmount = 350.0, alpha = 1.55, maxAmount = 250000.0) {
 function assignProfile() {
   const r = Math.random();
   let cumulative = 0;
-  for (const conf of Object.values(VENDOR_PROFILES)) {
+  for (const conf of Object.values(CUSTOMER_PROFILES)) {
     cumulative += conf.weight;
     if (r <= cumulative) return conf;
   }
-  return VENDOR_PROFILES.STANDARD;
+  return CUSTOMER_PROFILES.STANDARD;
 }
 
 function formatDate(dt) {
   return dt.toISOString().split('T')[0];
 }
 
-export function simulatePaymentHistories(vendors, { now = new Date() } = {}) {
+export function simulatePaymentHistories(customers, { now = new Date() } = {}) {
   const payments = [];
   const statusCounts = { PAID: 0, LATE: 0, PARTIAL: 0, MISSED: 0, PENDING: 0 };
   const amounts = [];
 
-  for (const vendor of vendors) {
-    const termDays = TERMS_MAP[vendor.payment_terms] ?? 30;
+  for (const customer of customers) {
+    const custId = customer.id;
+    const termDays = TERMS_MAP[customer.payment_terms] ?? 30;
     const profile = assignProfile();
-    const createdDt = vendor.created_at ? new Date(vendor.created_at) : new Date(now.getTime() - 365 * 86400000);
+    const createdDt = customer.created_at ? new Date(customer.created_at) : new Date(now.getTime() - 365 * 86400000);
 
     let currentInvoiceDt = new Date(createdDt.getTime() + (Math.random() * 20 + 5) * 86400000);
     const intervalDays = 30;
@@ -108,7 +110,8 @@ export function simulatePaymentHistories(vendors, { now = new Date() } = {}) {
       if (dueDt > now) {
         payments.push({
           id: invoiceId,
-          vendor_id: vendor.id,
+          customer_id: custId,
+          vendor_id: custId, // backward-compatible dual ID
           amount,
           due_date: dueDateStr,
           payment_date: null,
@@ -120,7 +123,8 @@ export function simulatePaymentHistories(vendors, { now = new Date() } = {}) {
         if (r < profile.missedProb && (now - dueDt) > 45 * 86400000) {
           payments.push({
             id: invoiceId,
-            vendor_id: vendor.id,
+            customer_id: custId,
+            vendor_id: custId,
             amount,
             due_date: dueDateStr,
             payment_date: null,
@@ -135,7 +139,8 @@ export function simulatePaymentHistories(vendors, { now = new Date() } = {}) {
 
           payments.push({
             id: invoiceId,
-            vendor_id: vendor.id,
+            customer_id: custId,
+            vendor_id: custId,
             amount,
             due_date: dueDateStr,
             payment_date: formatDate(payDt),
@@ -153,7 +158,8 @@ export function simulatePaymentHistories(vendors, { now = new Date() } = {}) {
 
           payments.push({
             id: invoiceId,
-            vendor_id: vendor.id,
+            customer_id: custId,
+            vendor_id: custId,
             amount,
             due_date: dueDateStr,
             payment_date: formatDate(payDt),
@@ -194,7 +200,7 @@ export function simulatePaymentHistories(vendors, { now = new Date() } = {}) {
 
 function toCSV(records) {
   if (!records || records.length === 0) return '';
-  const headers = ['id', 'vendor_id', 'amount', 'due_date', 'payment_date', 'status'];
+  const headers = ['id', 'customer_id', 'vendor_id', 'amount', 'due_date', 'payment_date', 'status'];
   const rows = records.map((row) =>
     headers
       .map((header) => {
@@ -209,34 +215,42 @@ function toCSV(records) {
 // CLI Execution
 if (process.argv[1] && process.argv[1].endsWith('simulate_payment_history.js')) {
   const args = process.argv.slice(2);
-  let vendorsFile = 'data/synthetic/vendors.json';
+  let customersFile = null;
   let outputDir = 'data/synthetic';
   let format = 'both';
 
   for (let i = 0; i < args.length; i++) {
-    if (args[i] === '--vendors-file' && args[i + 1]) vendorsFile = args[++i];
-    else if (args[i] === '--output-dir' && args[i + 1]) outputDir = args[++i];
+    if ((args[i] === '--customers-file' || args[i] === '--vendors-file') && args[i + 1]) {
+      customersFile = args[++i];
+    } else if (args[i] === '--output-dir' && args[i + 1]) outputDir = args[++i];
     else if (args[i] === '--format' && args[i + 1]) format = args[++i];
   }
 
-  const resolvedVendorsFile = path.resolve(process.cwd(), vendorsFile);
-  if (!fs.existsSync(resolvedVendorsFile)) {
-    console.error(`[ERROR] Vendors input file not found at: ${resolvedVendorsFile}`);
+  if (!customersFile) {
+    const custCandidate = path.resolve(process.cwd(), outputDir, 'customers.json');
+    const vendCandidate = path.resolve(process.cwd(), outputDir, 'vendors.json');
+    customersFile = fs.existsSync(custCandidate) ? custCandidate : vendCandidate;
+  }
+
+  const resolvedCustomersFile = path.resolve(process.cwd(), customersFile);
+  if (!fs.existsSync(resolvedCustomersFile)) {
+    console.error(`[ERROR] Customers input file not found at: ${resolvedCustomersFile}`);
     process.exit(1);
   }
 
-  const vendors = JSON.parse(fs.readFileSync(resolvedVendorsFile, 'utf8'));
+  const customers = JSON.parse(fs.readFileSync(resolvedCustomersFile, 'utf8'));
   const resolvedOutputDir = path.resolve(process.cwd(), outputDir);
   fs.mkdirSync(resolvedOutputDir, { recursive: true });
 
   console.log('='.repeat(65));
-  console.log(' CashPredix - Node.js Payment History & Anomaly Simulation (#43)');
+  console.log(' CashPredix - Accounts Receivable Payment Timeline Simulator (#43)');
   console.log('='.repeat(65));
-  console.log(` Loaded Vendors: ${vendors.length}`);
-  console.log(` Output Directory: ${resolvedOutputDir}`);
+  console.log(` Loaded Customers / Payers: ${customers.length}`);
+  console.log(` Input File:                ${resolvedCustomersFile}`);
+  console.log(` Output Directory:          ${resolvedOutputDir}`);
   console.log('='.repeat(65));
 
-  const result = simulatePaymentHistories(vendors);
+  const result = simulatePaymentHistories(customers);
 
   if (format === 'json' || format === 'both') {
     fs.writeFileSync(path.join(resolvedOutputDir, 'payment_history.json'), JSON.stringify(result.payments, null, 2));

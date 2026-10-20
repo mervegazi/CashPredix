@@ -41,18 +41,18 @@ export default function WelcomeDashboard() {
       description: 'Expected customer inflow by Nov 1',
     },
     {
-      title: 'Expected Payables',
+      title: 'Operating Payables',
       value: '$42,120.00',
       change: '14 disbursements scheduled',
       isPositive: false,
       icon: ArrowDownRight,
       color: 'amber',
-      description: 'Vendor liabilities within 15 days',
+      description: 'Scheduled disbursements within 15 days',
     },
     {
-      title: 'Vendor Behavioral Score',
+      title: 'Customer Reliability Score',
       value: '94.2 / 100',
-      change: 'Low Portfolio Risk',
+      change: 'Low Portfolio Credit Risk',
       isPositive: true,
       icon: ShieldCheck,
       color: 'indigo',
@@ -62,28 +62,28 @@ export default function WelcomeDashboard() {
 
   const UPCOMING_ALERTS = [
     {
-      vendor: 'Nordic Freight Corp.',
+      customer: 'JPMorgan Chase Treasury',
       amount: '$14,200.00',
       dueDate: 'Oct 19, 2026',
       risk: 'High Delay Risk (44%)',
       riskColor: 'red',
-      recommendation: 'Recommend early settlement discount or cash reserve buffer.',
+      recommendation: 'Recommend prompt follow-up or early payment incentive.',
     },
     {
-      vendor: 'Acme Cloud Logistics',
+      customer: 'Shopify Plus Merchant Corp',
       amount: '$8,450.00',
       dueDate: 'Oct 23, 2026',
       risk: 'Moderate Risk (12%)',
       riskColor: 'amber',
-      recommendation: 'Historical payment regularity is consistent.',
+      recommendation: 'Historical invoice settlement is steady.',
     },
     {
-      vendor: 'Global Semiconductor Ltd.',
+      customer: 'Walmart eCommerce Partners',
       amount: '$19,470.00',
       dueDate: 'Oct 28, 2026',
       risk: 'Optimal Low Risk (3%)',
       riskColor: 'emerald',
-      recommendation: 'Reliable supplier, zero delay predicted.',
+      recommendation: 'Reliable tier-1 client, zero settlement delay predicted.',
     },
   ];
 
@@ -107,19 +107,19 @@ export default function WelcomeDashboard() {
               Welcome back, <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-600 via-indigo-600 to-emerald-600 dark:from-blue-400 dark:via-indigo-300 dark:to-emerald-400">{userName}</span>!
             </h1>
             <p className="mt-1.5 text-sm sm:text-base text-slate-600 dark:text-gray-300 max-w-2xl leading-relaxed">
-              CashPredix AI has analyzed your vendor behavior metrics. Your business cash position is optimal, with no immediate liquidity shortfalls projected for the next 30 days.
+              CashPredix AI has analyzed your customer payment behavior metrics. Your incoming cash flow is optimal, with no liquidity shortfalls projected for the next 30 days.
             </p>
           </div>
 
           {/* Quick Action Buttons */}
           <div className="flex flex-wrap items-center gap-3 shrink-0">
             <Link
-              to="/dashboard/company-vendor"
+              to="/dashboard/company-customer"
               id="hero-add-vendor-button"
               className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-white bg-blue-600 hover:bg-blue-500 shadow-md shadow-blue-600/30 transition-all hover:scale-[1.02] active:scale-[0.98]"
             >
               <Building2 className="w-4 h-4" />
-              <span>Add Company & Vendor</span>
+              <span>Add Company & Customer</span>
             </Link>
             <Link
               to="/dashboard/cashflow-predicts"
@@ -174,7 +174,7 @@ export default function WelcomeDashboard() {
         })}
       </div>
 
-      {/* Forecast Chart & Upcoming Vendor Alerts */}
+      {/* Forecast Chart & Upcoming Customer Alerts */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Dynamic Static Cashflow Chart Preview (2 Columns) */}
         <div className="lg:col-span-2 rounded-2xl bg-white dark:bg-gray-900/90 border border-gray-200 dark:border-gray-800/80 p-6 shadow-sm">
@@ -185,7 +185,7 @@ export default function WelcomeDashboard() {
                 <span>30-Day Cash Flow Trajectory</span>
               </h2>
               <p className="text-xs text-gray-500 dark:text-gray-400">
-                Machine learning forecast integrating payment histories & vendor risk
+                Machine learning forecast integrating payment histories & customer payment risk
               </p>
             </div>
             <span className="text-xs font-semibold px-2.5 py-1 rounded-lg bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800/40 self-start sm:self-auto">
@@ -258,13 +258,13 @@ export default function WelcomeDashboard() {
           </div>
         </div>
 
-        {/* Vendor Behavioral Alerts (1 Column) */}
+        {/* Customer Behavioral Alerts (1 Column) */}
         <div className="rounded-2xl bg-white dark:bg-gray-900/90 border border-gray-200 dark:border-gray-800/80 p-6 shadow-sm flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between pb-3 border-b border-gray-100 dark:border-gray-800">
               <h2 className="text-base font-bold text-gray-900 dark:text-white flex items-center gap-2">
                 <AlertTriangle className="w-4 h-4 text-amber-500" />
-                <span>Vendor Risk Monitor</span>
+                <span>Customer Credit Risk Monitor</span>
               </h2>
               <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20">
                 3 Monitored
@@ -274,11 +274,11 @@ export default function WelcomeDashboard() {
             <div className="mt-4 space-y-3.5">
               {UPCOMING_ALERTS.map((alert) => (
                 <div
-                  key={alert.vendor}
+                  key={alert.customer}
                   className="p-3.5 rounded-xl bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-800 text-xs hover:border-gray-300 dark:hover:border-gray-700 transition-colors"
                 >
                   <div className="flex items-center justify-between font-semibold text-gray-900 dark:text-white">
-                    <span className="truncate pr-2">{alert.vendor}</span>
+                    <span className="truncate pr-2">{alert.customer}</span>
                     <span className="shrink-0">{alert.amount}</span>
                   </div>
                   <div className="mt-1 flex items-center justify-between text-[11px]">
@@ -301,10 +301,10 @@ export default function WelcomeDashboard() {
           </div>
 
           <Link
-            to="/dashboard/company-vendor"
+            to="/dashboard/company-customer"
             className="mt-4 pt-3 border-t border-gray-100 dark:border-gray-800 text-xs text-center text-blue-600 dark:text-blue-400 font-semibold hover:underline block"
           >
-            Manage Vendors & Payment Terms →
+            Manage Customers & Payment Terms →
           </Link>
         </div>
       </div>
@@ -316,7 +316,7 @@ export default function WelcomeDashboard() {
             <Sparkles className="w-5 h-5" />
           </div>
           <div>
-            <h3 className="text-sm font-bold text-slate-900 dark:text-white">Enterprise Liquidity & Supplier Engine Active</h3>
+            <h3 className="text-sm font-bold text-slate-900 dark:text-white">Enterprise Liquidity & Receivables Engine Active</h3>
             <p className="text-xs text-slate-600 dark:text-gray-400">
               Supabase Row-Level Security, multi-tenant company hierarchies, and predictive risk scoring initialized.
             </p>

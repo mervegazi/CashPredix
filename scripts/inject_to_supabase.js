@@ -1,13 +1,14 @@
 #!/usr/bin/env node
 /**
  * CashPredix - Supabase Database Ingestion & Relational Integrity Validation Script
- * Week 3: Task #44 - Ingest synthetic companies, vendors, and payments into Supabase PostgreSQL
+ * Week 3: Task #44 - Ingest synthetic companies, customers, and payments into Supabase PostgreSQL
  * with batch chunking, error handling, offline verification, and foreign key integrity checking.
  *
  * Schema:
  *   companies (id, user_id, name, industry, created_at)
- *   vendors (id, company_id, name, payment_terms, created_at)
- *   payment_history (id, vendor_id, amount, due_date, payment_date, status)
+ *   customers (id, company_id, name, payment_terms, created_at)
+ *   vendors   (id, company_id, name, payment_terms, created_at) [legacy compatibility]
+ *   payment_history (id, customer_id, vendor_id, amount, due_date, payment_date, status)
  *
  * Usage:
  *   node scripts/inject_to_supabase.js --local-verify
@@ -58,14 +59,14 @@ const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-
 /**
  * Validate datasets locally before / independent of Supabase upload
  */
-export function validateLocalRelationalIntegrity({ companies, vendors, payments }) {
+export function validateLocalRelationalIntegrity({ companies, customers, payments }) {
   console.log('\n' + '='.repeat(65));
   console.log(' LOCAL RELATIONAL DATASET INTEGRITY VALIDATION');
   console.log('='.repeat(65));
 
   const errors = [];
   const companyIds = new Set();
-  const vendorIds = new Set();
+  const customerIds = new Set();
 
   // 1. Verify Companies
   for (let i = 0; i < companies.length; i++) {
@@ -76,22 +77,22 @@ export function validateLocalRelationalIntegrity({ companies, vendors, payments 
     companyIds.add(c.id);
   }
 
-  // 2. Verify Vendors & Foreign Keys to Companies
-  let orphanVendors = 0;
-  for (let i = 0; i < vendors.length; i++) {
-    const v = vendors[i];
-    if (!UUID_REGEX.test(v.id)) errors.push(`Invalid vendor UUID at index ${i}: ${v.id}`);
-    if (!v.name) errors.push(`Missing vendor name at index ${i}`);
-    if (vendorIds.has(v.id)) errors.push(`Duplicate vendor ID: ${v.id}`);
-    vendorIds.add(v.id);
+  // 2. Verify Customers & Foreign Keys to Companies
+  let orphanCustomers = 0;
+  for (let i = 0; i < customers.length; i++) {
+    const cust = customers[i];
+    if (!UUID_REGEX.test(cust.id)) errors.push(`Invalid customer UUID at index ${i}: ${cust.id}`);
+    if (!cust.name) errors.push(`Missing customer name at index ${i}`);
+    if (customerIds.has(cust.id)) errors.push(`Duplicate customer ID: ${cust.id}`);
+    customerIds.add(cust.id);
 
-    if (!companyIds.has(v.company_id)) {
-      orphanVendors++;
-      errors.push(`Orphan vendor [${v.id}]: company_id ${v.company_id} does not exist in companies`);
+    if (!companyIds.has(cust.company_id)) {
+      orphanCustomers++;
+      errors.push(`Orphan customer [${cust.id}]: company_id ${cust.company_id} does not exist in companies`);
     }
   }
 
-  // 3. Verify Payment History & Foreign Keys to Vendors
+  // 3. Verify Payment History & Foreign Keys to Customers
   let orphanPayments = 0;
   const statusCounts = { PAID: 0, LATE: 0, PARTIAL: 0, MISSED: 0, PENDING: 0, OTHER: 0 };
   let totalVolume = 0;
@@ -103,9 +104,10 @@ export function validateLocalRelationalIntegrity({ companies, vendors, payments 
       errors.push(`Invalid payment amount at index ${i}: ${p.amount}`);
     }
 
-    if (!vendorIds.has(p.vendor_id)) {
+    const fkTarget = p.customer_id || p.vendor_id;
+    if (!customerIds.has(fkTarget)) {
       orphanPayments++;
-      errors.push(`Orphan payment [${p.id}]: vendor_id ${p.vendor_id} does not exist in vendors`);
+      errors.push(`Orphan payment [${p.id}]: target ${fkTarget} does not exist in customers`);
     }
 
     if (statusCounts[p.status] !== undefined) {
@@ -119,12 +121,12 @@ export function validateLocalRelationalIntegrity({ companies, vendors, payments 
 
   const isHealthy = errors.length === 0;
 
-  console.log(`  - Valid Companies:     ${companies.length}`);
-  console.log(`  - Valid Vendors:       ${vendors.length}`);
-  console.log(`  - Valid Payments:      ${payments.length}`);
-  console.log(`  - Total Volume:        $${totalVolume.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`);
-  console.log(`  - Orphan Vendors (FK): ${orphanVendors}`);
-  console.log(`  - Orphan Payments(FK): ${orphanPayments}`);
+  console.log(`  - Valid Companies:      ${companies.length}`);
+  console.log(`  - Valid Customers (AR): ${customers.length}`);
+  console.log(`  - Valid Invoices:       ${payments.length}`);
+  console.log(`  - Total Volume:         $${totalVolume.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`);
+  console.log(`  - Orphan Customers (FK):${orphanCustomers}`);
+  console.log(`  - Orphan Invoices (FK): ${orphanPayments}`);
   console.log('  - Invoice Status Distribution:');
   for (const [st, count] of Object.entries(statusCounts)) {
     const pct = ((count / Math.max(1, payments.length)) * 100).toFixed(1);
@@ -142,9 +144,9 @@ export function validateLocalRelationalIntegrity({ companies, vendors, payments 
   return {
     isHealthy,
     companiesCount: companies.length,
-    vendorsCount: vendors.length,
+    customersCount: customers.length,
     paymentsCount: payments.length,
-    orphanVendors,
+    orphanCustomers,
     orphanPayments,
     statusCounts,
     totalVolume,
@@ -202,9 +204,9 @@ async function getAuthenticatedClient({ email, password, autoTestUser }) {
   return { client, userId: null };
 }
 
-async function checkSupabaseTablesExist(client) {
-  const { error } = await client.from('companies').select('id').limit(1);
-  if (error && error.message.includes("Could not find the table 'public.companies'")) {
+async function checkSupabaseTableExists(client, tableName) {
+  const { error } = await client.from(tableName).select('id').limit(1);
+  if (error && (error.message.includes(`Could not find the table 'public.${tableName}'`) || error.message.includes('relation') && error.message.includes('does not exist'))) {
     return false;
   }
   return true;
@@ -250,7 +252,7 @@ async function main() {
   let dataDir = 'data/synthetic';
   let batchSize = 100;
   let limitCompanies = null;
-  let limitVendors = null;
+  let limitCustomers = null;
   let limitPayments = null;
 
   for (let i = 0; i < args.length; i++) {
@@ -261,35 +263,39 @@ async function main() {
     else if (args[i] === '--data-dir' && args[i + 1]) dataDir = args[++i];
     else if (args[i] === '--batch-size' && args[i + 1]) batchSize = parseInt(args[++i], 10);
     else if (args[i] === '--limit-companies' && args[i + 1]) limitCompanies = parseInt(args[++i], 10);
-    else if (args[i] === '--limit-vendors' && args[i + 1]) limitVendors = parseInt(args[++i], 10);
-    else if (args[i] === '--limit-payments' && args[i + 1]) limitPayments = parseInt(args[++i], 10);
+    else if ((args[i] === '--limit-customers' || args[i] === '--limit-vendors') && args[i + 1]) {
+      limitCustomers = parseInt(args[++i], 10);
+    } else if (args[i] === '--limit-payments' && args[i + 1]) limitPayments = parseInt(args[++i], 10);
   }
 
   // Load datasets
   const companiesPath = path.resolve(process.cwd(), dataDir, 'companies.json');
-  const vendorsPath = path.resolve(process.cwd(), dataDir, 'vendors.json');
+  let customersPath = path.resolve(process.cwd(), dataDir, 'customers.json');
+  if (!fs.existsSync(customersPath)) {
+    customersPath = path.resolve(process.cwd(), dataDir, 'vendors.json');
+  }
   const paymentsPath = path.resolve(process.cwd(), dataDir, 'payment_history.json');
 
-  if (!fs.existsSync(companiesPath) || !fs.existsSync(vendorsPath) || !fs.existsSync(paymentsPath)) {
+  if (!fs.existsSync(companiesPath) || !fs.existsSync(customersPath) || !fs.existsSync(paymentsPath)) {
     console.error(`[ERROR] Missing dataset files in '${dataDir}'.`);
     console.error('Run `npm run generate:data` and `npm run simulate:payments` first.');
     process.exit(1);
   }
 
   let companies = JSON.parse(fs.readFileSync(companiesPath, 'utf8'));
-  let vendors = JSON.parse(fs.readFileSync(vendorsPath, 'utf8'));
+  let customers = JSON.parse(fs.readFileSync(customersPath, 'utf8'));
   let payments = JSON.parse(fs.readFileSync(paymentsPath, 'utf8'));
 
   if (limitCompanies) companies = companies.slice(0, limitCompanies);
   const activeCompanyIds = new Set(companies.map((c) => c.id));
-  vendors = vendors.filter((v) => activeCompanyIds.has(v.company_id));
-  if (limitVendors) vendors = vendors.slice(0, limitVendors);
-  const activeVendorIds = new Set(vendors.map((v) => v.id));
-  payments = payments.filter((p) => activeVendorIds.has(p.vendor_id));
+  customers = customers.filter((c) => activeCompanyIds.has(c.company_id));
+  if (limitCustomers) customers = customers.slice(0, limitCustomers);
+  const activeCustomerIds = new Set(customers.map((c) => c.id));
+  payments = payments.filter((p) => activeCustomerIds.has(p.customer_id || p.vendor_id));
   if (limitPayments) payments = payments.slice(0, limitPayments);
 
   // 1. Always run Relational Integrity Validation
-  const localReport = validateLocalRelationalIntegrity({ companies, vendors, payments });
+  const localReport = validateLocalRelationalIntegrity({ companies, customers, payments });
 
   const reportOutPath = path.resolve(process.cwd(), dataDir, 'database_validation_report.json');
   fs.writeFileSync(reportOutPath, JSON.stringify(localReport, null, 2));
@@ -310,8 +316,8 @@ async function main() {
 
   const { client, userId } = await getAuthenticatedClient({ email, password, autoTestUser });
 
-  const tablesReady = await checkSupabaseTablesExist(client);
-  if (!tablesReady) {
+  const companiesReady = await checkSupabaseTableExists(client, 'companies');
+  if (!companiesReady) {
     console.log('\n[NOTICE] Supabase schema cache does not yet show table `public.companies`.');
     console.log('To complete remote injection into Supabase:');
     console.log('  1. Go to your Supabase Dashboard: https://supabase.com/dashboard');
@@ -328,9 +334,19 @@ async function main() {
     }
   }
 
-  // Upload to Supabase
+  // Upload to Supabase: companies, customers (and vendors if table exists), and payment_history
   await batchUpsert(client, 'companies', companies, { batchSize });
-  await batchUpsert(client, 'vendors', vendors, { batchSize });
+
+  const customersTableExists = await checkSupabaseTableExists(client, 'customers');
+  if (customersTableExists) {
+    await batchUpsert(client, 'customers', customers, { batchSize });
+  }
+
+  const vendorsTableExists = await checkSupabaseTableExists(client, 'vendors');
+  if (vendorsTableExists) {
+    await batchUpsert(client, 'vendors', customers, { batchSize });
+  }
+
   await batchUpsert(client, 'payment_history', payments, { batchSize });
 
   console.log('\n[SUCCESS] Successfully uploaded all data to Supabase!');

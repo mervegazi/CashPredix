@@ -1,7 +1,8 @@
 /**
  * CashPredix - Enterprise Seed Dataset (Week 3)
- * Provides 4 canonical enterprise companies and 280 realistic suppliers
- * with CashPredix Technologies Inc. holding 160+ specialized vendors.
+ * Accounts Receivable (AR) & Customer Cash Inflow Engine
+ * Provides 4 canonical enterprise companies and 280 realistic B2B corporate customers
+ * with CashPredix Technologies Inc. holding 160+ specialized enterprise client accounts.
  */
 
 export const INITIAL_SEED_COMPANIES = [
@@ -10,177 +11,176 @@ export const INITIAL_SEED_COMPANIES = [
     name: 'CashPredix Technologies Inc.',
     industry: 'Technology & SaaS',
     created_at: new Date(Date.now() - 720 * 86400000).toISOString(),
-    description: 'Flagship enterprise fintech & AI cash-flow prediction platform holding global cloud & dev vendor contracts.',
+    description: 'Flagship enterprise fintech & AI cash-flow prediction platform holding global B2B corporate SaaS client contracts.',
   },
   {
     id: 'comp-apex',
     name: 'Apex Horizon Logistics Corp.',
     industry: 'Logistics & Freight',
     created_at: new Date(Date.now() - 360 * 86400000).toISOString(),
-    description: 'Global multimodal freight forwarding, intermodal logistics, and warehousing operator.',
+    description: 'Global multimodal freight forwarding and supply chain operator serving multinational import/export shipping clients.',
   },
   {
     id: 'comp-vanguard',
     name: 'Vanguard Healthcare Systems Enterprises',
     industry: 'Healthcare & Pharmaceuticals',
     created_at: new Date(Date.now() - 280 * 86400000).toISOString(),
-    description: 'Integrated healthcare provider network, medical diagnostics, and biopharmaceutical supply management.',
+    description: 'Integrated healthcare and diagnostic networks serving hospital chains, clinical partners, and healthcare payers.',
   },
   {
     id: 'comp-quantum',
     name: 'Quantum Capital & Financial Holdings',
     industry: 'Financial Services & FinTech',
     created_at: new Date(Date.now() - 210 * 86400000).toISOString(),
-    description: 'Institutional asset management, quantitative liquidity networks, and clearing services.',
+    description: 'Institutional asset management and clearing network serving global hedge funds, pension funds, and asset managers.',
   },
 ];
 
-// Curated specialized vendor pools
-const CASHPREDIX_CORE_VENDORS = [
-  // Cloud & Infrastructure (18)
-  { name: 'Amazon Web Services (AWS)', category: 'Cloud & Infrastructure', terms: 'Net 30', score: 98 },
-  { name: 'Microsoft Azure Cloud Solutions', category: 'Cloud & Infrastructure', terms: 'Net 30', score: 97 },
-  { name: 'Google Cloud Platform (GCP)', category: 'Cloud & Infrastructure', terms: 'Net 30', score: 96 },
-  { name: 'Cloudflare Edge Security & CDN', category: 'Cloud & Infrastructure', terms: 'Net 15', score: 99 },
-  { name: 'Snowflake Enterprise Data Warehouse', category: 'Cloud & Infrastructure', terms: 'Net 30', score: 94 },
-  { name: 'Datadog Observability & APM', category: 'Cloud & Infrastructure', terms: 'Net 15', score: 95 },
-  { name: 'MongoDB Atlas Distributed Database', category: 'Cloud & Infrastructure', terms: 'Net 30', score: 92 },
-  { name: 'Redis Enterprise In-Memory Cache', category: 'Cloud & Infrastructure', terms: 'Net 15', score: 93 },
-  { name: 'Vercel Serverless Edge Platform', category: 'Cloud & Infrastructure', terms: 'Due on Receipt', score: 97 },
-  { name: 'Supabase Cloud PostgreSQL Engine', category: 'Cloud & Infrastructure', terms: 'Net 15', score: 99 },
-  { name: 'Confluent Apache Kafka Cloud', category: 'Cloud & Infrastructure', terms: 'Net 30', score: 91 },
-  { name: 'Elastic Cloud Enterprise Search', category: 'Cloud & Infrastructure', terms: 'Net 30', score: 89 },
-  { name: 'Fastly Real-Time CDN Network', category: 'Cloud & Infrastructure', terms: 'Net 30', score: 88 },
-  { name: 'DigitalOcean Enterprise Droplets', category: 'Cloud & Infrastructure', terms: 'Net 15', score: 92 },
-  { name: 'HashiCorp Terraform Cloud', category: 'Cloud & Infrastructure', terms: 'Net 30', score: 94 },
-  { name: 'Grafana Labs Enterprise Telemetry', category: 'Cloud & Infrastructure', terms: 'Net 30', score: 90 },
-  { name: 'Akamai Global Security Services', category: 'Cloud & Infrastructure', terms: 'Net 45', score: 87 },
-  { name: 'Equinix Metal Data Centers', category: 'Cloud & Infrastructure', terms: 'Net 60', score: 85 },
+// Curated specialized enterprise customer accounts
+const CASHPREDIX_CORE_CUSTOMERS = [
+  // Tier 1 Banking & Global Financial Institutions (18)
+  { name: 'JPMorgan Chase Treasury Services', category: 'Financial & Banking', terms: 'Net 30', score: 99 },
+  { name: 'Bank of America Global Commercial Banking', category: 'Financial & Banking', terms: 'Net 30', score: 98 },
+  { name: 'Goldman Sachs Asset Management LP', category: 'Financial & Banking', terms: 'Net 15', score: 99 },
+  { name: 'Morgan Stanley Wealth Management', category: 'Financial & Banking', terms: 'Net 30', score: 97 },
+  { name: 'Citigroup Corporate Treasury Solutions', category: 'Financial & Banking', terms: 'Net 30', score: 96 },
+  { name: 'Wells Fargo Commercial Capital Corp.', category: 'Financial & Banking', terms: 'Net 45', score: 93 },
+  { name: 'Barclays Global Corporate Banking', category: 'Financial & Banking', terms: 'Net 30', score: 95 },
+  { name: 'HSBC International Trade Finance', category: 'Financial & Banking', terms: 'Net 45', score: 94 },
+  { name: 'BNP Paribas Institutional Solutions', category: 'Financial & Banking', terms: 'Net 30', score: 92 },
+  { name: 'UBS Investment Bank Americas', category: 'Financial & Banking', terms: 'Net 15', score: 98 },
+  { name: 'Deutsche Bank Global Transaction Banking', category: 'Financial & Banking', terms: 'Net 45', score: 89 },
+  { name: 'Standard Chartered Emerging Markets', category: 'Financial & Banking', terms: 'Net 60', score: 85 },
+  { name: 'Santander Commercial Bank USA', category: 'Financial & Banking', terms: 'Net 30', score: 91 },
+  { name: 'Capital One Enterprise Treasury', category: 'Financial & Banking', terms: 'Net 15', score: 96 },
+  { name: 'PNC Financial Services Group', category: 'Financial & Banking', terms: 'Net 30', score: 94 },
+  { name: 'US Bancorp Enterprise Banking', category: 'Financial & Banking', terms: 'Net 30', score: 95 },
+  { name: 'Truist Corporate & Investment Banking', category: 'Financial & Banking', terms: 'Net 45', score: 88 },
+  { name: 'Silicon Valley Commercial FinTech Clients', category: 'Financial & Banking', terms: 'Net 15', score: 90 },
 
-  // AI & Developer Platforms (16)
-  { name: 'OpenAI API Commercial Services', category: 'Cloud & Infrastructure', terms: 'Net 15', score: 98 },
-  { name: 'Anthropic Claude AI Platform', category: 'Cloud & Infrastructure', terms: 'Net 15', score: 96 },
-  { name: 'GitHub Enterprise Suite', category: 'Cloud & Infrastructure', terms: 'Net 30', score: 99 },
-  { name: 'Atlassian Jira & Confluence Cloud', category: 'Cloud & Infrastructure', terms: 'Net 30', score: 94 },
-  { name: 'Slack Enterprise Grid Technologies', category: 'Cloud & Infrastructure', terms: 'Net 30', score: 95 },
-  { name: 'Figma Enterprise Design Systems', category: 'Marketing & Creative Media', terms: 'Net 30', score: 93 },
-  { name: 'Docker Hub Container Registries', category: 'Cloud & Infrastructure', terms: 'Net 15', score: 91 },
-  { name: 'Databricks Lakehouse Analytics', category: 'Cloud & Infrastructure', terms: 'Net 30', score: 93 },
-  { name: 'Postman Enterprise API Tooling', category: 'Cloud & Infrastructure', terms: 'Net 15', score: 92 },
-  { name: 'PagerDuty Incident Command', category: 'Cloud & Infrastructure', terms: 'Net 15', score: 96 },
-  { name: 'Linear Systems Agile Tracker', category: 'Cloud & Infrastructure', terms: 'Due on Receipt', score: 95 },
-  { name: 'Notion Labs Enterprise Workspace', category: 'Facilities & Office Maintenance', terms: 'Net 15', score: 94 },
-  { name: 'Weights & Biases ML Experimentation', category: 'Cloud & Infrastructure', terms: 'Net 30', score: 90 },
-  { name: 'Pinecone Vector Database Enterprise', category: 'Cloud & Infrastructure', terms: 'Net 15', score: 93 },
-  { name: 'Sentry Error Monitoring Platform', category: 'Cloud & Infrastructure', terms: 'Net 15', score: 96 },
-  { name: 'LaunchDarkly Feature Flag Management', category: 'Cloud & Infrastructure', terms: 'Net 30', score: 91 },
+  // Enterprise Tech Unicorns & SaaS Platforms (16)
+  { name: 'Shopify Plus Merchant Platform Corp.', category: 'Tech & SaaS Enterprise', terms: 'Due on Receipt', score: 99 },
+  { name: 'Uber Technologies Global Treasury', category: 'Tech & SaaS Enterprise', terms: 'Net 15', score: 97 },
+  { name: 'Airbnb Worldwide Payments Division', category: 'Tech & SaaS Enterprise', terms: 'Net 15', score: 96 },
+  { name: 'DoorDash Merchant Financial Services', category: 'Tech & SaaS Enterprise', terms: 'Net 30', score: 92 },
+  { name: 'Snowflake Corporate Data Ops', category: 'Tech & SaaS Enterprise', terms: 'Net 30', score: 98 },
+  { name: 'Stripe Corporate Billing Partner', category: 'Tech & SaaS Enterprise', terms: 'Due on Receipt', score: 99 },
+  { name: 'Block / Square Merchant Network', category: 'Tech & SaaS Enterprise', terms: 'Net 15', score: 95 },
+  { name: 'Salesforce Enterprise Analytics Hub', category: 'Tech & SaaS Enterprise', terms: 'Net 30', score: 97 },
+  { name: 'HubSpot Global Growth Systems', category: 'Tech & SaaS Enterprise', terms: 'Net 30', score: 94 },
+  { name: 'ServiceNow Cloud Enterprise Operations', category: 'Tech & SaaS Enterprise', terms: 'Net 30', score: 96 },
+  { name: 'Intuit Quickbooks Enterprise Alliance', category: 'Tech & SaaS Enterprise', terms: 'Net 15', score: 98 },
+  { name: 'Workday Human Capital Systems Corp.', category: 'Tech & SaaS Enterprise', terms: 'Net 30', score: 95 },
+  { name: 'Atlassian Enterprise Agile Accounts', category: 'Tech & SaaS Enterprise', terms: 'Net 30', score: 93 },
+  { name: 'Zoom Communications Enterprise Video', category: 'Tech & SaaS Enterprise', terms: 'Net 15', score: 94 },
+  { name: 'DocuSign Digital Agreement Cloud', category: 'Tech & SaaS Enterprise', terms: 'Net 30', score: 91 },
+  { name: 'Twilio Customer Communications Group', category: 'Tech & SaaS Enterprise', terms: 'Net 30', score: 90 },
 
-  // Payments & Financial Infrastructure (12)
-  { name: 'Stripe Payments & Billing API', category: 'Legal & Professional Services', terms: 'Due on Receipt', score: 99 },
-  { name: 'Twilio Global Telecom & SMS', category: 'Cloud & Infrastructure', terms: 'Net 30', score: 93 },
-  { name: 'Plaid Financial Account Verification', category: 'Legal & Professional Services', terms: 'Net 30', score: 91 },
-  { name: 'Adyen Global Merchant Services', category: 'Legal & Professional Services', terms: 'Net 15', score: 94 },
-  { name: 'Brex Corporate Expense Management', category: 'Legal & Professional Services', terms: 'Due on Receipt', score: 95 },
-  { name: 'Ramp Card Operations & Treasury', category: 'Legal & Professional Services', terms: 'Due on Receipt', score: 96 },
-  { name: 'Deel International Payroll Engine', category: 'Legal & Professional Services', terms: 'Net 15', score: 92 },
-  { name: 'Remote.com Global Contractor Network', category: 'Legal & Professional Services', terms: 'Net 30', score: 89 },
-  { name: 'Carta Equity Management Solutions', category: 'Legal & Professional Services', terms: 'Net 30', score: 94 },
-  { name: 'Modern Treasury Automated ACH', category: 'Legal & Professional Services', terms: 'Net 15', score: 92 },
-  { name: 'Marqeta Card Issuing Platform', category: 'Legal & Professional Services', terms: 'Net 30', score: 87 },
-  { name: 'Checkr Enterprise Background Verification', category: 'Legal & Professional Services', terms: 'Net 30', score: 90 },
+  // Global Retail & E-Commerce Conglomerates (14)
+  { name: 'Walmart Global eCommerce Division', category: 'Retail & Commerce', terms: 'Net 30', score: 98 },
+  { name: 'Target Corporation Retail Logistics', category: 'Retail & Commerce', terms: 'Net 30', score: 95 },
+  { name: 'The Home Depot Pro Merchant Services', category: 'Retail & Commerce', terms: 'Net 45', score: 93 },
+  { name: 'Costco Wholesale Corporate Membership', category: 'Retail & Commerce', terms: 'Net 15', score: 99 },
+  { name: 'Best Buy Commercial Electronics Group', category: 'Retail & Commerce', terms: 'Net 30', score: 91 },
+  { name: 'Lowe\'s Commercial Business Services', category: 'Retail & Commerce', terms: 'Net 45', score: 90 },
+  { name: 'Wayfair B2B Commercial Interiors', category: 'Retail & Commerce', terms: 'Net 30', score: 86 },
+  { name: 'eBay Enterprise Merchant Alliance', category: 'Retail & Commerce', terms: 'Net 15', score: 94 },
+  { name: 'Alibaba Americas B2B Marketplace', category: 'Retail & Commerce', terms: 'Net 60', score: 84 },
+  { name: 'Rakuten International Retail Network', category: 'Retail & Commerce', terms: 'Net 30', score: 89 },
+  { name: 'Kroger Supermarkets Digital Treasury', category: 'Retail & Commerce', terms: 'Net 30', score: 94 },
+  { name: 'Nike Direct-to-Consumer Digital Ops', category: 'Retail & Commerce', terms: 'Net 30', score: 97 },
+  { name: 'LVMH Moët Hennessy Luxury Americas', category: 'Retail & Commerce', terms: 'Net 30', score: 96 },
+  { name: 'Inditex / Zara Global Supply Group', category: 'Retail & Commerce', terms: 'Net 45', score: 92 },
 
-  // Cybersecurity & Hardware (14)
-  { name: 'CrowdStrike Falcon Endpoint Security', category: 'Cloud & Infrastructure', terms: 'Net 30', score: 97 },
-  { name: 'SentinelOne Autonomous AI Defense', category: 'Cloud & Infrastructure', terms: 'Net 30', score: 95 },
-  { name: 'Palo Alto Networks Next-Gen Firewall', category: 'Cloud & Infrastructure', terms: 'Net 45', score: 91 },
-  { name: 'Okta Identity & SSO Cloud', category: 'Cloud & Infrastructure', terms: 'Net 30', score: 96 },
-  { name: 'Apple Enterprise Device Fleet', category: 'Hardware & Electronics', terms: 'Net 30', score: 98 },
-  { name: 'Dell Technologies High-Compute Servers', category: 'Hardware & Electronics', terms: 'Net 45', score: 90 },
-  { name: 'Cisco Systems Networking Hardware', category: 'Hardware & Electronics', terms: 'Net 60', score: 88 },
-  { name: 'Yubico Hardware Security Keys', category: 'Hardware & Electronics', terms: 'Net 30', score: 95 },
-  { name: '1Password Enterprise Secret Vault', category: 'Cloud & Infrastructure', terms: 'Net 15', score: 97 },
-  { name: 'Qualys Cloud Vulnerability Scanner', category: 'Cloud & Infrastructure', terms: 'Net 30', score: 89 },
-  { name: 'Vanta Automated SOC2 Compliance', category: 'Legal & Professional Services', terms: 'Net 30', score: 94 },
-  { name: 'Drata Continuous Compliance Engine', category: 'Legal & Professional Services', terms: 'Net 30', score: 93 },
-  { name: 'NVIDIA AI Accelerated Compute Enterprise', category: 'Hardware & Electronics', terms: 'Net 60', score: 91 },
-  { name: 'Supermicro Server Rack Systems', category: 'Hardware & Electronics', terms: 'Net 45', score: 84 },
+  // Manufacturing, Industrial & Energy (12)
+  { name: 'General Electric Treasury Operations', category: 'Industrial & Manufacturing', terms: 'Net 45', score: 93 },
+  { name: 'Boeing Commercial Aviation Services', category: 'Industrial & Manufacturing', terms: 'Net 60', score: 88 },
+  { name: 'Lockheed Martin Aeronautics Div.', category: 'Industrial & Manufacturing', terms: 'Net 30', score: 97 },
+  { name: 'Caterpillar Global Equipment FinCorp', category: 'Industrial & Manufacturing', terms: 'Net 45', score: 91 },
+  { name: 'Siemens Industrial Automation LLC', category: 'Industrial & Manufacturing', terms: 'Net 45', score: 94 },
+  { name: '3M Global Innovation & Supply Chain', category: 'Industrial & Manufacturing', terms: 'Net 30', score: 95 },
+  { name: 'Honeywell Aerospace Technologies', category: 'Industrial & Manufacturing', terms: 'Net 30', score: 92 },
+  { name: 'Deere & Company Agricultural Systems', category: 'Industrial & Manufacturing', terms: 'Net 45', score: 90 },
+  { name: 'Raytheon Technologies Defense Systems', category: 'Industrial & Manufacturing', terms: 'Net 30', score: 96 },
+  { name: 'Chevron Corporate Liquidity Management', category: 'Industrial & Manufacturing', terms: 'Net 15', score: 98 },
+  { name: 'ExxonMobil Global Upstream Accounts', category: 'Industrial & Manufacturing', terms: 'Net 30', score: 95 },
+  { name: 'Dow Chemical Global Distribution Co.', category: 'Industrial & Manufacturing', terms: 'Net 60', score: 86 },
 
-  // Professional Services & Legal (10)
-  { name: 'Latham & Watkins Global Legal Counsel', category: 'Legal & Professional Services', terms: 'Net 30', score: 94 },
-  { name: 'Ernst & Young (EY) Audit & Advisory', category: 'Legal & Professional Services', terms: 'Net 45', score: 92 },
-  { name: 'Deloitte Risk & Tax Strategies', category: 'Legal & Professional Services', terms: 'Net 45', score: 90 },
-  { name: 'PricewaterhouseCoopers (PwC) Assurance', category: 'Legal & Professional Services', terms: 'Net 45', score: 89 },
-  { name: 'McKinsey & Company Strategy Partners', category: 'Legal & Professional Services', terms: 'Net 60', score: 88 },
-  { name: 'Wilson Sonsini Goodrich Corporate Counsel', category: 'Legal & Professional Services', terms: 'Net 30', score: 93 },
-  { name: 'Kroll Cyber Risk & Forensics', category: 'Legal & Professional Services', terms: 'Net 30', score: 86 },
-  { name: 'Aon Commercial Risk Solutions', category: 'Legal & Professional Services', terms: 'Net 30', score: 91 },
-  { name: 'Marsh McLennan Enterprise Insurance', category: 'Legal & Professional Services', terms: 'Net 45', score: 90 },
-  { name: 'BDO USA Advisory & Consulting LLP', category: 'Legal & Professional Services', terms: 'Net 30', score: 87 },
+  // Healthcare, Pharma & Biotech Networks (10)
+  { name: 'UnitedHealth Group Corporate Treasury', category: 'Healthcare & Pharma', terms: 'Net 30', score: 98 },
+  { name: 'CVS Health Pharmacy Benefit Services', category: 'Healthcare & Pharma', terms: 'Net 30', score: 95 },
+  { name: 'Johnson & Johnson Global Health Systems', category: 'Healthcare & Pharma', terms: 'Net 30', score: 97 },
+  { name: 'Pfizer BioPharmaceutical Commercial Group', category: 'Healthcare & Pharma', terms: 'Net 45', score: 93 },
+  { name: 'McKesson Pharmaceutical Solutions', category: 'Healthcare & Pharma', terms: 'Net 30', score: 96 },
+  { name: 'Abbott Laboratories Diagnostics Network', category: 'Healthcare & Pharma', terms: 'Net 30', score: 94 },
+  { name: 'Eli Lilly and Company Commercial Accounts', category: 'Healthcare & Pharma', terms: 'Net 45', score: 91 },
+  { name: 'Merck & Co. Global Human Health', category: 'Healthcare & Pharma', terms: 'Net 30', score: 95 },
+  { name: 'Thermo Fisher Scientific Research Hub', category: 'Healthcare & Pharma', terms: 'Net 30', score: 94 },
+  { name: 'Bristol Myers Squibb Enterprise Ops', category: 'Healthcare & Pharma', terms: 'Net 45', score: 89 },
 ];
 
-const APEX_CORE_VENDORS = [
-  { name: 'Maersk Line Maritime Shipping Corp.', category: 'Logistics & Shipping', terms: 'Net 45', score: 92 },
-  { name: 'Mediterranean Shipping Company (MSC)', category: 'Logistics & Shipping', terms: 'Net 45', score: 89 },
-  { name: 'DHL Global Forwarding Express', category: 'Logistics & Shipping', terms: 'Net 30', score: 94 },
-  { name: 'FedEx Corporate Freight Solutions', category: 'Logistics & Shipping', terms: 'Net 30', score: 91 },
-  { name: 'Kuehne + Nagel Logistics Transit', category: 'Logistics & Shipping', terms: 'Net 45', score: 90 },
-  { name: 'C.H. Robinson Worldwide Freight Brokerage', category: 'Logistics & Shipping', terms: 'Net 30', score: 86 },
-  { name: 'Shell Commercial Marine & Fleet Fuel', category: 'Raw Materials & Manufacturing', terms: 'Net 15', score: 95 },
-  { name: 'ExxonMobil Aviation & Heavy Transport', category: 'Raw Materials & Manufacturing', terms: 'Net 30', score: 93 },
-  { name: 'Volvo Trucks Fleet Service & Leasing', category: 'Hardware & Electronics', terms: 'Net 60', score: 88 },
-  { name: 'Scania Heavy Transport Systems', category: 'Hardware & Electronics', terms: 'Net 60', score: 87 },
-  { name: 'Caterpillar Material Handling Systems', category: 'Hardware & Electronics', terms: 'Net 45', score: 90 },
-  { name: 'ProLogis Industrial Warehousing Parks', category: 'Facilities & Office Maintenance', terms: 'Net 30', score: 96 },
-  { name: 'Thermo King Refrigerated Trailer Units', category: 'Hardware & Electronics', terms: 'Net 45', score: 85 },
-  { name: 'BNSF Railway Intermodal Rail Lines', category: 'Logistics & Shipping', terms: 'Net 30', score: 89 },
-  { name: 'Union Pacific Intermodal Freight', category: 'Logistics & Shipping', terms: 'Net 30', score: 88 },
+const APEX_CORE_CUSTOMERS = [
+  { name: 'Nike Global Footwear Supply Logistics', category: 'Retail & Commerce', terms: 'Net 30', score: 97 },
+  { name: 'Apple Inc. Worldwide Distribution Hub', category: 'Tech & SaaS Enterprise', terms: 'Net 15', score: 99 },
+  { name: 'Samsung Electronics Americas Freight', category: 'Tech & SaaS Enterprise', terms: 'Net 30', score: 95 },
+  { name: 'Tesla Motors Gigafactory Parts Transit', category: 'Industrial & Manufacturing', terms: 'Net 30', score: 93 },
+  { name: 'Procter & Gamble Consumer Goods Supply', category: 'Retail & Commerce', terms: 'Net 45', score: 94 },
+  { name: 'Unilever North America Transit Group', category: 'Retail & Commerce', terms: 'Net 45', score: 91 },
+  { name: 'Sony Corporation Audio/Visual Freight', category: 'Tech & SaaS Enterprise', terms: 'Net 30', score: 92 },
+  { name: 'Ford Motor Company Automotive Assembly', category: 'Industrial & Manufacturing', terms: 'Net 60', score: 87 },
+  { name: 'General Motors Component Inbound Freight', category: 'Industrial & Manufacturing', terms: 'Net 60', score: 86 },
+  { name: 'IKEA Supply AG Furniture Logistics', category: 'Retail & Commerce', terms: 'Net 45', score: 90 },
+  { name: 'Adidas AG Sports Apparel Distribution', category: 'Retail & Commerce', terms: 'Net 30', score: 94 },
+  { name: 'LG Electronics North America Transport', category: 'Tech & SaaS Enterprise', terms: 'Net 30', score: 89 },
+  { name: 'Nestlé USA Packaged Food Transportation', category: 'Retail & Commerce', terms: 'Net 30', score: 95 },
+  { name: 'PepsiCo Beverages Fleet Delivery Hub', category: 'Retail & Commerce', terms: 'Net 15', score: 96 },
+  { name: 'Dell Technologies Global Hardware Freight', category: 'Tech & SaaS Enterprise', terms: 'Net 45', score: 88 },
 ];
 
-const VANGUARD_CORE_VENDORS = [
-  { name: 'Pfizer BioPharmaceuticals Manufacturing', category: 'Raw Materials & Manufacturing', terms: 'Net 45', score: 95 },
-  { name: 'Siemens Healthineers Diagnostic Imaging', category: 'Hardware & Electronics', terms: 'Net 60', score: 93 },
-  { name: 'Medtronic Surgical Devices & Implants', category: 'Hardware & Electronics', terms: 'Net 45', score: 91 },
-  { name: 'Quest Diagnostics Clinical Testing Labs', category: 'Legal & Professional Services', terms: 'Net 30', score: 94 },
-  { name: 'Abbott Laboratories Diagnostics Division', category: 'Raw Materials & Manufacturing', terms: 'Net 30', score: 92 },
-  { name: 'McKesson Pharmaceutical Distribution', category: 'Logistics & Shipping', terms: 'Net 30', score: 96 },
-  { name: 'Roche Diagnostics Global Reagents', category: 'Raw Materials & Manufacturing', terms: 'Net 45', score: 90 },
-  { name: 'Thermo Fisher Scientific Laboratory Equipment', category: 'Hardware & Electronics', terms: 'Net 30', score: 94 },
-  { name: 'GE HealthCare Precision Care Systems', category: 'Hardware & Electronics', terms: 'Net 60', score: 88 },
-  { name: 'Cardinal Health Hospital Supply Network', category: 'Logistics & Shipping', terms: 'Net 30', score: 92 },
-  { name: 'Baxter International Renal & Infusion Systems', category: 'Raw Materials & Manufacturing', terms: 'Net 45', score: 87 },
-  { name: 'Stryker Orthopedic & Surgical Tech', category: 'Hardware & Electronics', terms: 'Net 60', score: 89 },
+const VANGUARD_CORE_CUSTOMERS = [
+  { name: 'Mayo Clinic Health System Operations', category: 'Healthcare & Pharma', terms: 'Net 30', score: 99 },
+  { name: 'Cleveland Clinic Foundation Network', category: 'Healthcare & Pharma', terms: 'Net 30', score: 98 },
+  { name: 'Johns Hopkins Medicine Clinical Center', category: 'Healthcare & Pharma', terms: 'Net 30', score: 97 },
+  { name: 'Kaiser Permanente Medical Group', category: 'Healthcare & Pharma', terms: 'Net 15', score: 99 },
+  { name: 'Mount Sinai Health System New York', category: 'Healthcare & Pharma', terms: 'Net 30', score: 94 },
+  { name: 'Mass General Brigham Health Alliance', category: 'Healthcare & Pharma', terms: 'Net 30', score: 95 },
+  { name: 'Stanford Health Care Clinical Services', category: 'Healthcare & Pharma', terms: 'Net 15', score: 98 },
+  { name: 'Cedars-Sinai Medical Center Los Angeles', category: 'Healthcare & Pharma', terms: 'Net 30', score: 96 },
+  { name: 'Northwell Health Regional Hospital Group', category: 'Healthcare & Pharma', terms: 'Net 45', score: 91 },
+  { name: 'UPMC Health System Western Pennsylvania', category: 'Healthcare & Pharma', terms: 'Net 45', score: 89 },
+  { name: 'Geisinger Health Rural Care Network', category: 'Healthcare & Pharma', terms: 'Net 45', score: 88 },
+  { name: 'MD Anderson Cancer Center Foundation', category: 'Healthcare & Pharma', terms: 'Net 30', score: 97 },
 ];
 
-const QUANTUM_CORE_VENDORS = [
-  { name: 'Bloomberg Financial Terminals & Enterprise Data', category: 'Cloud & Infrastructure', terms: 'Net 30', score: 98 },
-  { name: 'Moody\'s Analytics Credit & Risk Models', category: 'Legal & Professional Services', terms: 'Net 30', score: 96 },
-  { name: 'S&P Global Market Intelligence Feeds', category: 'Legal & Professional Services', terms: 'Net 30', score: 95 },
-  { name: 'Refinitiv LSEG Real-Time Feeds', category: 'Cloud & Infrastructure', terms: 'Net 30', score: 93 },
-  { name: 'SWIFT Interbank Secure Messaging Network', category: 'Cloud & Infrastructure', terms: 'Net 15', score: 99 },
-  { name: 'State Street Global Custody Services', category: 'Legal & Professional Services', terms: 'Net 45', score: 94 },
-  { name: 'FactSet Financial Research Systems', category: 'Cloud & Infrastructure', terms: 'Net 30', score: 92 },
-  { name: 'Fitch Ratings Sovereign & Credit Analytics', category: 'Legal & Professional Services', terms: 'Net 30', score: 91 },
-  { name: 'Broadridge Financial Transaction Processing', category: 'Cloud & Infrastructure', terms: 'Net 30', score: 90 },
-  { name: 'Depository Trust & Clearing Corp (DTCC)', category: 'Legal & Professional Services', terms: 'Due on Receipt', score: 97 },
-  { name: 'Interactive Brokers Institutional Clearing', category: 'Legal & Professional Services', terms: 'Net 15', score: 94 },
-  { name: 'Morningstar Enterprise Fund Research', category: 'Legal & Professional Services', terms: 'Net 30', score: 89 },
+const QUANTUM_CORE_CUSTOMERS = [
+  { name: 'BlackRock Global Investment Management', category: 'Financial & Banking', terms: 'Net 15', score: 99 },
+  { name: 'Vanguard Group Institutional Equity', category: 'Financial & Banking', terms: 'Net 15', score: 99 },
+  { name: 'Fidelity Investments Asset Management', category: 'Financial & Banking', terms: 'Net 15', score: 98 },
+  { name: 'Citadel Securities Quantitative Liquidity', category: 'Financial & Banking', terms: 'Due on Receipt', score: 99 },
+  { name: 'Bridgewater Associates Macro Trading', category: 'Financial & Banking', terms: 'Net 30', score: 96 },
+  { name: 'Millennium Management Multi-Strategy', category: 'Financial & Banking', terms: 'Net 30', score: 95 },
+  { name: 'Point72 Asset Management Group', category: 'Financial & Banking', terms: 'Net 30', score: 94 },
+  { name: 'Two Sigma Investments Algorithmic Fund', category: 'Financial & Banking', terms: 'Net 15', score: 97 },
+  { name: 'D.E. Shaw & Co. Computational Capital', category: 'Financial & Banking', terms: 'Net 15', score: 98 },
+  { name: 'AQR Capital Management Systematic Fund', category: 'Financial & Banking', terms: 'Net 30', score: 91 },
+  { name: 'State of California Public Employees (CalPERS)', category: 'Financial & Banking', terms: 'Net 45', score: 95 },
+  { name: 'Teacher Retirement System of Texas Fund', category: 'Financial & Banking', terms: 'Net 45', score: 93 },
 ];
 
-// Helper to expand vendor pool programmatically up to required count
-function expandVendors(baseList, targetCount, companyId, prefixPrefix) {
+// Helper to expand customer pool programmatically up to required count
+function expandCustomers(baseList, targetCount, companyId, prefixPrefix) {
   const result = [];
   const termsList = ['Due on Receipt', 'Net 15', 'Net 30', 'Net 45', 'Net 60', '2/10 Net 30'];
   const categoriesList = [
-    'Cloud & Infrastructure', 'Logistics & Shipping', 'Hardware & Electronics',
-    'Raw Materials & Manufacturing', 'Legal & Professional Services',
-    'Marketing & Creative Media', 'Facilities & Office Maintenance',
+    'Financial & Banking', 'Tech & SaaS Enterprise', 'Retail & Commerce',
+    'Industrial & Manufacturing', 'Healthcare & Pharma', 'Government & Education',
   ];
 
   // 1. Add base curated items first
   for (let i = 0; i < baseList.length && result.length < targetCount; i++) {
     const item = baseList[i];
     result.push({
-      id: `vend-${companyId.replace('comp-', '')}-${i + 1}`,
+      id: `cust-${companyId.replace('comp-', '')}-${i + 1}`,
       company_id: companyId,
       name: item.name,
       category: item.category,
@@ -190,16 +190,16 @@ function expandVendors(baseList, targetCount, companyId, prefixPrefix) {
     });
   }
 
-  // 2. Synthesize additional unique vendors up to target count
+  // 2. Synthesize additional unique customers up to target count
   const genericPrefixes = [
-    'Nexus', 'Vertex', 'Horizon', 'Pinnacle', 'Pulse', 'Meridian', 'Solas',
-    'Omni', 'Crestview', 'Astra', 'Strata', 'Synergy', 'Beacon', 'Cobalt',
-    'Ironclad', 'Summit', 'Velox', 'Integra', 'Hyperion', 'Kore', 'Atlas',
+    'Beacon', 'Cobalt', 'Summit', 'Velox', 'Hyperion', 'Kore', 'Atlas',
     'Novus', 'Terra', 'Zephyr', 'Aegis', 'Centurion', 'Optima', 'Vanguard',
+    'Apex', 'Nexus', 'Vertex', 'Horizon', 'Pinnacle', 'Pulse', 'Meridian',
+    'Solas', 'Omni', 'Crestview', 'Astra', 'Strata', 'Synergy',
   ];
   const genericMiddles = [
-    'Dynamics', 'Systems', 'Solutions', 'Technologies', 'Networks', 'Analytics',
-    'Capital', 'Services', 'Partners', 'Logistics', 'Robotics', 'Digital',
+    'Capital', 'Holdings', 'Commercial', 'Enterprises', 'Global', 'Solutions',
+    'Technologies', 'Trading', 'Industries', 'Systems', 'Networks', 'Partners',
   ];
   const genericSuffixes = ['Inc.', 'Corp.', 'LLC', 'Ltd.', 'Group', 'Enterprises'];
 
@@ -210,7 +210,7 @@ function expandVendors(baseList, targetCount, companyId, prefixPrefix) {
     const s = genericSuffixes[(counter * 3) % genericSuffixes.length];
     const cat = categoriesList[counter % categoriesList.length];
     const term = termsList[(counter * 5) % termsList.length];
-    
+
     // Distribute score: 60% high (85-99), 25% medium (72-84), 15% volatile (52-71)
     let score;
     const mod = counter % 100;
@@ -223,7 +223,7 @@ function expandVendors(baseList, targetCount, companyId, prefixPrefix) {
     }
 
     result.push({
-      id: `vend-${companyId.replace('comp-', '')}-${counter}`,
+      id: `cust-${companyId.replace('comp-', '')}-${counter}`,
       company_id: companyId,
       name: `${p} ${m} ${prefixPrefix ? `${prefixPrefix} ` : ''}${s}`,
       category: cat,
@@ -237,19 +237,22 @@ function expandVendors(baseList, targetCount, companyId, prefixPrefix) {
   return result;
 }
 
-export function generateInitialSeedVendors() {
-  const vendors = [
-    // CashPredix: 160 vendors (hundreds of specialized suppliers!)
-    ...expandVendors(CASHPREDIX_CORE_VENDORS, 160, 'comp-cashpredix', 'Cloud', [75, 99]),
-    // Apex Horizon Logistics: 45 vendors
-    ...expandVendors(APEX_CORE_VENDORS, 45, 'comp-apex', 'Logistics', [70, 96]),
-    // Vanguard Healthcare Systems: 40 vendors
-    ...expandVendors(VANGUARD_CORE_VENDORS, 40, 'comp-vanguard', 'Health', [68, 97]),
-    // Quantum Capital: 35 vendors
-    ...expandVendors(QUANTUM_CORE_VENDORS, 35, 'comp-quantum', 'Capital', [72, 98]),
+export function generateInitialSeedCustomers() {
+  const customers = [
+    // CashPredix: 160 enterprise corporate SaaS clients
+    ...expandCustomers(CASHPREDIX_CORE_CUSTOMERS, 160, 'comp-cashpredix', 'Account'),
+    // Apex Horizon Logistics: 45 cargo clients
+    ...expandCustomers(APEX_CORE_CUSTOMERS, 45, 'comp-apex', 'Shipper'),
+    // Vanguard Healthcare Systems: 40 clinical clients
+    ...expandCustomers(VANGUARD_CORE_CUSTOMERS, 40, 'comp-vanguard', 'Health'),
+    // Quantum Capital: 35 institutional investor clients
+    ...expandCustomers(QUANTUM_CORE_CUSTOMERS, 35, 'comp-quantum', 'Fund'),
   ];
 
-  return vendors;
+  return customers;
 }
 
-export const INITIAL_SEED_VENDORS = generateInitialSeedVendors();
+export const INITIAL_SEED_CUSTOMERS = generateInitialSeedCustomers();
+
+// Backward-compatible alias
+export const INITIAL_SEED_VENDORS = INITIAL_SEED_CUSTOMERS;

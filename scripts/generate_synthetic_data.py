@@ -145,45 +145,55 @@ CANONICAL_FOUR_COMPANIES = [
     {
         "name": "CashPredix Technologies Inc.",
         "industry": "Technology & SaaS",
-        "vendor_count": 160,
+        "customer_count": 160,
         "is_flagship": True,
         "specialized_prefixes": [
-            "AWS Cloud", "Azure Infra", "Google Cloud", "Snowflake Data", "Datadog Observability",
-            "OpenAI API", "Anthropic AI", "GitHub Enterprise", "Stripe Global", "Twilio Messaging",
-            "Supabase DB", "Vercel Edge", "Cloudflare Security", "MongoDB Atlas", "Redis Enterprise",
-            "SentinelOne", "CrowdStrike", "Elasticsearch", "Atlassian", "Figma Design", "Slack Enterprise",
-            "Zoom Communications", "Confluent Kafka", "Docker Hub", "HashiCorp", "Databricks Analytics",
-            "PagerDuty", "Postman Enterprise", "Linear Systems", "Notion Labs"
+            "JPMorgan Chase Treasury", "Bank of America Enterprise", "Goldman Sachs Asset", "Morgan Stanley Wealth",
+            "Citigroup Solutions", "Wells Fargo Commercial", "Barclays Banking", "HSBC Trade",
+            "BNP Paribas Institutional", "UBS Americas", "Deutsche Bank Transaction", "Standard Chartered Markets",
+            "Santander Commercial", "Capital One Enterprise", "PNC Financial Services", "US Bancorp Banking",
+            "Shopify Plus Merchant", "Uber Technologies Treasury", "Airbnb Global Payments", "DoorDash Financial",
+            "Snowflake Corporate Ops", "Stripe Billing Partner", "Block Square Network", "Salesforce Analytics",
+            "HubSpot Growth Systems", "ServiceNow Cloud", "Intuit Quickbooks", "Workday Enterprise",
+            "Walmart eCommerce", "Target Logistics", "Home Depot Merchant", "Costco Wholesale Corp",
+            "General Electric Treasury", "Boeing Aviation Services", "Lockheed Martin Systems", "Siemens Industrial",
+            "UnitedHealth Group", "CVS Health Pharmacy", "Johnson & Johnson Health", "Pfizer BioPharma"
         ]
     },
     {
         "name": "Apex Horizon Logistics Corp.",
         "industry": "Logistics & Freight",
-        "vendor_count": 45,
+        "customer_count": 45,
         "is_flagship": False,
         "specialized_prefixes": [
-            "Maersk Maritime", "Swift Haulage", "Nordic Freight", "DHL Supply", "FedEx Corporate",
-            "Shell Commercial Fuel", "Volvo Fleet Maintenance", "Caterpillar Equipment", "Kuehne+Nagel Transit"
+            "Nike Global Footwear Supply", "Apple Worldwide Distribution", "Samsung Electronics Americas",
+            "Tesla Motors Gigafactory Parts", "Procter & Gamble Consumer Goods", "Unilever North America Transit",
+            "Sony Corporation Electronics", "Ford Motor Company Assembly", "General Motors Components",
+            "IKEA Supply AG Furniture", "Adidas Sports Apparel", "LG Electronics Transport"
         ]
     },
     {
         "name": "Vanguard Healthcare Systems Enterprises",
         "industry": "Healthcare & Pharmaceuticals",
-        "vendor_count": 40,
+        "customer_count": 40,
         "is_flagship": False,
         "specialized_prefixes": [
-            "Pfizer BioPharmaceuticals", "Siemens Healthineers", "Medtronic Devices", "Quest Diagnostics",
-            "Abbott Laboratories", "McKesson Medical Supply", "Roche Diagnostics", "Thermo Fisher Scientific"
+            "Mayo Clinic Health System", "Cleveland Clinic Foundation", "Johns Hopkins Medicine Center",
+            "Kaiser Permanente Medical", "Mount Sinai Health System", "Mass General Brigham Alliance",
+            "Stanford Health Care", "Cedars-Sinai Medical Center", "Northwell Health Hospital Group",
+            "UPMC Health System", "MD Anderson Cancer Foundation", "Geisinger Health Network"
         ]
     },
     {
         "name": "Quantum Capital & Financial Holdings",
         "industry": "Financial Services & FinTech",
-        "vendor_count": 35,
+        "customer_count": 35,
         "is_flagship": False,
         "specialized_prefixes": [
-            "Bloomberg Financial", "Moody's Risk Analytics", "S&P Global Market", "Refinitiv Data",
-            "SWIFT Interbank", "State Street Custody", "FactSet Research", "Fitch Ratings Global"
+            "BlackRock Global Investment", "Vanguard Group Institutional", "Fidelity Investments Asset",
+            "Citadel Securities Liquidity", "Bridgewater Associates Macro", "Millennium Management Strategy",
+            "Point72 Asset Management", "Two Sigma Investments Fund", "D.E. Shaw Computational Capital",
+            "CalPERS Public Employees Fund", "Texas Teacher Retirement System", "AQR Capital Systematic"
         ]
     }
 ]
@@ -191,7 +201,7 @@ CANONICAL_FOUR_COMPANIES = [
 
 def generate_synthetic_dataset(
     num_companies: int = 4,
-    vendors_per_company: int = 100,
+    customers_per_company: int = 100,
     user_id: str = None,
     seed: int = None,
     use_canonical_four: bool = True
@@ -199,10 +209,7 @@ def generate_synthetic_dataset(
     """
     Programmatically synthesize relational datasets matching the Supabase schema:
       - companies: id, user_id, name, industry, created_at
-      - vendors: id, company_id, name, payment_terms, created_at
-
-    When use_canonical_four=True (default), generates exactly 4 enterprise companies
-    with CashPredix Technologies Inc. holding hundreds of vendors (160+).
+      - customers: id, company_id, name, payment_terms, created_at (Accounts Receivable / Inbound Cash Flow)
     """
     if seed is not None:
         random.seed(seed)
@@ -211,10 +218,10 @@ def generate_synthetic_dataset(
     now = datetime.now(timezone.utc)
 
     companies = []
-    vendors = []
+    customers = []
     
     existing_company_names = set()
-    existing_vendor_names = set()
+    existing_customer_names = set()
 
     if use_canonical_four:
         for comp_spec in CANONICAL_FOUR_COMPANIES:
@@ -234,21 +241,21 @@ def generate_synthetic_dataset(
                 "created_at": company_created_at
             })
 
-            target_count = comp_spec["vendor_count"]
+            target_count = comp_spec["customer_count"]
             categories = list(VENDOR_CATEGORIES.keys())
             prefixes_pool = list(comp_spec.get("specialized_prefixes", []))
 
             for v_idx in range(target_count):
-                vendor_id = str(uuid.uuid4())
+                customer_id = str(uuid.uuid4())
                 category = random.choice(categories)
 
                 # Prioritize realistic specialized names first, then generative fallback
                 if v_idx < len(prefixes_pool):
                     prefix = prefixes_pool[v_idx]
-                    vendor_name = f"{prefix} {random.choice(['Systems', 'Technologies', 'Services', 'Corp.', 'LLC'])}"
-                    existing_vendor_names.add(vendor_name)
+                    customer_name = f"{prefix} {random.choice(['Corporate', 'Enterprises', 'Operations', 'Holdings', 'LLC', 'Inc.'])}"
+                    existing_customer_names.add(customer_name)
                 else:
-                    vendor_name = generate_vendor_name(category, existing_vendor_names)
+                    customer_name = generate_vendor_name(category, existing_customer_names)
 
                 cat_bias = VENDOR_CATEGORIES[category]["terms_bias"]
                 if random.random() < 0.75:
@@ -257,26 +264,27 @@ def generate_synthetic_dataset(
                     payment_term = random.choice(PAYMENT_TERMS_ALL)
 
                 company_dt = datetime.fromisoformat(company_created_at)
-                max_vendor_offset = max(1, (now - company_dt).days - 10)
-                vendor_offset = random.randint(1, max_vendor_offset)
-                vendor_created_at = (company_dt + timedelta(days=vendor_offset, seconds=random.randint(0, 86400))).isoformat()
+                max_customer_offset = max(1, (now - company_dt).days - 10)
+                customer_offset = random.randint(1, max_customer_offset)
+                customer_created_at = (company_dt + timedelta(days=customer_offset, seconds=random.randint(0, 86400))).isoformat()
 
-                vendors.append({
-                    "id": vendor_id,
+                customers.append({
+                    "id": customer_id,
                     "company_id": company_id,
-                    "name": vendor_name,
+                    "name": customer_name,
                     "payment_terms": payment_term,
-                    "created_at": vendor_created_at
+                    "created_at": customer_created_at
                 })
 
         return {
             "user_id": base_user_id,
             "companies": companies,
-            "vendors": vendors,
+            "customers": customers,
+            "vendors": customers,  # legacy backward-compatible alias
             "summary": {
                 "total_companies": len(companies),
-                "total_vendors": len(vendors),
-                "flagship_vendors": CANONICAL_FOUR_COMPANIES[0]["vendor_count"],
+                "total_customers": len(customers),
+                "flagship_customers": CANONICAL_FOUR_COMPANIES[0]["customer_count"],
                 "generated_at": now.isoformat()
             }
         }
@@ -300,10 +308,10 @@ def generate_synthetic_dataset(
         companies.append(company_record)
 
         categories = list(VENDOR_CATEGORIES.keys())
-        for v_idx in range(vendors_per_company):
-            vendor_id = str(uuid.uuid4())
+        for v_idx in range(customers_per_company):
+            customer_id = str(uuid.uuid4())
             category = random.choice(categories)
-            vendor_name = generate_vendor_name(category, existing_vendor_names)
+            customer_name = generate_vendor_name(category, existing_customer_names)
 
             cat_bias = VENDOR_CATEGORIES[category]["terms_bias"]
             if random.random() < 0.75:
@@ -312,52 +320,58 @@ def generate_synthetic_dataset(
                 payment_term = random.choice(PAYMENT_TERMS_ALL)
 
             company_dt = datetime.fromisoformat(company_created_at)
-            max_vendor_offset = max(1, (now - company_dt).days - 10)
-            vendor_offset = random.randint(1, max_vendor_offset)
-            vendor_created_at = (company_dt + timedelta(days=vendor_offset, seconds=random.randint(0, 86400))).isoformat()
+            max_customer_offset = max(1, (now - company_dt).days - 10)
+            customer_offset = random.randint(1, max_customer_offset)
+            customer_created_at = (company_dt + timedelta(days=customer_offset, seconds=random.randint(0, 86400))).isoformat()
 
-            vendor_record = {
-                "id": vendor_id,
+            customer_record = {
+                "id": customer_id,
                 "company_id": company_id,
-                "name": vendor_name,
+                "name": customer_name,
                 "payment_terms": payment_term,
-                "created_at": vendor_created_at
+                "created_at": customer_created_at
             }
-            vendors.append(vendor_record)
+            customers.append(customer_record)
 
     return {
         "user_id": base_user_id,
         "companies": companies,
-        "vendors": vendors,
+        "customers": customers,
+        "vendors": customers,
         "summary": {
             "total_companies": len(companies),
-            "total_vendors": len(vendors),
-            "vendors_per_company": vendors_per_company,
+            "total_customers": len(customers),
+            "customers_per_company": customers_per_company,
             "generated_at": now.isoformat()
         }
     }
 
 
 def save_to_json(data: dict, output_dir: Path):
-    """Save datasets in JSON format."""
+    """Save datasets in JSON format for customers and companies."""
     output_dir.mkdir(parents=True, exist_ok=True)
     
     companies_file = output_dir / "companies.json"
-    vendors_file = output_dir / "vendors.json"
+    customers_file = output_dir / "customers.json"
+    vendors_file = output_dir / "vendors.json"  # compatibility alias
     bundle_file = output_dir / "synthetic_dataset_bundle.json"
 
     with open(companies_file, "w", encoding="utf-8") as f:
         json.dump(data["companies"], f, indent=2)
 
+    with open(customers_file, "w", encoding="utf-8") as f:
+        json.dump(data["customers"], f, indent=2)
+
     with open(vendors_file, "w", encoding="utf-8") as f:
-        json.dump(data["vendors"], f, indent=2)
+        json.dump(data["customers"], f, indent=2)
 
     with open(bundle_file, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2)
 
     print(f"[✓] Saved JSON files to {output_dir}:")
     print(f"    - {companies_file} ({len(data['companies'])} companies)")
-    print(f"    - {vendors_file} ({len(data['vendors'])} vendors)")
+    print(f"    - {customers_file} ({len(data['customers'])} customers / accounts receivable)")
+    print(f"    - {vendors_file} ({len(data['customers'])} legacy alias records)")
     print(f"    - {bundle_file} (Full bundle with metadata)")
 
 
@@ -366,6 +380,7 @@ def save_to_csv(data: dict, output_dir: Path):
     output_dir.mkdir(parents=True, exist_ok=True)
 
     companies_csv = output_dir / "companies.csv"
+    customers_csv = output_dir / "customers.csv"
     vendors_csv = output_dir / "vendors.csv"
 
     # Write companies.csv
@@ -376,28 +391,35 @@ def save_to_csv(data: dict, output_dir: Path):
             writer.writeheader()
             writer.writerows(data["companies"])
 
-    # Write vendors.csv
-    if data["vendors"]:
-        keys = list(data["vendors"][0].keys())
+    # Write customers.csv
+    if data["customers"]:
+        keys = list(data["customers"][0].keys())
+        with open(customers_csv, "w", newline="", encoding="utf-8") as f:
+            writer = csv.DictWriter(f, fieldnames=keys)
+            writer.writeheader()
+            writer.writerows(data["customers"])
+
+        # Also write vendors.csv for legacy compatibility
         with open(vendors_csv, "w", newline="", encoding="utf-8") as f:
             writer = csv.DictWriter(f, fieldnames=keys)
             writer.writeheader()
-            writer.writerows(data["vendors"])
+            writer.writerows(data["customers"])
 
     print(f"[✓] Saved CSV files to {output_dir}:")
     print(f"    - {companies_csv} ({len(data['companies'])} rows)")
-    print(f"    - {vendors_csv} ({len(data['vendors'])} rows)")
+    print(f"    - {customers_csv} ({len(data['customers'])} rows)")
+    print(f"    - {vendors_csv} ({len(data['customers'])} legacy alias rows)")
 
 
 def main():
     parser = argparse.ArgumentParser(
-        description="CashPredix Week 3 Task #42: Generate synthetic company and vendor records."
+        description="CashPredix Week 3 Task #42: Generate synthetic company and customer records (Accounts Receivable)."
     )
     parser.add_argument(
         "--canonical-four",
         action="store_true",
         default=True,
-        help="Generate the canonical 4 companies preset with CashPredix holding hundreds of vendors (default: True)"
+        help="Generate the canonical 4 companies preset with CashPredix holding 160 customers (default: True)"
     )
     parser.add_argument(
         "--custom-companies",
@@ -412,10 +434,12 @@ def main():
         help="Number of company profiles to generate when --custom-companies is set (default: 4)"
     )
     parser.add_argument(
+        "--customers-per-company",
         "--vendors-per-company",
         type=int,
         default=100,
-        help="Number of vendor records per company when --custom-companies is set (default: 100)"
+        dest="customers_per_company",
+        help="Number of customer records per company when --custom-companies is set (default: 100)"
     )
     parser.add_argument(
         "--user-id",
@@ -447,19 +471,19 @@ def main():
 
     use_canonical = not args.custom_companies
     print("=" * 60)
-    print(" CashPredix - Synthetic Data Generation Tool (Week 3 / #42)")
+    print(" CashPredix - Accounts Receivable Synthetic Generator (Week 3)")
     print("=" * 60)
     if use_canonical:
         print(" Mode:                       Canonical 4 Companies Preset")
         print(" Companies:                  4 (CashPredix, Apex, Vanguard, Quantum)")
-        print(" CashPredix Vendors:         160 (Hundreds of Specialized Suppliers)")
-        print(" Total Ecosystem Vendors:    280")
+        print(" CashPredix Customers:       160 (B2B Enterprise Corporate Clients)")
+        print(" Total Ecosystem Customers:  280")
     else:
-        total_expected_vendors = args.companies * args.vendors_per_company
+        total_expected_cust = args.companies * args.customers_per_company
         print(" Mode:                       Custom Generic Generation")
         print(f" Target Companies:           {args.companies}")
-        print(f" Target Vendors / Company:   {args.vendors_per_company}")
-        print(f" Total Synthetic Vendors:    {total_expected_vendors}")
+        print(f" Target Customers / Company: {args.customers_per_company}")
+        print(f" Total Synthetic Customers:  {total_expected_cust}")
     print(f" Format:                     {args.format.upper()}")
     print(f" Output Directory:           {args.output_dir}")
     print(f" Random Seed:                {args.seed}")
@@ -467,7 +491,7 @@ def main():
 
     dataset = generate_synthetic_dataset(
         num_companies=args.companies,
-        vendors_per_company=args.vendors_per_company,
+        customers_per_company=args.customers_per_company,
         user_id=args.user_id,
         seed=args.seed,
         use_canonical_four=use_canonical
@@ -480,7 +504,7 @@ def main():
         save_to_csv(dataset, out_path)
 
     print("=" * 60)
-    print(f"[SUCCESS] Synthesized {len(dataset['companies'])} companies and {len(dataset['vendors'])} vendor records successfully!")
+    print(f"[SUCCESS] Synthesized {len(dataset['companies'])} companies and {len(dataset['customers'])} customer records successfully!")
     print("=" * 60)
 
 

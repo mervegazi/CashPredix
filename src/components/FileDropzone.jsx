@@ -35,13 +35,13 @@ export default function FileDropzone({ companies, onBatchUpload, isUploading }) 
     // Parse header row
     const rawHeaders = lines[0].split(',').map((h) => h.replace(/^["']|["']$/g, '').trim().toLowerCase());
 
-    const nameIdx = rawHeaders.findIndex((h) => h.includes('vendor') || h.includes('name'));
+    const nameIdx = rawHeaders.findIndex((h) => h.includes('customer') || h.includes('client') || h.includes('vendor') || h.includes('name'));
     const termsIdx = rawHeaders.findIndex((h) => h.includes('term') || h.includes('payment'));
     const categoryIdx = rawHeaders.findIndex((h) => h.includes('category') || h.includes('industry') || h.includes('type'));
-    const amountIdx = rawHeaders.findIndex((h) => h.includes('amount') || h.includes('balance') || h.includes('invoice'));
+    const amountIdx = rawHeaders.findIndex((h) => h.includes('amount') || h.includes('balance') || h.includes('invoice') || h.includes('inflow') || h.includes('receivable'));
 
     if (nameIdx === -1) {
-      throw new Error('Could not find a "Vendor Name" or "Name" header column');
+      throw new Error('Could not find a "Customer Name", "Client Name", or "Name" header column');
     }
 
     const rows = [];
@@ -52,19 +52,19 @@ export default function FileDropzone({ companies, onBatchUpload, isUploading }) 
       const values = lines[i].match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g) || lines[i].split(',');
       const cleanValues = values.map((v) => v.replace(/^["']|["']$/g, '').trim());
 
-      const vendorName = cleanValues[nameIdx] || '';
+      const customerName = cleanValues[nameIdx] || '';
       const paymentTerms = (termsIdx !== -1 ? cleanValues[termsIdx] : '') || 'Net 30';
-      const category = (categoryIdx !== -1 ? cleanValues[categoryIdx] : '') || 'General Supplier';
+      const category = (categoryIdx !== -1 ? cleanValues[categoryIdx] : '') || 'Commercial Client';
       const amount = amountIdx !== -1 ? parseFloat(cleanValues[amountIdx].replace(/[$,]/g, '')) : null;
 
-      if (!vendorName) {
-        errors.push(`Row ${i + 1}: Missing vendor name, skipped.`);
+      if (!customerName) {
+        errors.push(`Row ${i + 1}: Missing customer name, skipped.`);
         continue;
       }
 
       rows.push({
         id: `import-${Date.now()}-${i}`,
-        name: vendorName,
+        name: customerName,
         payment_terms: paymentTerms,
         category,
         amount: isNaN(amount) ? null : amount,
@@ -96,7 +96,7 @@ export default function FileDropzone({ companies, onBatchUpload, isUploading }) 
         const { rows, errors } = parseCSV(text);
         setParsedRows(rows);
         setParseErrors(errors);
-        toast.success(`Parsed ${rows.length} vendor rows successfully!`);
+        toast.success(`Parsed ${rows.length} customer rows successfully!`);
       } catch (err) {
         toast.error(`CSV Parsing failed: ${err.message}`);
         setParsedRows([]);
@@ -136,25 +136,24 @@ export default function FileDropzone({ companies, onBatchUpload, isUploading }) 
 
   const handleDownloadSample = () => {
     const sampleContent =
-      'Vendor Name,Payment Terms,Category,Estimated Monthly Invoice\n' +
-      'Nordic Freight Corp,Net 30,Logistics & Shipping,14500.00\n' +
-      'CloudScale Networks,Net 15,Cloud & Infrastructure,8200.00\n' +
-      'Silicon Edge Components,Net 60,Hardware & Electronics,24000.00\n' +
-      'Titan Alloys Foundry,Net 45,Raw Materials,35000.00\n' +
-      'Sterling Legal Advisory,Due on Receipt,Legal & Professional,6500.00\n' +
-      'PixelCraft Digital Media,2/10 Net 30,Marketing & Creative,4200.00\n' +
-      'SafeGuard Office Systems,Net 30,Facilities & Maintenance,1850.00\n';
+      'Customer Name,Payment Terms,Category,Estimated Monthly Inflow\n' +
+      'JPMorgan Chase Treasury,Net 30,FinTech & Banking,45000.00\n' +
+      'Shopify Plus Merchant,Net 15,SaaS & Digital Platforms,18200.00\n' +
+      'Walmart eCommerce,Net 60,Retail & Wholesale Chains,84000.00\n' +
+      'Mayo Clinical Systems,Net 45,Healthcare & Clinical,65000.00\n' +
+      'Nike Global Logistics,2/10 Net 30,Logistics & Transit,32500.00\n' +
+      'State Research Institute,Net 90,Public Sector & Education,19500.00\n';
 
     const blob = new Blob([sampleContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.setAttribute('download', 'cashpredix_vendor_sample.csv');
+    link.setAttribute('download', 'cashpredix_customer_sample.csv');
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
-    toast.success('Sample CSV template downloaded!');
+    toast.success('Sample customer CSV template downloaded!');
   };
 
   const handleConfirmBatchUpload = () => {
@@ -179,10 +178,10 @@ export default function FileDropzone({ companies, onBatchUpload, isUploading }) 
           </div>
           <div>
             <h4 className="text-sm font-bold text-gray-900 dark:text-white">
-              Batch CSV & Excel Ingestion
+              Batch Customer & Receivables Ingestion
             </h4>
             <p className="text-xs text-gray-500 dark:text-gray-400">
-              Bulk upload supplier ledgers and historical invoices with client-side header mapping.
+              Bulk upload corporate customer ledgers and incoming invoices with client-side header mapping.
             </p>
           </div>
         </div>
@@ -225,7 +224,7 @@ export default function FileDropzone({ companies, onBatchUpload, isUploading }) 
 
           <div>
             <p className="text-sm font-bold text-gray-900 dark:text-white">
-              Drag & Drop your payment ledger here, or <span className="text-blue-500 hover:underline">browse files</span>
+              Drag & Drop your customer receivables ledger here, or <span className="text-blue-500 hover:underline">browse files</span>
             </p>
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
               Supports CSV, TXT, Excel exported files (Up to 10,000 rows)
@@ -260,7 +259,7 @@ export default function FileDropzone({ companies, onBatchUpload, isUploading }) 
                   </span>
                 </div>
                 <span className="text-xs text-emerald-600 dark:text-emerald-400 font-semibold">
-                  {parsedRows.length} valid vendor records extracted
+                  {parsedRows.length} valid customer records extracted
                 </span>
               </div>
             </div>
@@ -313,10 +312,10 @@ export default function FileDropzone({ companies, onBatchUpload, isUploading }) 
               <thead className="bg-gray-50 dark:bg-gray-800/60 text-gray-500 dark:text-gray-400 sticky top-0">
                 <tr>
                   <th className="py-2.5 px-3 font-semibold">#</th>
-                  <th className="py-2.5 px-3 font-semibold">Vendor Name</th>
+                  <th className="py-2.5 px-3 font-semibold">Customer / Client Name</th>
                   <th className="py-2.5 px-3 font-semibold">Payment Terms</th>
                   <th className="py-2.5 px-3 font-semibold">Category</th>
-                  <th className="py-2.5 px-3 font-semibold">Est. Monthly Volume</th>
+                  <th className="py-2.5 px-3 font-semibold">Est. Monthly Inflow</th>
                   <th className="py-2.5 px-3 font-semibold">Status</th>
                 </tr>
               </thead>
@@ -361,12 +360,12 @@ export default function FileDropzone({ companies, onBatchUpload, isUploading }) 
               {isUploading ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Ingesting {parsedRows.length} Vendors...</span>
+                  <span>Ingesting {parsedRows.length} Customers...</span>
                 </>
               ) : (
                 <>
                   <Sparkles className="w-4 h-4" />
-                  <span>Ingest {parsedRows.length} Vendors to Database</span>
+                  <span>Ingest {parsedRows.length} Customers to Database</span>
                   <ArrowRight className="w-4 h-4" />
                 </>
               )}

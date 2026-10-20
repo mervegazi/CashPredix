@@ -101,23 +101,23 @@ export default function LandingPage() {
               </g>
             </g>
 
-            {/* Top-Left Horizontal Vendor Scores */}
+            {/* Top-Left Horizontal Customer Scores */}
             <g transform="translate(100, 120)">
               <g className="animate-float">
-                <text x="0" y="-10" fill="currentColor" fontSize="16" fontFamily="monospace" opacity="0.6">TOP VENDOR SCORES</text>
-                {/* Vendor 1 */}
-                <text x="0" y="20" fill="currentColor" fontSize="14" opacity="0.8">GlobalTech</text>
+                <text x="0" y="-10" fill="currentColor" fontSize="16" fontFamily="monospace" opacity="0.6">TOP CUSTOMER SCORES</text>
+                {/* Customer 1 */}
+                <text x="0" y="20" fill="currentColor" fontSize="14" opacity="0.8">JPMorgan Corporate</text>
                 <rect x="100" y="8" width="180" height="12" fill="currentColor" opacity="0.2" rx="6" />
                 <rect x="100" y="8" width="165" height="12" fill="currentColor" opacity="0.8" rx="6" />
                 <text x="290" y="20" fill="currentColor" fontSize="14" fontWeight="bold">92</text>
                 
-                {/* Vendor 2 */}
+                {/* Customer 2 */}
                 <text x="0" y="50" fill="currentColor" fontSize="14" opacity="0.8">Nexus Corp</text>
                 <rect x="100" y="38" width="180" height="12" fill="currentColor" opacity="0.2" rx="6" />
                 <rect x="100" y="38" width="150" height="12" fill="currentColor" opacity="0.6" rx="6" />
                 <text x="290" y="50" fill="currentColor" fontSize="14" fontWeight="bold">85</text>
                 
-                {/* Vendor 3 */}
+                {/* Customer 3 */}
                 <text x="0" y="80" fill="currentColor" fontSize="14" opacity="0.8">Alpha Inc.</text>
                 <rect x="100" y="68" width="180" height="12" fill="currentColor" opacity="0.2" rx="6" />
                 <rect x="100" y="68" width="120" height="12" fill="currentColor" opacity="0.4" rx="6" />
@@ -156,7 +156,7 @@ export default function LandingPage() {
             {/* Background watermark large text */}
             <g fill="currentColor" fontFamily="monospace" fontWeight="bold">
               <text x="40" y="60" fontSize="36" opacity="0.3">LIQUIDITY PREDICTION ENGINE</text>
-              <text x="650" y="580" fontSize="36" opacity="0.3">AI VENDOR BEHAVIOR ANALYSIS</text>
+              <text x="650" y="580" fontSize="36" opacity="0.3">AI CUSTOMER BEHAVIOR ANALYSIS</text>
             </g>
           </svg>
         </div>
@@ -166,7 +166,7 @@ export default function LandingPage() {
             Autonomous Liquidity Prediction & Behavioral Scoring
           </h1>
           <p className="mt-6 text-lg leading-8 text-gray-300">
-            CashPredix is a machine learning-driven platform that anticipates your company's cash flows and analyzes vendor reliability to keep your finances secure and predictable.
+            CashPredix is a machine learning-driven platform that anticipates your company's incoming cash flows and analyzes customer payment reliability to keep your finances secure and predictable.
           </p>
           <div className="mt-10 flex items-center justify-center gap-x-6">
             <Link
@@ -209,10 +209,10 @@ export default function LandingPage() {
                   <div className="h-10 w-10 flex items-center justify-center rounded-lg bg-blue-600">
                     🤖
                   </div>
-                  Vendor Behavioral Scoring
+                  Customer Behavioral Scoring
                 </dt>
                 <dd className="mt-4 flex flex-auto flex-col text-base leading-7 text-gray-300">
-                  <p className="flex-auto">Analyze vendor payment histories to assign dynamic behavioral reliability scores, helping you assess risks instantly.</p>
+                  <p className="flex-auto">Analyze customer payment histories to assign dynamic behavioral reliability scores, helping you assess credit and receivable risks instantly.</p>
                 </dd>
               </div>
               <div className="flex flex-col">
@@ -223,7 +223,7 @@ export default function LandingPage() {
                   Seamless Management
                 </dt>
                 <dd className="mt-4 flex flex-auto flex-col text-base leading-7 text-gray-300">
-                  <p className="flex-auto">Easily upload vendor data via Excel and manage all your companies from a centralized, real-time dashboard.</p>
+                  <p className="flex-auto">Easily upload customer ledger data via CSV/Excel and manage all your companies from a centralized, real-time dashboard.</p>
                 </dd>
               </div>
             </dl>
