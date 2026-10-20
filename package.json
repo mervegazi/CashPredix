@@ -8,7 +8,8 @@
     "build": "vite build",
     "lint": "oxlint",
     "preview": "vite preview",
-    "generate:data": "node scripts/generate_synthetic_data.js"
+    "generate:data": "node scripts/generate_synthetic_data.js",
+    "simulate:payments": "node scripts/simulate_payment_history.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.117.2",
