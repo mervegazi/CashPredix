@@ -1,0 +1,10 @@
+# CashPredix Machine Learning & Data Science Dependencies
+# Week 4: ML Environment & Behavioral Scoring Pipeline
+
+numpy>=2.0.0
+pandas>=2.2.0
+scikit-learn>=1.6.0
+scipy>=1.13.0
+supabase>=2.30.0
+python-dotenv>=1.0.0
+python-docx>=1.1.0
