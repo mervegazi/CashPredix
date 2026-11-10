@@ -6,8 +6,12 @@ import {
   AlertTriangle,
   Receipt,
   Download,
+  Sparkles,
+  BrainCircuit,
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import ScenarioPredictionCard from './ScenarioPredictionCard';
+import { predictInvoice } from '../lib/mlPredictionService';
 
 // Deterministic pseudorandom number generator for consistent ledger simulation per customer
 function pseudoRandom(seed) {
@@ -285,6 +289,37 @@ function generateCustomerLedger(customer) {
 
 export default function CustomerLedgerModal({ isOpen, customer, company, onClose }) {
   const [activeFilter, setActiveFilter] = useState('all'); // 'all' | 'split' | 'checks' | 'open'
+  const [selectedPrediction, setSelectedPrediction] = useState(null);
+  const [isPredicting, setIsPredicting] = useState(false);
+  const [predictedInvoiceId, setPredictedInvoiceId] = useState(null);
+
+  const handlePredictInvoice = async (invoice) => {
+    if (predictedInvoiceId === invoice.id) {
+      setPredictedInvoiceId(null);
+      setSelectedPrediction(null);
+      return;
+    }
+    setPredictedInvoiceId(invoice.id);
+    setIsPredicting(true);
+    try {
+      const daysUntilDue = invoice.due_date
+        ? Math.round((new Date(invoice.due_date) - new Date('2026-10-20T00:00:00Z')) / 86400000)
+        : 30;
+      const res = await predictInvoice({
+        customerId: customer.id,
+        invoiceAmount: invoice.invoice_amount,
+        daysUntilDue: daysUntilDue > 0 ? daysUntilDue : 30,
+        invoiceNumber: invoice.invoice_number,
+        customer: customer,
+      });
+      setSelectedPrediction(res);
+      toast.success(`5-Step ML Prediction calculated for ${invoice.invoice_number}!`);
+    } catch (e) {
+      toast.error('Prediction failed: ' + e.message);
+    } finally {
+      setIsPredicting(false);
+    }
+  };
 
   // Escape key handler
   useEffect(() => {
@@ -538,6 +573,26 @@ export default function CustomerLedgerModal({ isOpen, customer, company, onClose
 
         {/* Financial Transactions Table */}
         <div className="flex-1 overflow-y-auto p-6 space-y-4">
+          {/* 5-Step ML Prediction Panel */}
+          {selectedPrediction && (
+            <div className="mb-4">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-bold text-gray-800 dark:text-gray-200 flex items-center gap-1.5">
+                  <BrainCircuit className="w-4 h-4 text-purple-500" />
+                  Active 5-Step ML Forecast: {selectedPrediction.invoice_number} (${selectedPrediction.invoice_amount?.toLocaleString()})
+                </span>
+                <button
+                  type="button"
+                  onClick={() => { setSelectedPrediction(null); setPredictedInvoiceId(null); }}
+                  className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 transition-colors"
+                >
+                  Close Forecast
+                </button>
+              </div>
+              <ScenarioPredictionCard prediction={selectedPrediction} isLoading={isPredicting} />
+            </div>
+          )}
+
           <div className="overflow-x-auto rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm">
             <table className="w-full text-left text-xs">
               <thead className="bg-gray-50 dark:bg-gray-800/60 text-gray-500 dark:text-gray-400 sticky top-0">
@@ -551,6 +606,7 @@ export default function CustomerLedgerModal({ isOpen, customer, company, onClose
                   <th className="py-3 px-3.5 font-semibold">Method & Instrument Details</th>
                   <th className="py-3 px-3.5 font-semibold">Settlement & Delay (DSO)</th>
                   <th className="py-3 px-3.5 font-semibold">Status</th>
+                  <th className="py-3 px-3.5 font-semibold text-right">5-Step ML</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 dark:divide-gray-800 text-gray-700 dark:text-gray-300">
@@ -695,6 +751,22 @@ export default function CustomerLedgerModal({ isOpen, customer, company, onClose
                             MISSED
                           </span>
                         )}
+                      </td>
+
+                      {/* 5-Step ML Prediction Action */}
+                      <td className="py-3 px-3.5 text-right">
+                        <button
+                          type="button"
+                          onClick={() => handlePredictInvoice(t)}
+                          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-[11px] font-bold transition-all shadow-xs cursor-pointer ${
+                            predictedInvoiceId === t.id
+                              ? 'bg-purple-600 text-white shadow-purple-500/30'
+                              : 'bg-purple-50 hover:bg-purple-100 dark:bg-purple-950/40 dark:hover:bg-purple-900/60 text-purple-600 dark:text-purple-300 border border-purple-200 dark:border-purple-800/60'
+                          }`}
+                        >
+                          <Sparkles className="w-3 h-3 text-amber-400" />
+                          <span>{predictedInvoiceId === t.id ? 'Hide' : 'Predict ML'}</span>
+                        </button>
                       </td>
                     </tr>
                   );
