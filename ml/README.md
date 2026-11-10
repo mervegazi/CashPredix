@@ -1,20 +1,21 @@
 # CashPredix — Machine Learning & Cash Flow Architecture
 
-**5-Step Hybrid Architecture: 2 Machine Learning Models + 3 Custom Algorithms & Output Data Flow**
+**6-Step Hybrid Architecture: 2 Machine Learning Models + 4 Custom Algorithms & Output Data Flow**
 
-This directory implements the complete Machine Learning and algorithmic pipeline for CashPredix, strictly adhering to the **CashPredix 5-Step Hybrid Pipeline Specification**.
+This directory implements the complete Machine Learning and algorithmic pipeline for CashPredix, strictly adhering to the **CashPredix 6-Step Hybrid Pipeline Specification** trained on 3,000,000 synthetic invoices.
 
 ---
 
-## 1. 5-Step Architecture Overview
+## 1. 6-Step Architecture Overview
 
 | Step | Module Task (What This Step Does) | Model / Algorithm Used | Key Inputs | Generated Output |
 |---|---|---|---|---|
-| **Step 1** | Predict How the Customer Will Pay the Invoice (Single vs. Divided, and Timing) | **1st ML Model:** LightGBM Multi-Class Classifier (6 Classes) | Customer's past delays, historical split rate, invoice amount vs customer average | 6 Numeric Probabilities (0.00 to 1.00) adding to 1.00 |
-| **Step 2** | Calculate Customer Reliability Score (0–100) with Divided-Invoice Penalty | **Custom Algorithm:** Divided-Invoice Penalty Scoring Formula | 6 numeric probabilities from Step 1 + historical invoice dividing rate | 1 Numeric Customer Score between 0 and 100 |
-| **Step 3** | Predict Divided Invoice Payment Percentages and Exact Payment Days | **2nd ML Model:** Multi-Output XGBoost Regressor | Numeric Customer Score (Step 2), invoice total amount, invoice due date, historical part gap | 3 Numeric Values: `part1_invoice_ratio`, `part1_days_from_today`, `part2_days_from_today` |
-| **Step 4** | Convert Numeric ML Outputs into Written Customer Scenario Text | **Custom Algorithm:** Dynamic Scenario Text Generator | Numeric Score (Step 2) + Split % & Payment Days (Step 3) + Invoice Due Date | 1 Text String explaining customer score, division, and payment timing |
-| **Step 5** | Calculate Total Weekly, Monthly, and Yearly Company Cash Flow | **Custom Algorithm:** Cash Flow Aggregation & Projection Engine | Dollar amounts and predicted payment dates from Step 3 across all customers | Numeric Cash Flow Totals ($) grouped by Week, Month, and 12-Month Year |
+| **Step 1** | Predict How the Customer Will Pay the Invoice (Single vs. Divided, and Timing) | **1st ML Model:** LightGBM Multi-Class Classifier (12 Classes) | Past delays, split rate, invoice amount, counterparty history | 12 Numeric Probabilities (0.00 to 1.00) adding to 1.00 |
+| **Step 2** | Calculate Customer Reliability Score (0–100) with Divided-Invoice Penalty | **Custom Algorithm:** Divided-Invoice Penalty Scoring Formula | 12 numeric probabilities from Step 1 + historical split rate | 1 Numeric Customer Score (0 to 100) + Credit Tier |
+| **Step 3** | Predict Divided Invoice Payment Percentages and Exact Payment Days | **2nd ML Model:** Multi-Output XGBoost Regressor | Customer Score (Step 2), invoice amount, days until due | 3 Numeric Values: `part1_invoice_ratio`, `part1_days_from_today`, `part2_days_from_today` |
+| **Step 4** | Convert Numeric ML Outputs into Written Customer Scenario Text | **Custom Algorithm:** Dynamic Scenario Text Generator | Score (Step 2) + Split % & Payment Days (Step 3) + Due Date | 1 Text String explaining customer score, division, and payment timing |
+| **Step 5** | Calculate Total Weekly, Monthly, and Yearly Company Cash Flow | **Custom Algorithm:** Cash Flow Aggregation & Projection Engine | Dollar amounts and predicted payment dates across all invoices | Cash Flow Totals ($) grouped by this week, next week, in 2w, in 3w, monthly, yearly |
+| **Step 6** | Real-Time Counterparty Risk Alert & Working Capital Optimizer | **Custom Algorithm:** Risk Action Optimizer | Score (Step 2) + Class (Step 1) + Installment schedule (Step 3) | Action flag (`UPFRONT_RETAINER`, `FACTORING_ALERT`, etc.) + 8% APR Carry Cost ($) |
 
 ---
 
@@ -23,15 +24,14 @@ This directory implements the complete Machine Learning and algorithmic pipeline
 ```
 ml/
 ├── __init__.py
-├── step1_payment_classifier.py    # LightGBM 6-Class Payment Classifier
-├── step2_penalty_scoring.py       # Divided-Invoice Penalty Scoring Formula
+├── step1_payment_classifier.py    # LightGBM 12-Class Payment Classifier
+├── step2_penalty_scoring.py       # Divided-Invoice Penalty Scoring Formula (12 Classes)
 ├── step3_xgb_split_regressor.py    # Multi-Output XGBoost Regressor
 ├── step4_scenario_generator.py    # Dynamic Scenario Text Generator
 ├── step5_cashflow_aggregator.py    # Weekly, Monthly, Yearly Cash Flow Engine
-├── hybrid_pipeline.py             # Master End-to-End Orchestrator
-├── validation.py                  # Evaluation & Audit Suite
-├── data_pipeline.py               # Supabase & Synthetic Data Ingestion
-├── feature_engineering.py         # Customer Historical Feature Aggregation
+├── step6_risk_action_optimizer.py # Credit Risk Alert & Working Capital Carry Cost (8% APR)
+├── hybrid_pipeline.py             # Master End-to-End 6-Step Orchestrator
+├── validation.py                  # Evaluation & Audit Suite (6 Steps)
 └── models/
     ├── lightgbm_payment_classifier.joblib
     └── xgboost_split_regressor.joblib
@@ -45,7 +45,7 @@ ml/
 # 1. Activate virtual environment
 source .venv/bin/activate
 
-# 2. Run the complete 5-Step Hybrid Pipeline
+# 2. Run the complete 6-Step Hybrid Pipeline
 python ml/hybrid_pipeline.py
 
 # 3. Run validation and verification report

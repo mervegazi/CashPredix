@@ -331,8 +331,16 @@ def sync_scores_to_supabase():
     Synchronize customer behavioral scores and split penalties to Supabase database.
     """
     try:
-        from ml.data_pipeline import get_supabase_client
-        supabase = get_supabase_client()
+        url = os.getenv("VITE_SUPABASE_URL") or os.getenv("SUPABASE_URL") or ""
+        key = os.getenv("VITE_SUPABASE_ANON_KEY") or os.getenv("SUPABASE_ANON_KEY") or ""
+        supabase = None
+        if url and key:
+            try:
+                from supabase import create_client
+                supabase = create_client(url, key)
+            except Exception:
+                supabase = None
+
         if not supabase:
             return {
                 "status": "offline_mode",
