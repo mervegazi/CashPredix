@@ -292,18 +292,29 @@ class XGBoostSplitRegressor:
         return reg
 
 
-def train_step3_model() -> Tuple[XGBoostSplitRegressor, Dict[str, Any]]:
+def train_step3_model(csv_path: Optional[Path] = None, max_samples: Optional[int] = 50_000) -> Tuple[XGBoostSplitRegressor, Dict[str, Any]]:
     """Train Multi-Output XGBoost regressor on dataset."""
-    csv_path = BASE_DIR / "data" / "synthetic" / "payment_history.csv"
-    df = pd.read_csv(csv_path)
+    large_csv = BASE_DIR / "data" / "synthetic" / "payment_history_large.csv"
+    default_csv = BASE_DIR / "data" / "synthetic" / "payment_history.csv"
+    target_csv = csv_path or (large_csv if large_csv.exists() else default_csv)
+
+    logger.info("Loading regression training data from %s...", target_csv)
+    if max_samples and target_csv == large_csv:
+        df = pd.read_csv(target_csv, nrows=max_samples * 2)
+    else:
+        df = pd.read_csv(target_csv)
 
     dataset = prepare_regression_dataset(df)
+    if max_samples and len(dataset) > max_samples:
+        dataset = dataset.sample(n=max_samples, random_state=42)
+
     X = dataset[FEATURE_COLUMNS_STEP3]
     y = dataset[TARGET_COLUMNS_STEP3]
 
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=0.20, random_state=42
     )
+
 
     reg = XGBoostSplitRegressor(random_state=42)
     reg.fit(X_train, y_train)
