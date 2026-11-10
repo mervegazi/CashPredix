@@ -36,6 +36,7 @@ from ml.step3_xgb_split_regressor import (
 )
 from ml.step4_scenario_generator import generate_scenario_text
 from ml.step5_cashflow_aggregator import aggregate_cash_flow
+from ml.step6_risk_action_optimizer import evaluate_counterparty_risk_and_action
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger("CashPredix.HybridPipeline")
@@ -144,6 +145,17 @@ class CashPredixHybridPipeline:
             days_until_due=days_until_due
         )
 
+        # -------------------------------------------------------------
+        # STEP 6: Counterparty Risk Alert & Working Capital Optimizer
+        # -------------------------------------------------------------
+        risk_action = evaluate_counterparty_risk_and_action(
+            customer_score=customer_score,
+            predicted_class=predicted_class,
+            invoice_amount=invoice_amount,
+            schedule_data=schedule,
+            probabilities=probabilities
+        )
+
         return {
             "invoice_number": invoice_number,
             "customer_id": str(customer_id),
@@ -155,7 +167,8 @@ class CashPredixHybridPipeline:
             "step2_customer_score": customer_score,
             "step2_score_details": score_data,
             "step3_schedule": schedule,
-            "step4_scenario_text": scenario_text
+            "step4_scenario_text": scenario_text,
+            "step6_risk_action": risk_action
         }
 
     def predict_portfolio_cashflow(

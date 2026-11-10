@@ -1,21 +1,38 @@
+import { useState } from 'react';
 import { 
   BrainCircuit, 
   Sparkles, 
   ShieldCheck, 
   Calendar, 
-  Layers
+  Layers,
+  AlertTriangle,
+  Zap,
+  TrendingDown,
+  CheckCircle2,
+  SlidersHorizontal
 } from 'lucide-react';
 
-const CLASS_LABELS = {
-  P_single_early: { label: 'Single Payment (Early)', color: 'bg-sky-500', text: 'text-sky-600 dark:text-sky-400' },
-  P_single_ontime: { label: 'Single Payment (On-Time)', color: 'bg-emerald-500', text: 'text-emerald-600 dark:text-emerald-400' },
-  P_single_late: { label: 'Single Payment (Late)', color: 'bg-amber-500', text: 'text-amber-600 dark:text-amber-400' },
-  P_split_both_ontime: { label: 'Split (Both On-Time)', color: 'bg-indigo-500', text: 'text-indigo-600 dark:text-indigo-400' },
-  P_split_part1_ontime_part2_late: { label: 'Split (Part 1 On-Time, Part 2 Late)', color: 'bg-purple-500', text: 'text-purple-600 dark:text-purple-400' },
-  P_split_part1_late_part2_ontime: { label: 'Split (Part 1 Late, Part 2 On-Time)', color: 'bg-rose-500', text: 'text-rose-600 dark:text-rose-400' },
+const CLASS_LABELS_12 = {
+  P_single_early: { label: 'Single (Early Payment)', group: 'single', color: 'bg-sky-500', text: 'text-sky-600 dark:text-sky-400' },
+  P_single_ontime: { label: 'Single (On-Time Payment)', group: 'single', color: 'bg-emerald-500', text: 'text-emerald-600 dark:text-emerald-400' },
+  P_single_late: { label: 'Single (Delayed Payment)', group: 'single', color: 'bg-rose-500', text: 'text-rose-600 dark:text-rose-400' },
+
+  P_split_both_early: { label: 'Split (Both Early)', group: 'split', color: 'bg-teal-500', text: 'text-teal-600 dark:text-teal-400' },
+  P_split_part1_early_part2_ontime: { label: 'Split (P1 Early, P2 On-Time)', group: 'split', color: 'bg-cyan-500', text: 'text-cyan-600 dark:text-cyan-400' },
+  P_split_part1_early_part2_late: { label: 'Split (P1 Early, P2 Late Drag)', group: 'split', color: 'bg-amber-500', text: 'text-amber-600 dark:text-amber-400' },
+
+  P_split_part1_ontime_part2_early: { label: 'Split (P1 On-Time, P2 Early)', group: 'split', color: 'bg-blue-500', text: 'text-blue-600 dark:text-blue-400' },
+  P_split_both_ontime: { label: 'Split (Both On-Time)', group: 'split', color: 'bg-indigo-500', text: 'text-indigo-600 dark:text-indigo-400' },
+  P_split_part1_ontime_part2_late: { label: 'Split (P1 On-Time, P2 Late Drag)', group: 'split', color: 'bg-orange-500', text: 'text-orange-600 dark:text-orange-400' },
+
+  P_split_part1_late_part2_early: { label: 'Split (P1 Late, P2 Early Catchup)', group: 'split', color: 'bg-purple-500', text: 'text-purple-600 dark:text-purple-400' },
+  P_split_part1_late_part2_ontime: { label: 'Split (P1 Late, P2 On-Time)', group: 'split', color: 'bg-fuchsia-500', text: 'text-fuchsia-600 dark:text-fuchsia-400' },
+  P_split_both_late: { label: 'Split (Both Late Default Risk)', group: 'split', color: 'bg-red-600', text: 'text-red-600 dark:text-red-400' },
 };
 
 export default function ScenarioPredictionCard({ prediction, isLoading = false }) {
+  const [activeProbFilter, setActiveProbFilter] = useState('all'); // 'all' | 'single' | 'split'
+
   if (isLoading) {
     return (
       <div className="p-6 rounded-3xl bg-white dark:bg-gray-900 border border-blue-200/80 dark:border-blue-900/40 shadow-xl space-y-4 animate-pulse">
@@ -43,7 +60,7 @@ export default function ScenarioPredictionCard({ prediction, isLoading = false }
           No Invoice Selected for Prediction
         </p>
         <p className="text-xs text-gray-400 mt-1">
-          Select an invoice from the ledger or run a live forecast to execute the 5-Step Hybrid ML engine.
+          Select an invoice from the ledger or run a live forecast to execute the 6-Step Hybrid ML engine.
         </p>
       </div>
     );
@@ -55,8 +72,8 @@ export default function ScenarioPredictionCard({ prediction, isLoading = false }
     is_divided_invoice,
     step2_customer_score,
     step2_score_details: scoreDetails = {},
-    step3_schedule: schedule = {},
     step4_scenario_text,
+    step6_risk_action: riskAction = null,
     predicted_installments: installments = [],
   } = prediction;
 
@@ -66,6 +83,12 @@ export default function ScenarioPredictionCard({ prediction, isLoading = false }
       : step2_customer_score >= 65
       ? 'text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/40 border-blue-200 dark:border-blue-800/60'
       : 'text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-950/40 border-rose-200 dark:border-rose-800/60';
+
+  const displayedProbs = Object.entries(CLASS_LABELS_12).filter(([key, config]) => {
+    if (activeProbFilter === 'single') return config.group === 'single';
+    if (activeProbFilter === 'split') return config.group === 'split';
+    return true;
+  });
 
   return (
     <div className="rounded-3xl bg-white dark:bg-gray-900 border border-blue-200/80 dark:border-blue-900/40 shadow-xl overflow-hidden transition-all">
@@ -77,10 +100,10 @@ export default function ScenarioPredictionCard({ prediction, isLoading = false }
           </div>
           <div>
             <h3 className="text-sm font-bold tracking-wide">
-              5-Step Hybrid ML Prediction Engine
+              6-Step Hybrid ML & Cash Flow Architecture
             </h3>
             <span className="text-[11px] text-blue-100/90 font-medium">
-              LightGBM Classifier + Divided Penalty + Multi-Output XGBoost
+              12 Timing Classes • Divided Penalty • Multi-Output XGBoost • Working Capital Optimizer
             </span>
           </div>
         </div>
@@ -112,6 +135,36 @@ export default function ScenarioPredictionCard({ prediction, isLoading = false }
             "{step4_scenario_text}"
           </p>
         </div>
+
+        {/* Step 6: Counterparty Risk Alert & Working Capital Optimizer Banner */}
+        {riskAction && (
+          <div className={`p-4 rounded-2xl border ${
+            riskAction.color_code === 'rose'
+              ? 'bg-rose-50/80 dark:bg-rose-950/30 border-rose-200 dark:border-rose-800/50 text-rose-900 dark:text-rose-100'
+              : riskAction.color_code === 'amber'
+              ? 'bg-amber-50/80 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800/50 text-amber-900 dark:text-amber-100'
+              : 'bg-emerald-50/80 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800/50 text-emerald-900 dark:text-emerald-100'
+          }`}>
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-[11px] font-bold uppercase tracking-wider flex items-center gap-1.5">
+                <Zap className="w-3.5 h-3.5" />
+                Step 6: Credit Action & Working Capital Optimizer
+              </span>
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/70 dark:bg-black/30 border border-current">
+                {riskAction.step6_risk_level}
+              </span>
+            </div>
+            <p className="text-xs font-semibold leading-relaxed">
+              {riskAction.recommendation}
+            </p>
+            {riskAction.estimated_working_capital_carry_cost > 0 && (
+              <div className="mt-2 text-[11px] font-mono opacity-90 flex items-center gap-2">
+                <span>Estimated Working Capital Carry Cost (8% APR):</span>
+                <span className="font-bold">${riskAction.estimated_working_capital_carry_cost.toLocaleString()}</span>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Step 2 & Step 3 Split Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -145,7 +198,7 @@ export default function ScenarioPredictionCard({ prediction, isLoading = false }
                 <span className="font-semibold font-mono">-{scoreDetails.invoice_split_penalty}</span>
               </div>
               <div className="text-[10px] text-gray-400 italic pt-0.5">
-                Formula: Base_Score - 5 * Split_Rate
+                Formula: Base_Score (12 Classes) - 5 * Split_Rate
               </div>
             </div>
           </div>
@@ -197,20 +250,54 @@ export default function ScenarioPredictionCard({ prediction, isLoading = false }
           </div>
         </div>
 
-        {/* Step 1: 6-Class Probability Distribution Bars */}
-        <div className="space-y-2 pt-2">
-          <div className="flex items-center justify-between">
+        {/* Step 1: 12-Class Probability Distribution Bars */}
+        <div className="space-y-3 pt-2">
+          <div className="flex flex-wrap items-center justify-between gap-2">
             <span className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
               <Layers className="w-3.5 h-3.5 text-purple-500" />
-              Step 1: LightGBM 6-Class Probability Distribution
+              Step 1: LightGBM 12-Class Probability Distribution
             </span>
-            <span className="text-[11px] font-semibold text-purple-600 dark:text-purple-400">
-              Predicted: {CLASS_LABELS[predicted_class]?.label || predicted_class}
-            </span>
+
+            {/* Filter Pills */}
+            <div className="flex rounded-lg bg-gray-100 dark:bg-gray-800 p-0.5 text-[10px]">
+              <button
+                type="button"
+                onClick={() => setActiveProbFilter('all')}
+                className={`px-2 py-0.5 rounded-md font-semibold ${
+                  activeProbFilter === 'all'
+                    ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-xs'
+                    : 'text-gray-500 hover:text-gray-900 dark:hover:text-white'
+                }`}
+              >
+                All 12
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveProbFilter('single')}
+                className={`px-2 py-0.5 rounded-md font-semibold ${
+                  activeProbFilter === 'single'
+                    ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-xs'
+                    : 'text-gray-500 hover:text-gray-900 dark:hover:text-white'
+                }`}
+              >
+                Single (3)
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveProbFilter('split')}
+                className={`px-2 py-0.5 rounded-md font-semibold ${
+                  activeProbFilter === 'split'
+                    ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-xs'
+                    : 'text-gray-500 hover:text-gray-900 dark:hover:text-white'
+                }`}
+              >
+                Split (9)
+              </button>
+            </div>
           </div>
 
-          <div className="space-y-2 pt-1">
-            {Object.entries(CLASS_LABELS).map(([key, config]) => {
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-2.5 pt-1">
+            {displayedProbs.map(([key, config]) => {
               const probability = probs[key] || 0.0;
               const pct = Math.round(probability * 100);
               const isSelected = key === predicted_class;
@@ -230,7 +317,7 @@ export default function ScenarioPredictionCard({ prediction, isLoading = false }
                       {pct}%
                     </span>
                   </div>
-                  <div className="w-full h-2 rounded-full bg-gray-100 dark:bg-gray-800 overflow-hidden">
+                  <div className="w-full h-1.5 rounded-full bg-gray-100 dark:bg-gray-800 overflow-hidden">
                     <div
                       className={`h-full rounded-full transition-all duration-500 ${config.color} ${isSelected ? 'opacity-100' : 'opacity-60'}`}
                       style={{ width: `${Math.max(2, pct)}%` }}

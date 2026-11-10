@@ -1,13 +1,13 @@
 /**
- * CashPredix - 5-Step Hybrid ML Prediction Service
+ * CashPredix - 6-Step Hybrid ML Prediction Service
  * Bridges React frontend with FastAPI backend (/api/predict/invoice, /api/cashflow/projection)
- * Includes resilient offline fallback client implementing identical statistical formulas.
+ * Includes resilient offline fallback client implementing all 12 classes & 6-step architecture.
  */
 
 const API_BASE = ''; // Uses Vite proxy or relative path
 
 /**
- * Predict invoice payment behavior across the 5-Step Architecture.
+ * Predict invoice payment behavior across the 6-Step Architecture.
  *
  * @param {Object} params
  * @param {string} params.customerId - Customer ID
@@ -15,7 +15,7 @@ const API_BASE = ''; // Uses Vite proxy or relative path
  * @param {number} params.daysUntilDue - Days until payment maturity
  * @param {string} [params.invoiceNumber] - Optional invoice ID
  * @param {Object} [params.customer] - Customer metadata (for local client fallback)
- * @returns {Promise<Object>} 5-Step prediction result
+ * @returns {Promise<Object>} 6-Step prediction result
  */
 export async function predictInvoice({
   customerId,
@@ -49,46 +49,32 @@ export async function predictInvoice({
     }
   } catch (err) {
     // Backend offline or unreachable; fall back to resilient client computation
-    console.warn('FastAPI backend offline; using client-side 5-step fallback engine:', err.message);
+    console.warn('FastAPI backend offline; using client-side 6-step fallback engine:', err.message);
   }
 
   // -------------------------------------------------------------------------
-  // Resilient Client-Side Fallback Engine (Strict 5-Step Mathematics)
+  // Resilient Client-Side Fallback Engine (All 12 Classes & 6-Step Architecture)
   // -------------------------------------------------------------------------
-  const splitRate = (customer && customer.split_rate) || 0.18;
+  const splitRate = (customer && customer.split_rate) || 0.22;
   const avgDelay = (customer && customer.avg_delay_days) || 1.5;
   const isHighDelay = avgDelay > 5;
+  const isDisciplined = avgDelay <= 0;
 
-  // Step 1: 6-Class Probabilities
-  let rawProbs;
-  if (splitRate > 0.35) {
-    rawProbs = {
-      P_single_early: 0.05,
-      P_single_ontime: 0.25,
-      P_single_late: 0.10,
-      P_split_both_ontime: 0.35,
-      P_split_part1_ontime_part2_late: 0.18,
-      P_split_part1_late_part2_ontime: 0.07,
-    };
-  } else if (isHighDelay) {
-    rawProbs = {
-      P_single_early: 0.04,
-      P_single_ontime: 0.26,
-      P_single_late: 0.45,
-      P_split_both_ontime: 0.05,
-      P_split_part1_ontime_part2_late: 0.15,
-      P_split_part1_late_part2_ontime: 0.05,
-    };
-  } else {
-    rawProbs = {
-      P_single_early: 0.15,
-      P_single_ontime: 0.62,
-      P_single_late: 0.08,
-      P_split_both_ontime: 0.09,
-      P_split_part1_ontime_part2_late: 0.04,
-      P_split_part1_late_part2_ontime: 0.02,
-    };
-  }
+  // Step 1: 12-Class Probability Distribution
+  const rawProbs = {
+    P_single_early: isDisciplined ? 0.22 : 0.06,
+    P_single_ontime: isDisciplined ? 0.48 : 0.28,
+    P_single_late: isHighDelay ? 0.35 : 0.08,
+    P_split_both_early: isDisciplined && splitRate > 0.2 ? 0.08 : 0.02,
+    P_split_part1_early_part2_ontime: splitRate > 0.2 ? 0.07 : 0.03,
+    P_split_part1_early_part2_late: isHighDelay && splitRate > 0.2 ? 0.12 : 0.04,
+    P_split_part1_ontime_part2_early: splitRate > 0.2 ? 0.06 : 0.02,
+    P_split_both_ontime: !isHighDelay && splitRate > 0.2 ? 0.18 : 0.05,
+    P_split_part1_ontime_part2_late: isHighDelay && splitRate > 0.2 ? 0.15 : 0.04,
+    P_split_part1_late_part2_early: 0.02,
+    P_split_part1_late_part2_ontime: 0.04,
+    P_split_both_late: isHighDelay ? 0.16 : 0.02,
+  };
 
   const sumProbs = Object.values(rawProbs).reduce((a, b) => a + b, 0);
   const probabilities = {};
@@ -101,10 +87,20 @@ export async function predictInvoice({
   );
   const isSplit = predictedClass.includes('split');
 
-  // Step 2: Divided-Invoice Penalty Scoring Formula
-  // Base_Score = 100 - on_time_deficit
-  const onTimeSum = probabilities.P_single_ontime + probabilities.P_single_early + probabilities.P_split_both_ontime;
-  const baseScore = Math.round(Math.max(10, Math.min(100, onTimeSum * 100)));
+  // Step 2: Comprehensive 12-Class Penalty Scoring Formula
+  const baseScore = Math.round(
+    100.0 * (
+      1.00 * (probabilities.P_single_early + probabilities.P_single_ontime) +
+      0.95 * probabilities.P_split_both_early +
+      0.90 * probabilities.P_split_part1_early_part2_ontime +
+      0.88 * (probabilities.P_split_both_ontime + probabilities.P_split_part1_ontime_part2_early) +
+      0.65 * (probabilities.P_split_part1_late_part2_ontime + probabilities.P_split_part1_late_part2_early) +
+      0.55 * probabilities.P_split_part1_early_part2_late +
+      0.50 * probabilities.P_split_part1_ontime_part2_late +
+      0.10 * probabilities.P_split_both_late +
+      0.00 * probabilities.P_single_late
+    )
+  );
   const penaltyDeduction = Math.round(5 * splitRate * 10) / 10;
   const customerScore = Math.max(0, Math.min(100, Math.round(baseScore - penaltyDeduction)));
 
@@ -121,8 +117,21 @@ export async function predictInvoice({
   if (isSplit) {
     part1Ratio = 0.55;
     part2Ratio = 0.45;
-    part1Days = Math.max(1, Math.min(daysUntilDue, 14));
-    part2Days = part1Days + 16;
+    if (predictedClass.includes('part1_early')) {
+      part1Days = Math.max(1, daysUntilDue - 16);
+    } else if (predictedClass.includes('part1_late')) {
+      part1Days = daysUntilDue + 7;
+    } else {
+      part1Days = Math.max(1, Math.min(daysUntilDue, 14));
+    }
+
+    if (predictedClass.includes('part2_early')) {
+      part2Days = Math.max(part1Days + 3, daysUntilDue - 3);
+    } else if (predictedClass.includes('part2_late')) {
+      part2Days = daysUntilDue + 18;
+    } else {
+      part2Days = part1Days + 16;
+    }
   }
 
   const part1Amount = Math.round(payload.invoice_amount * part1Ratio * 100) / 100;
@@ -130,16 +139,67 @@ export async function predictInvoice({
 
   // Step 4: Scenario Text Generation
   let scenarioText = '';
+  const p1Status = part1Days <= daysUntilDue - 3 ? 'Early' : part1Days <= daysUntilDue + 2 ? 'On-Time' : 'Late';
+  const p2Status = part2Days <= daysUntilDue - 3 ? 'Early' : part2Days <= daysUntilDue + 2 ? 'On-Time' : 'Late';
+
   if (isSplit) {
-    scenarioText = `Customer will likely split the invoice (%${Math.round(part1Ratio * 100)} Part 1, %${Math.round(part2Ratio * 100)} Part 2). Part 1 is expected in ${part1Days} days, Part 2 in ${part2Days} days. Divided-invoice penalty score: ${customerScore}/100.`;
+    scenarioText = `This customer's score is ${customerScore}. They will likely divide this $${payload.invoice_amount.toLocaleString()} invoice into 2 parts: Part 1 ($${part1Amount.toLocaleString()}) will be paid in ${part1Days} days (${p1Status}), and Part 2 ($${part2Amount.toLocaleString()}) will be paid in ${part2Days} days (${p2Status}).`;
   } else {
-    const timingDesc =
-      predictedClass === 'P_single_early'
-        ? 'early (prior to due date)'
-        : predictedClass === 'P_single_late'
-        ? 'with delay'
-        : 'on time';
-    scenarioText = `Customer is projected to pay in a single full installment ${timingDesc} in ${part1Days} days. Divided-invoice penalty score: ${customerScore}/100.`;
+    scenarioText = `This customer's score is ${customerScore}. They will likely pay this $${payload.invoice_amount.toLocaleString()} invoice in a single payment: 100% ($${part1Amount.toLocaleString()}) will be paid in ${part1Days} days (${p1Status}).`;
+  }
+
+  // Step 6: Counterparty Risk Alert & Working Capital Optimizer
+  let step6Action;
+  if (predictedClass === 'P_split_both_late' || customerScore < 55) {
+    step6Action = {
+      step6_risk_level: 'High / Critical Default Risk',
+      action_flag: 'UPFRONT_RETAINER_REQUIRED',
+      color_code: 'rose',
+      recommendation: 'Both installments face severe payment delay. Require 50% upfront retainer prior to shipment and restrict balance to Net 7.',
+      mitigation_strategy: 'Halt unsecured credit expansion; enforce deposit guarantee.',
+      estimated_working_capital_carry_cost: Math.round(payload.invoice_amount * 0.08 * (Math.max(0, part2Days - 30) / 365) * 100) / 100,
+      projected_liquidity_delay_days: Math.max(0, part2Days - 30),
+    };
+  } else if (predictedClass.includes('part2_late')) {
+    step6Action = {
+      step6_risk_level: 'Divided Installment Drag',
+      action_flag: 'FACTORING_ALERT',
+      color_code: 'amber',
+      recommendation: `Installment Delay Drag: Part 1 is paid reliably, but Part 2 ($${part2Amount.toLocaleString()}) is dragged to day ${part2Days}. Recommend securing Part 2 via invoice factoring or post-dated check.`,
+      mitigation_strategy: 'Automate Day 15 milestone check; offer 1% early settlement discount on Part 2.',
+      estimated_working_capital_carry_cost: Math.round(payload.invoice_amount * 0.08 * (Math.max(0, part2Days - 30) / 365) * 100) / 100,
+      projected_liquidity_delay_days: Math.max(0, part2Days - 30),
+    };
+  } else if (predictedClass.includes('both_early')) {
+    step6Action = {
+      step6_risk_level: 'Minimal / Accelerated Liquidity',
+      action_flag: 'CREDIT_EXPANSION_ELIGIBLE',
+      color_code: 'emerald',
+      recommendation: 'Counterparty accelerates payments early on all installments. Eligible for credit line expansion.',
+      mitigation_strategy: 'Maintain preferred supplier relationship.',
+      estimated_working_capital_carry_cost: 0.0,
+      projected_liquidity_delay_days: 0,
+    };
+  } else if (customerScore >= 85) {
+    step6Action = {
+      step6_risk_level: 'Prime / Benchmark',
+      action_flag: 'EARLY_DISCOUNT_OFFER',
+      color_code: 'emerald',
+      recommendation: 'Exceptional settlement discipline. Recommend offering standard 2/10 Net 30 terms to capture early cash inflow.',
+      mitigation_strategy: 'Standard receivables monitoring; zero risk mitigation required.',
+      estimated_working_capital_carry_cost: 0.0,
+      projected_liquidity_delay_days: 0,
+    };
+  } else {
+    step6Action = {
+      step6_risk_level: 'Standard Operational',
+      action_flag: 'STANDARD_MONITORING',
+      color_code: 'blue',
+      recommendation: 'Commercial payments conform to expected B2B contract terms. Continue standard collections monitoring.',
+      mitigation_strategy: 'Routine accounts receivable ledger tracking.',
+      estimated_working_capital_carry_cost: Math.round(payload.invoice_amount * 0.08 * (Math.max(0, part1Days - 30) / 365) * 100) / 100,
+      projected_liquidity_delay_days: Math.max(0, part1Days - 30),
+    };
   }
 
   const today = new Date();
@@ -191,10 +251,11 @@ export async function predictInvoice({
       part2_invoice_ratio: part2Ratio,
       part2_amount: part2Amount,
       part2_days_from_today: part2Days,
-      part1_week_status: `Day ${part1Days}`,
-      part2_week_status: isSplit ? `Day ${part2Days}` : 'N/A',
+      part1_week_status: `Day ${part1Days} (${p1Status})`,
+      part2_week_status: isSplit ? `Day ${part2Days} (${p2Status})` : 'N/A',
     },
     step4_scenario_text: scenarioText,
+    step6_risk_action: step6Action,
     predicted_installments: installments,
   };
 }

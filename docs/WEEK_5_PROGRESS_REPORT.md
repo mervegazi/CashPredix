@@ -9,17 +9,20 @@
 
 ## 1. Executive Summary & Sprint Objectives
 
-During Week 5 of the CashPredix development lifecycle, the engineering roadmap underwent a significant architecture upgrade to strictly implement the **5-Step Hybrid Machine Learning Architecture** (*2 Machine Learning Models + 3 Custom Algorithms*). All previous legacy scoring implementations were deprecated, and the system was re-architected around a specialized pipeline designed specifically for divided-invoice liquidity modeling in enterprise cash flow management.
+During Week 5 of the CashPredix development lifecycle, the engineering roadmap underwent a significant architecture upgrade to strictly implement the **6-Step Hybrid Machine Learning Architecture** (*2 Machine Learning Models + 4 Custom Algorithms*). All previous legacy scoring implementations were deprecated, and the system was re-architected around a specialized pipeline designed specifically for divided-invoice liquidity modeling in enterprise cash flow management.
 
-Furthermore, to ensure rigorous training data scale as required by academic standards, a high-throughput synthetic data generation engine was developed, producing **1,000,000 realistic invoices** (1,240,327 installment records totaling 212.5 MB) across 500 business counterparties with Pareto revenue distributions and empirical timing variations.
+Furthermore, to ensure rigorous training data scale as required by academic standards, a high-throughput vectorized synthetic data generation engine was developed, producing **3,000,000 realistic invoices** (3,960,442 installment records totaling 436.5 MB) across 500 business counterparties with Pareto revenue distributions and empirical timing variations.
 
 ### Core Sprint Objectives Accomplished:
-1. **Large-Scale Data Generation (1M Invoices):** Built vectorized generator simulating multi-part installment behaviors, realistic delay curves, and Pareto revenue tiers.
-2. **Step 1 — LightGBM Multi-Class Classifier (6 Classes):** Modeled single vs. divided payment probabilities (`P_single_early`, `P_single_ontime`, `P_single_late`, `P_split_both_ontime`, `P_split_part1_ontime_part2_late`, `P_split_part1_late_part2_ontime`).
-3. **Step 2 — Custom Divided-Invoice Penalty Scoring Formula:** Implemented explicit business scoring formula `Base_Score - 5 * Historical_Invoice_Split_Rate` bounded strictly to [0, 100].
+1. **Large-Scale Data Generation (3M Invoices):** Built vectorized generator simulating multi-part installment behaviors, realistic delay curves, and Pareto revenue tiers across 3 Million invoices.
+2. **Step 1 — LightGBM Multi-Class Classifier (12 Classes):** Modeled single vs. divided payment probabilities covering all timing permutations:
+   - 3 Single Payment Classes: `P_single_early`, `P_single_ontime`, `P_single_late`
+   - 9 Split Payment Classes: `P_split_both_early`, `P_split_part1_early_part2_ontime`, `P_split_part1_early_part2_late`, `P_split_part1_ontime_part2_early`, `P_split_both_ontime`, `P_split_part1_ontime_part2_late`, `P_split_part1_late_part2_early`, `P_split_part1_late_part2_ontime`, `P_split_both_late`.
+3. **Step 2 — Custom Divided-Invoice Penalty Scoring Formula:** Implemented explicit business scoring formula `Base_Score - 5 * Historical_Invoice_Split_Rate` bounded strictly to [0, 100], weighting all 12 timing permutations.
 4. **Step 3 — Multi-Output XGBoost Regressor:** Simultaneously predicted installment payment ratios and timing offsets (`part1_invoice_ratio`, `part1_days_from_today`, `part2_days_from_today`).
 5. **Step 4 — Dynamic Scenario Text Generator:** Engineered template-driven natural language generation synthesizing complex probabilistic predictions into human-readable scenario narratives.
 6. **Step 5 — Cash Flow Aggregation & Projection Engine:** Developed multi-horizon projection module aggregating expected cash receipts across weekly, monthly, and yearly timeframes.
+7. **Step 6 — Counterparty Risk Alert & Working Capital Optimizer:** Evaluated proactive risk mitigation flags (Upfront retainers, factoring triggers, proactive milestone reminders) and calculated working capital carry cost at 8% cost of capital.
 
 All Week 5 tasks (#21, #22, #23, #52) have been successfully implemented, validated, and verified with 100% test pass rates.
 
@@ -29,22 +32,22 @@ All Week 5 tasks (#21, #22, #23, #52) have been successfully implemented, valida
 
 | Task ID | Task Scope | Status | Key Deliverable & Artifact |
 | :--- | :--- | :--- | :--- |
-| **Task #21** | Step 1 & 2: LightGBM 6-Class Classifier & Customer Penalty Scoring | **Done** | [`ml/step1_payment_classifier.py`](../ml/step1_payment_classifier.py), [`ml/step2_penalty_scoring.py`](../ml/step2_penalty_scoring.py), serialized model [`ml/models/lightgbm_payment_classifier.joblib`](../ml/models/lightgbm_payment_classifier.joblib). |
+| **Task #21** | Step 1 & 2: LightGBM 12-Class Classifier & Customer Penalty Scoring | **Done** | [`ml/step1_payment_classifier.py`](../ml/step1_payment_classifier.py), [`ml/step2_penalty_scoring.py`](../ml/step2_penalty_scoring.py), serialized model [`ml/models/lightgbm_payment_classifier.joblib`](../ml/models/lightgbm_payment_classifier.joblib). |
 | **Task #22** | Step 3: Multi-Output XGBoost Regressor for Split Ratios & Payment Days | **Done** | [`ml/step3_xgb_split_regressor.py`](../ml/step3_xgb_split_regressor.py), serialized model [`ml/models/xgboost_split_regressor.joblib`](../ml/models/xgboost_split_regressor.joblib). |
 | **Task #23** | Step 4 & 5: Dynamic Scenario Text Generator & Cash Flow Aggregation Engine | **Done** | [`ml/step4_scenario_generator.py`](../ml/step4_scenario_generator.py), [`ml/step5_cashflow_aggregator.py`](../ml/step5_cashflow_aggregator.py), master orchestrator [`ml/hybrid_pipeline.py`](../ml/hybrid_pipeline.py). |
 | **Task #52** | Week 5 Weekly Progress Report | **Done** | [`docs/WEEK_5_PROGRESS_REPORT.md`](WEEK_5_PROGRESS_REPORT.md), [`docs/Week_5_Weekly_Progress_Report_CashPredix.docx`](Week_5_Weekly_Progress_Report_CashPredix.docx). |
 
 ---
 
-## 3. The 5-Step Hybrid Architecture Implementation
+## 3. The 6-Step Hybrid Architecture Implementation
 
 ```
 [ Input: Invoice Data ]
          │
          ▼
 ┌────────────────────────────────────────────────────────┐
-│ STEP 1: LightGBM Multi-Class Classifier (6 Classes)    │
-│ Predicts probabilities: P_single_*, P_split_*          │
+│ STEP 1: LightGBM Multi-Class Classifier (12 Classes)   │
+│ Predicts probabilities: P_single_*, P_split_* (all 12) │
 └──────────────────────────┬─────────────────────────────┘
                            │
                            ▼
@@ -69,22 +72,34 @@ All Week 5 tasks (#21, #22, #23, #52) have been successfully implemented, valida
 ┌────────────────────────────────────────────────────────┐
 │ STEP 5: Cash Flow Aggregation & Projection Engine      │
 │ Aggregates cash into weekly, monthly, yearly horizons  │
+└──────────────────────────┬─────────────────────────────┘
+                           │
+                           ▼
+┌────────────────────────────────────────────────────────┐
+│ STEP 6: Risk Alert & Working Capital Optimizer (8% APR)│
+│ Proactive mitigation triggers & liquidity carry cost   │
 └────────────────────────────────────────────────────────┘
 ```
 
 ### Detailed Component Specifications:
 
-#### Step 1: LightGBM Multi-Class Classifier
+#### Step 1: LightGBM Multi-Class Classifier (12 Classes)
 - **Model:** Gradient boosted decision trees using histogram binning with multi-class log-loss objective.
-- **Classes (6):**
-  1. `P_single_early`: Full payment made strictly before the invoice due date.
-  2. `P_single_ontime`: Full payment made on or within a 2-day grace period of the due date.
-  3. `P_single_late`: Full payment made beyond the grace period.
-  4. `P_split_both_ontime`: Invoice split into two installments, both paid on time.
-  5. `P_split_part1_ontime_part2_late`: First installment on time, second installment delayed.
-  6. `P_split_part1_late_part2_ontime`: First installment delayed, second installment on time.
+- **Classes (12):**
+  1. `P_single_early`: Full single payment made strictly before the invoice due date.
+  2. `P_single_ontime`: Full single payment made on or within a 2-day grace period of the due date.
+  3. `P_single_late`: Full single payment made beyond the grace period.
+  4. `P_split_both_early`: Split into two installments, both settled early.
+  5. `P_split_part1_early_part2_ontime`: Part 1 settled early, Part 2 on-time.
+  6. `P_split_part1_early_part2_late`: Part 1 settled early, Part 2 delayed.
+  7. `P_split_part1_ontime_part2_early`: Part 1 on-time, Part 2 settled early.
+  8. `P_split_both_ontime`: Split into two installments, both settled on-time.
+  9. `P_split_part1_ontime_part2_late`: Part 1 on-time, Part 2 delayed.
+  10. `P_split_part1_late_part2_early`: Part 1 delayed, Part 2 settled early.
+  11. `P_split_part1_late_part2_ontime`: Part 1 delayed, Part 2 settled on-time.
+  12. `P_split_both_late`: Split into two installments, both delayed.
 - **Input Features (8):** `invoice_amount`, `days_until_due`, `customer_avg_delay`, `customer_on_time_ratio`, `customer_split_invoice_rate`, `customer_total_invoices`, `customer_late_count`, `amount_to_avg_ratio`.
-- **Accuracy on Large Dataset:** 98.42% accuracy across all 6 classes.
+- **Dataset Scale:** 3,000,000 synthetic invoices generated with exact empirical distributions.
 
 #### Step 2: Custom Divided-Invoice Penalty Scoring Algorithm
 - **Formula:**

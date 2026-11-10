@@ -1,17 +1,30 @@
 #!/usr/bin/env python3
 """
-CashPredix - High-Scale Vectorized Synthetic Data Generator (1M - 3M Invoices)
-Generates large-scale synthetic B2B invoice and payment histories covering:
-- Single payment scenarios (Early, On-Time, Late)
-- Divided invoice scenarios (Both On-Time, Part 1 On-Time/Part 2 Late, Part 1 Late/Part 2 On-Time)
-- Pareto invoice amounts ($500 to $100,000)
-- Realistic payment cadence, split ratios, and installment milestones
+CashPredix - High-Scale Vectorized Synthetic Data Generator (3,000,000 Invoices)
+Generates large-scale synthetic B2B invoice and payment histories covering ALL 12 payment/split combinations:
+
+Single Invoices (3 classes):
+1. P_single_early: Full payment at least 3 days before due date.
+2. P_single_ontime: Full payment on due date (+/- 2 days).
+3. P_single_late: Full payment after due date.
+
+Divided Invoices (9 combinations: Part 1 Early/On-Time/Late x Part 2 Early/On-Time/Late):
+4. P_split_both_early: Both parts paid early.
+5. P_split_part1_early_part2_ontime: Part 1 early, Part 2 on-time.
+6. P_split_part1_early_part2_late: Part 1 early, Part 2 late.
+7. P_split_part1_ontime_part2_early: Part 1 on-time, Part 2 early.
+8. P_split_both_ontime: Both parts on-time.
+9. P_split_part1_ontime_part2_late: Part 1 on-time, Part 2 late.
+10. P_split_part1_late_part2_early: Part 1 late, Part 2 early.
+11. P_split_part1_late_part2_ontime: Part 1 late, Part 2 on-time.
+12. P_split_both_late: Both parts late.
 """
 
 import os
 import sys
 import uuid
 import time
+import json
 import argparse
 from pathlib import Path
 from datetime import datetime, timedelta
@@ -19,214 +32,235 @@ from typing import Optional
 import numpy as np
 import pandas as pd
 
-
 BASE_DIR = Path(__file__).resolve().parent.parent
 OUTPUT_DIR = BASE_DIR / "data" / "synthetic"
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
+PAYMENT_CLASSES_12 = [
+    "P_single_early",
+    "P_single_ontime",
+    "P_single_late",
+    "P_split_both_early",
+    "P_split_part1_early_part2_ontime",
+    "P_split_part1_early_part2_late",
+    "P_split_part1_ontime_part2_early",
+    "P_split_both_ontime",
+    "P_split_part1_ontime_part2_late",
+    "P_split_part1_late_part2_early",
+    "P_split_part1_late_part2_ontime",
+    "P_split_both_late",
+]
+
 
 def generate_large_scale_invoices(
-    total_invoices: int = 1_000_000,
+    total_invoices: int = 3_000_000,
     num_customers: int = 500,
     output_file: Optional[Path] = None,
-    chunk_size: int = 250_000,
+    chunk_size: int = 500_000,
     random_seed: int = 42
 ) -> Path:
     """
-    Generate high-scale synthetic B2B payment history in efficient chunks.
+    Generate 3 Million synthetic B2B invoices with all 12 timing/split possibilities
+    using vectorized array chunking for blazing speed.
     """
     rng = np.random.default_rng(random_seed)
     target_path = output_file or (OUTPUT_DIR / "payment_history_large.csv")
 
-    print(f"[DATA-GEN] Starting high-scale generation of {total_invoices:,} invoices across {num_customers} customers...")
+    print(f"\n[DATA-GEN] Starting high-speed generation of {total_invoices:,} invoices across {num_customers} counterparties...")
+    print(f"[DATA-GEN] Target output file: {target_path}")
     start_time = time.time()
 
-    # Generate customer IDs and profile weights
-    customer_ids = [str(uuid.uuid4()) for _ in range(num_customers)]
+    # Generate persistent customer pool
+    customer_ids = np.array([f"cust_{i+1:04d}" for i in range(num_customers)])
     
-    # Customer baseline habits:
-    # 55% Disciplined, 30% Moderate Splitters, 15% Chronic Delay/Splitters
-    cust_split_tendencies = rng.beta(a=2, b=5, size=num_customers)  # Avg split rate ~28%
-    cust_avg_amounts = rng.pareto(a=2.5, size=num_customers) * 8000.0 + 1500.0
+    # Counterparty baseline behavior distributions:
+    # Split tendencies and base revenue tiers
+    cust_split_rates = rng.beta(a=2.0, b=5.0, size=num_customers)  # ~28% avg split rate
+    cust_avg_amounts = rng.pareto(a=2.5, size=num_customers) * 8500.0 + 1200.0
 
-    classes = [
-        "P_single_early",
-        "P_single_ontime",
-        "P_single_late",
-        "P_split_both_ontime",
-        "P_split_part1_ontime_part2_late",
-        "P_split_part1_late_part2_ontime"
-    ]
-    # Class probability weights
-    class_probs = np.array([0.16, 0.42, 0.18, 0.08, 0.12, 0.04])
-    class_probs = class_probs / class_probs.sum()
+    # 12-Class Probability Weights (Empirical B2B distribution covering all combinations)
+    weights = np.array([
+        0.14,  # P_single_early
+        0.38,  # P_single_ontime
+        0.16,  # P_single_late
+        0.03,  # P_split_both_early
+        0.04,  # P_split_part1_early_part2_ontime
+        0.03,  # P_split_part1_early_part2_late (first early, second late)
+        0.02,  # P_split_part1_ontime_part2_early
+        0.07,  # P_split_both_ontime
+        0.05,  # P_split_part1_ontime_part2_late (first on-time, second late)
+        0.02,  # P_split_part1_late_part2_early (first late, second early)
+        0.03,  # P_split_part1_late_part2_ontime (first late, second on-time)
+        0.03,  # P_split_both_late (both late)
+    ])
+    weights = weights / weights.sum()
 
-    base_date = datetime(2025, 1, 1)
-    written_rows = 0
+    base_date = np.datetime64("2024-01-01")
+    total_installment_rows = 0
 
-    # If file exists, remove to start fresh
     if target_path.exists():
         target_path.unlink()
 
     first_chunk = True
-    invoices_generated = 0
+    invoices_done = 0
 
-    while invoices_generated < total_invoices:
-        current_chunk_size = min(chunk_size, total_invoices - invoices_generated)
-        
-        # Sample customers for this chunk
-        cust_indices = rng.integers(0, num_customers, size=current_chunk_size)
-        assigned_cids = [customer_ids[i] for i in cust_indices]
-        
-        # Sample invoice amounts (Pareto-distributed)
-        base_amts = cust_avg_amounts[cust_indices]
-        inv_amts = np.round(base_amts * rng.uniform(0.7, 1.4, size=current_chunk_size), 2)
-        
-        # Sample invoice dates across a 2-year period (730 days)
-        day_offsets = rng.integers(0, 700, size=current_chunk_size)
-        term_days = rng.choice([15, 30, 45, 60], size=current_chunk_size, p=[0.15, 0.60, 0.15, 0.10])
-        
-        # Assign payment behavior class
-        assigned_classes = rng.choice(classes, size=current_chunk_size, p=class_probs)
-        
-        rows = []
-        for i in range(current_chunk_size):
-            inv_id = f"INV-GEN-{invoices_generated + i + 1:07d}"
-            cid = assigned_cids[i]
-            total_amt = float(inv_amts[i])
-            inv_date = base_date + timedelta(days=int(day_offsets[i]))
-            term = int(term_days[i])
-            due_date = inv_date + timedelta(days=term)
-            
-            p_class = assigned_classes[i]
-            
-            if p_class.startswith("P_single"):
-                # Single Payment (1 Part)
-                if p_class == "P_single_early":
-                    dpd = int(rng.integers(-10, -2))
-                elif p_class == "P_single_ontime":
-                    dpd = int(rng.integers(-2, 3))
-                else:  # P_single_late
-                    dpd = int(rng.integers(3, 35))
-                    
-                pay_date = due_date + timedelta(days=dpd)
-                status = "PAID" if dpd <= 2 else "LATE"
-                
-                rows.append({
-                    "id": str(uuid.uuid4()),
-                    "customer_id": cid,
-                    "invoice_number": inv_id,
-                    "invoice_date": inv_date.strftime("%Y-%m-%d"),
-                    "due_date": due_date.strftime("%Y-%m-%d"),
-                    "invoice_amount": total_amt,
-                    "amount": total_amt,
-                    "amount_paid": total_amt,
-                    "remaining_balance": 0.0,
-                    "payment_date": pay_date.strftime("%Y-%m-%d"),
-                    "payment_method": "wire_transfer",
-                    "installment_number": 1,
-                    "total_installments": 1,
-                    "is_split_payment": False,
-                    "days_past_due": dpd,
-                    "status": status
-                })
-            else:
-                # Divided Invoice (2 Parts)
-                # Split ratio typically 40/60, 50/50, or 60/40
-                p1_ratio = float(rng.choice([0.40, 0.50, 0.60]))
-                p1_amt = round(total_amt * p1_ratio, 2)
-                p2_amt = round(total_amt - p1_amt, 2)
-                
-                if p_class == "P_split_both_ontime":
-                    dpd1 = int(rng.integers(-14, 0))
-                    dpd2 = int(rng.integers(0, 3))
-                elif p_class == "P_split_part1_ontime_part2_late":
-                    dpd1 = int(rng.integers(-5, 2))
-                    dpd2 = int(rng.integers(5, 40))
-                else:  # P_split_part1_late_part2_ontime
-                    dpd1 = int(rng.integers(3, 15))
-                    dpd2 = int(rng.integers(-2, 2))
-                    
-                p1_date = due_date + timedelta(days=dpd1)
-                p2_date = due_date + timedelta(days=dpd2)
-                
-                # Part 1
-                rows.append({
-                    "id": str(uuid.uuid4()),
-                    "customer_id": cid,
-                    "invoice_number": inv_id,
-                    "invoice_date": inv_date.strftime("%Y-%m-%d"),
-                    "due_date": due_date.strftime("%Y-%m-%d"),
-                    "invoice_amount": total_amt,
-                    "amount": p1_amt,
-                    "amount_paid": p1_amt,
-                    "remaining_balance": p2_amt,
-                    "payment_date": p1_date.strftime("%Y-%m-%d"),
-                    "payment_method": "ach",
-                    "installment_number": 1,
-                    "total_installments": 2,
-                    "is_split_payment": True,
-                    "days_past_due": dpd1,
-                    "status": "PARTIAL" if dpd1 <= 2 else "LATE"
-                })
-                # Part 2
-                rows.append({
-                    "id": str(uuid.uuid4()),
-                    "customer_id": cid,
-                    "invoice_number": inv_id,
-                    "invoice_date": inv_date.strftime("%Y-%m-%d"),
-                    "due_date": due_date.strftime("%Y-%m-%d"),
-                    "invoice_amount": total_amt,
-                    "amount": p2_amt,
-                    "amount_paid": p2_amt,
-                    "remaining_balance": 0.0,
-                    "payment_date": p2_date.strftime("%Y-%m-%d"),
-                    "payment_method": "ach",
-                    "installment_number": 2,
-                    "total_installments": 2,
-                    "is_split_payment": True,
-                    "days_past_due": dpd2,
-                    "status": "PAID" if dpd2 <= 2 else "LATE"
-                })
+    while invoices_done < total_invoices:
+        n = min(chunk_size, total_invoices - invoices_done)
+        chunk_start = time.time()
 
-        chunk_df = pd.DataFrame(rows)
-        chunk_df.to_csv(target_path, mode="a", index=False, header=first_chunk)
+        # Vectorized sampling
+        c_idx = rng.integers(0, num_customers, size=n)
+        assigned_cids = customer_ids[c_idx]
+        
+        # Amounts
+        assigned_amounts = np.round(cust_avg_amounts[c_idx] * rng.uniform(0.75, 1.35, size=n), 2)
+        
+        # Issue date & terms
+        day_offsets = rng.integers(0, 720, size=n)
+        terms = rng.choice(np.array([15, 30, 45, 60]), size=n, p=[0.15, 0.60, 0.15, 0.10])
+        
+        # Class assignments
+        assigned_classes = rng.choice(PAYMENT_CLASSES_12, size=n, p=weights)
+        is_split_mask = np.char.startswith(assigned_classes, "P_split")
+
+        # Invoice IDs
+        inv_ids = np.array([f"INV-3M-{invoices_done + i + 1:08d}" for i in range(n)])
+
+        # Split ratios: default 1.0 for single, ~0.50 for split
+        split_ratios = np.ones(n, dtype=np.float32)
+        split_ratios[is_split_mask] = np.round(rng.uniform(0.35, 0.65, size=np.sum(is_split_mask)), 2)
+
+        # Dates calculation
+        inv_dates = base_date + day_offsets.astype("timedelta64[D]")
+        due_dates = inv_dates + terms.astype("timedelta64[D]")
+
+        # Delays calculation per class
+        # Part 1 delays
+        delay1 = np.zeros(n, dtype=np.int32)
+        delay2 = np.zeros(n, dtype=np.int32)
+
+        for idx, cls_name in enumerate(assigned_classes):
+            if cls_name == "P_single_early":
+                delay1[idx] = rng.integers(-10, -3)
+            elif cls_name == "P_single_ontime":
+                delay1[idx] = rng.integers(-2, 3)
+            elif cls_name == "P_single_late":
+                delay1[idx] = rng.integers(4, 35)
+            elif cls_name == "P_split_both_early":
+                delay1[idx] = rng.integers(-14, -5)
+                delay2[idx] = rng.integers(-6, -2)
+            elif cls_name == "P_split_part1_early_part2_ontime":
+                delay1[idx] = rng.integers(-12, -4)
+                delay2[idx] = rng.integers(-2, 3)
+            elif cls_name == "P_split_part1_early_part2_late":
+                delay1[idx] = rng.integers(-12, -3)
+                delay2[idx] = rng.integers(5, 30)
+            elif cls_name == "P_split_part1_ontime_part2_early":
+                delay1[idx] = rng.integers(-2, 3)
+                delay2[idx] = rng.integers(-6, -2)
+            elif cls_name == "P_split_both_ontime":
+                delay1[idx] = rng.integers(-3, 2)
+                delay2[idx] = rng.integers(0, 3)
+            elif cls_name == "P_split_part1_ontime_part2_late":
+                delay1[idx] = rng.integers(-2, 2)
+                delay2[idx] = rng.integers(6, 28)
+            elif cls_name == "P_split_part1_late_part2_early":
+                delay1[idx] = rng.integers(4, 15)
+                delay2[idx] = rng.integers(-4, -1)
+            elif cls_name == "P_split_part1_late_part2_ontime":
+                delay1[idx] = rng.integers(4, 16)
+                delay2[idx] = rng.integers(-1, 3)
+            elif cls_name == "P_split_both_late":
+                delay1[idx] = rng.integers(5, 20)
+                delay2[idx] = rng.integers( delay1[idx] + 5, delay1[idx] + 35)
+
+        # Build installment 1 records
+        amt1 = np.where(is_split_mask, np.round(assigned_amounts * split_ratios, 2), assigned_amounts)
+        pay_date1 = due_dates + delay1.astype("timedelta64[D]")
+
+        part1_df = pd.DataFrame({
+            "invoice_id": inv_ids,
+            "customer_id": assigned_cids,
+            "invoice_amount": assigned_amounts,
+            "installment_number": 1,
+            "total_installments": np.where(is_split_mask, 2, 1),
+            "installment_amount": amt1,
+            "installment_ratio": split_ratios,
+            "invoice_date": pd.to_datetime(inv_dates).strftime("%Y-%m-%d"),
+            "due_date": pd.to_datetime(due_dates).strftime("%Y-%m-%d"),
+            "payment_date": pd.to_datetime(pay_date1).strftime("%Y-%m-%d"),
+            "days_past_due": delay1,
+            "payment_term_days": terms,
+            "is_split_payment": is_split_mask,
+            "target_class": assigned_classes
+        })
+
+        # Build installment 2 records for split invoices
+        split_indices = np.where(is_split_mask)[0]
+        amt2 = np.round(assigned_amounts[split_indices] - amt1[split_indices], 2)
+        pay_date2 = due_dates[split_indices] + delay2[split_indices].astype("timedelta64[D]")
+
+        part2_df = pd.DataFrame({
+            "invoice_id": inv_ids[split_indices],
+            "customer_id": assigned_cids[split_indices],
+            "invoice_amount": assigned_amounts[split_indices],
+            "installment_number": 2,
+            "total_installments": 2,
+            "installment_amount": amt2,
+            "installment_ratio": np.round(1.0 - split_ratios[split_indices], 2),
+            "invoice_date": pd.to_datetime(inv_dates[split_indices]).strftime("%Y-%m-%d"),
+            "due_date": pd.to_datetime(due_dates[split_indices]).strftime("%Y-%m-%d"),
+            "payment_date": pd.to_datetime(pay_date2).strftime("%Y-%m-%d"),
+            "days_past_due": delay2[split_indices],
+            "payment_term_days": terms[split_indices],
+            "is_split_payment": True,
+            "target_class": assigned_classes[split_indices]
+        })
+
+        # Combine and interleave chunk
+        chunk_combined = pd.concat([part1_df, part2_df], ignore_index=True)
+        chunk_combined.sort_values(by=["invoice_id", "installment_number"], inplace=True)
+
+        # Append to CSV
+        chunk_combined.to_csv(target_path, mode="w" if first_chunk else "a", header=first_chunk, index=False)
         first_chunk = False
-        
-        invoices_generated += current_chunk_size
-        written_rows += len(chunk_df)
-        print(f"[DATA-GEN] Progress: {invoices_generated:,} / {total_invoices:,} invoices ({written_rows:,} rows written)...")
+
+        total_installment_rows += len(chunk_combined)
+        invoices_done += n
+        chunk_elapsed = time.time() - chunk_start
+        print(f"  -> Generated {invoices_done:,} / {total_invoices:,} invoices ({total_installment_rows:,} installment rows) [Chunk: {chunk_elapsed:.2f}s]")
 
     elapsed = time.time() - start_time
     file_size_mb = target_path.stat().st_size / (1024 * 1024)
-    print(f"\n[✓] High-scale dataset generation complete!")
-    print(f"    - Invoices:   {total_invoices:,}")
-    print(f"    - Total Rows: {written_rows:,}")
-    print(f"    - File Size:  {file_size_mb:.2f} MB")
-    print(f"    - Time Taken: {elapsed:.2f} seconds")
-    print(f"    - File Path:  {target_path}")
 
-    # Generate companion metadata JSON
-    meta_path = OUTPUT_DIR / "large_scale_dataset_metrics.json"
-    with open(meta_path, "w", encoding="utf-8") as f:
-        import json
-        json.dump({
-            "total_invoices": total_invoices,
-            "total_rows": written_rows,
-            "num_customers": num_customers,
-            "file_size_mb": round(file_size_mb, 2),
-            "generation_time_sec": round(elapsed, 2),
-            "class_distribution": {
-                c: float(p) for c, p in zip(classes, class_probs)
-            }
-        }, f, indent=2)
+    print(f"\n[DATA-GEN] SUCCESS: 3 Million Dataset Generation Completed!")
+    print(f"[DATA-GEN] Total Invoices:         {total_invoices:,}")
+    print(f"[DATA-GEN] Total Installment Rows: {total_installment_rows:,}")
+    print(f"[DATA-GEN] File Size:              {file_size_mb:.2f} MB")
+    print(f"[DATA-GEN] Total Generation Time:  {elapsed:.2f} seconds ({total_invoices / elapsed:,.0f} inv/sec)")
+
+    # Save metrics JSON
+    metrics = {
+        "dataset_name": "CashPredix 3 Million Synthetic B2B Payment History",
+        "total_invoices": total_invoices,
+        "total_installment_rows": total_installment_rows,
+        "num_counterparties": num_customers,
+        "total_classes": 12,
+        "classes": PAYMENT_CLASSES_12,
+        "file_size_mb": round(file_size_mb, 2),
+        "generated_at": datetime.utcnow().isoformat() + "Z",
+        "generation_time_seconds": round(elapsed, 2)
+    }
+    with open(OUTPUT_DIR / "large_scale_dataset_metrics.json", "w") as f:
+        json.dump(metrics, f, indent=2)
 
     return target_path
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Generate large-scale synthetic B2B payment history")
-    parser.add_argument("--count", type=int, default=100_000, help="Number of invoices to generate (e.g. 100000, 1000000)")
+    parser = argparse.ArgumentParser(description="CashPredix 3 Million Dataset Generator")
+    parser.add_argument("--count", type=int, default=3_000_000, help="Total invoices to generate (default: 3,000,000)")
+    parser.add_argument("--customers", type=int, default=500, help="Number of distinct customers")
     args = parser.parse_args()
 
-    generate_large_scale_invoices(total_invoices=args.count)
+    generate_large_scale_invoices(total_invoices=args.count, num_customers=args.customers)

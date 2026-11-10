@@ -111,16 +111,21 @@ export default function CashflowPredictsPlaceholder() {
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2.5">
             <TrendingUp className="w-6 h-6 text-emerald-500" />
-            <span>5-Step Hybrid Cash Flow Forecast Engine</span>
+            <span>6-Step Hybrid Cash Flow Forecast Engine</span>
           </h1>
           <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            Predictive liquidity projection powered by LightGBM Multi-Class Classification, Customer Penalty Scoring, and Multi-Output XGBoost Regression.
+            Trained on 3,000,000 simulated invoices covering all 12 Single & Split timing outcomes, Dynamic Customer Penalty Scoring, and Working Capital Optimization.
           </p>
         </div>
 
-        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800/40 text-xs font-semibold self-start sm:self-auto">
-          <BrainCircuit className="w-4 h-4 text-purple-500" />
-          <span>Active ML Engine (5 Steps)</span>
+        <div className="flex items-center gap-2">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800/40 text-xs font-bold">
+            <span>3,000,000 Invoices</span>
+          </div>
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800/40 text-xs font-semibold">
+            <BrainCircuit className="w-4 h-4 text-purple-500" />
+            <span>6-Step Active Architecture</span>
+          </div>
         </div>
       </div>
 
@@ -358,7 +363,7 @@ export default function CashflowPredictsPlaceholder() {
                 ) : (
                   <>
                     <Zap className="w-4 h-4 text-amber-300" />
-                    <span>Run 5-Step ML Prediction</span>
+                    <span>Run 6-Step ML Prediction</span>
                   </>
                 )}
               </button>
@@ -369,28 +374,32 @@ export default function CashflowPredictsPlaceholder() {
           <div className="p-5 rounded-3xl bg-gray-50 dark:bg-gray-800/40 border border-gray-200/80 dark:border-gray-700/80 text-xs space-y-3">
             <h4 className="font-bold text-gray-900 dark:text-white flex items-center gap-2">
               <Layers className="w-4 h-4 text-blue-500" />
-              <span>5-Step Pipeline Processing Order</span>
+              <span>6-Step Pipeline Processing Order</span>
             </h4>
             <div className="space-y-2 text-[11px] text-gray-600 dark:text-gray-400">
               <div className="flex items-start gap-2">
                 <span className="w-4 h-4 rounded-full bg-blue-500/10 text-blue-600 font-bold flex items-center justify-center shrink-0">1</span>
-                <span><strong>LightGBM 6-Class Classifier:</strong> Evaluates split vs single probability curves.</span>
+                <span><strong>LightGBM 12-Class Classifier:</strong> Evaluates all single & 9 divided payment timing curves.</span>
               </div>
               <div className="flex items-start gap-2">
                 <span className="w-4 h-4 rounded-full bg-indigo-500/10 text-indigo-600 font-bold flex items-center justify-center shrink-0">2</span>
-                <span><strong>Divided Penalty Formula:</strong> Discounts score by 5 × historical split frequency.</span>
+                <span><strong>Divided Penalty Scoring:</strong> Discounts score by split-rate and installment delay friction.</span>
               </div>
               <div className="flex items-start gap-2">
                 <span className="w-4 h-4 rounded-full bg-purple-500/10 text-purple-600 font-bold flex items-center justify-center shrink-0">3</span>
-                <span><strong>Multi-Output XGBoost:</strong> Concurrently predicts split ratios and day offsets.</span>
+                <span><strong>Multi-Output XGBoost:</strong> Concurrently predicts split percentages and payment days.</span>
               </div>
               <div className="flex items-start gap-2">
                 <span className="w-4 h-4 rounded-full bg-emerald-500/10 text-emerald-600 font-bold flex items-center justify-center shrink-0">4</span>
-                <span><strong>Scenario Generator:</strong> Synthesizes natural language executive insight.</span>
+                <span><strong>Dynamic Scenario Generator:</strong> Synthesizes executive natural language insights.</span>
               </div>
               <div className="flex items-start gap-2">
                 <span className="w-4 h-4 rounded-full bg-amber-500/10 text-amber-600 font-bold flex items-center justify-center shrink-0">5</span>
-                <span><strong>Cashflow Aggregator:</strong> Allocates payment parts into calendar liquidity buckets.</span>
+                <span><strong>Cashflow Aggregation:</strong> Distributes expected receipts into calendar intervals.</span>
+              </div>
+              <div className="flex items-start gap-2">
+                <span className="w-4 h-4 rounded-full bg-rose-500/10 text-rose-600 font-bold flex items-center justify-center shrink-0">6</span>
+                <span><strong>Working Capital Optimizer:</strong> Action alerts, factoring triggers, carry cost at 8% APR.</span>
               </div>
             </div>
           </div>

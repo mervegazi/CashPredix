@@ -9,13 +9,13 @@
 
 ## 1. Executive Summary & Sprint Objectives
 
-During Week 6 of the CashPredix engineering lifecycle, the team successfully bridged the machine learning intelligence layer developed in Week 5 with the full-stack web application. The primary sprint focus was the end-to-end operationalization of the **5-Step Hybrid Architecture** (*2 Machine Learning Models + 3 Custom Algorithms*), exposing it through a high-performance REST API backend and integrating live interactive prediction triggers into the React dashboard.
+During Week 6 of the CashPredix engineering lifecycle, the team successfully bridged the machine learning intelligence layer developed in Week 5 with the full-stack web application. The primary sprint focus was the end-to-end operationalization of the **6-Step Hybrid Architecture** (*2 Machine Learning Models + 4 Custom Algorithms*), trained on the comprehensive **3,000,000 synthetic invoice dataset** (3,960,442 installment records), exposing it through a high-performance REST API backend and integrating live interactive prediction triggers into the React dashboard.
 
 ### Core Sprint Objectives Accomplished:
-1. **REST API Endpoints for 5-Step Architecture (Task #24):** Built a FastAPI backend service (`server/app.py`) providing `/api/predict/invoice`, `/api/cashflow/projection`, `/api/customers/scores`, and `/api/sync/supabase` with standardized Pydantic schemas.
-2. **Frontend Integration & Live Prediction Triggers (Task #25):** Created a client-side prediction service (`src/lib/mlPredictionService.js`) with resilient offline fallback computation, a glassmorphic visualization component (`src/components/ScenarioPredictionCard.jsx`), an upgraded cash flow projection view (`src/pages/dashboard/CashflowPredictsPlaceholder.jsx`), and interactive ledger integration (`src/components/CustomerLedgerModal.jsx`).
-3. **Edge Cases, Single vs. Split Invoices & Database Sync (Task #26):** Implemented Bayesian fallback priors for cold-start counterparties with zero invoice history, strict zero suppression for single payment invoices (`part2 = 0`, `ratio = 1.0`), and database synchronization protocols.
-4. **Verification & Testing (Tasks #24, #25, #26):** Created comprehensive test suites (`tests/test_api_endpoints.py` and `tests/test_edge_cases.py`), verifying 100% test pass rates across all edge cases and API contracts.
+1. **REST API Endpoints for 6-Step Architecture (Task #24):** Built a FastAPI backend service (`server/app.py`) providing `/api/predict/invoice` (with full 12-class probability distributions and Step 6 risk actions), `/api/cashflow/projection`, `/api/customers/scores`, and `/api/sync/supabase` with standardized Pydantic schemas.
+2. **Frontend Integration & Live Prediction Triggers (Task #25):** Created a client-side prediction service (`src/lib/mlPredictionService.js`) with resilient offline fallback computation for all 12 classes, a glassmorphic visualization component (`src/components/ScenarioPredictionCard.jsx`) featuring 12-class filter tabs and Step 6 Credit Action Banners, an upgraded cash flow projection view (`src/pages/dashboard/CashflowPredictsPlaceholder.jsx`), and interactive ledger integration (`src/components/CustomerLedgerModal.jsx`).
+3. **Edge Cases, 12 Timing Permutations & Database Sync (Task #26):** Implemented Bayesian fallback priors for cold-start counterparties with zero invoice history, strict zero suppression for single payment invoices (`part2 = 0`, `ratio = 1.0`), probability normalization over all 12 classes, Step 6 Working Capital Carry Cost calculation (8% APR), and database synchronization protocols.
+4. **Verification & Testing (Tasks #24, #25, #26):** Created comprehensive test suites (`tests/test_api_endpoints.py` and `tests/test_edge_cases.py`), verifying 100% test pass rates across all 12 behavioral classes, edge cases, and API contracts.
 
 All Week 6 tasks (#24, #25, #26, #53) have been completed and verified.
 
@@ -27,7 +27,7 @@ All Week 6 tasks (#24, #25, #26, #53) have been completed and verified.
 | :--- | :--- | :--- | :--- |
 | **Task #24** | ML Pipeline API Endpoints (FastAPI Backend) | **Done** | [`server/app.py`](../server/app.py), [`requirements.txt`](../requirements.txt), [`tests/test_api_endpoints.py`](../tests/test_api_endpoints.py). |
 | **Task #25** | Frontend Integration & Live Prediction Triggers | **Done** | [`src/lib/mlPredictionService.js`](../src/lib/mlPredictionService.js), [`src/components/ScenarioPredictionCard.jsx`](../src/components/ScenarioPredictionCard.jsx), [`src/components/CustomerLedgerModal.jsx`](../src/components/CustomerLedgerModal.jsx), [`src/pages/dashboard/CashflowPredictsPlaceholder.jsx`](../src/pages/dashboard/CashflowPredictsPlaceholder.jsx). |
-| **Task #26** | Edge Cases, Single vs Split Invoices & Database Sync | **Done** | [`tests/test_edge_cases.py`](../tests/test_edge_cases.py), cold-start fallback priors in [`ml/hybrid_pipeline.py`](../ml/hybrid_pipeline.py), database sync in [`server/app.py`](../server/app.py). |
+| **Task #26** | Edge Cases, 12 Classes & Database Sync | **Done** | [`tests/test_edge_cases.py`](../tests/test_edge_cases.py), cold-start fallback priors in [`ml/hybrid_pipeline.py`](../ml/hybrid_pipeline.py), database sync in [`server/app.py`](../server/app.py). |
 | **Task #53** | Week 6 Weekly Progress Report | **Done** | [`docs/WEEK_6_PROGRESS_REPORT.md`](WEEK_6_PROGRESS_REPORT.md), [`docs/Week_6_Weekly_Progress_Report_CashPredix.docx`](Week_6_Weekly_Progress_Report_CashPredix.docx). |
 
 ---
@@ -50,8 +50,8 @@ All Week 6 tasks (#24, #25, #26, #53) have been completed and verified.
                        │ Calls Hybrid Orchestrator
                        ▼
 ┌────────────────────────────────────────────────────────┐
-│ STEP 1: LightGBM Multi-Class Classifier (6 Classes)    │
-│ Predicts probabilities: P_single_*, P_split_*          │
+│ STEP 1: LightGBM Multi-Class Classifier (12 Classes)   │
+│ Predicts probabilities across all single & split perms │
 └──────────────────────────┬─────────────────────────────┘
                            │
                            ▼
@@ -80,13 +80,20 @@ All Week 6 tasks (#24, #25, #26, #53) have been completed and verified.
 └──────────────────────────┬─────────────────────────────┘
                            │
                            ▼
+┌────────────────────────────────────────────────────────┐
+│ STEP 6: Risk Alert & Working Capital Optimizer (8% APR)│
+│ Prescribes credit triggers & quantifies carry costs    │
+└──────────────────────────┬─────────────────────────────┘
+                           │
+                           ▼
        ┌───────────────────────────────┐
        │ UI Rendering & Visualization  │
        │ ScenarioPredictionCard.jsx    │
        │ - Scenario Narrative Box      │
        │ - Reliability Score Badge     │
-       │ - 6 Probability Bars          │
-       │ - Installment Schedule        │
+       │ - 12 Probability Bars & Tabs  │
+       │ - Step 6 Credit Action Banner │
+       │ - Installment Schedule Cards  │
        └───────────────────────────────┘
 ```
 

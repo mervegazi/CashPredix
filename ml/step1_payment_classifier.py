@@ -53,9 +53,15 @@ PAYMENT_CLASSES = [
     "P_single_early",
     "P_single_ontime",
     "P_single_late",
+    "P_split_both_early",
+    "P_split_part1_early_part2_ontime",
+    "P_split_part1_early_part2_late",
+    "P_split_part1_ontime_part2_early",
     "P_split_both_ontime",
     "P_split_part1_ontime_part2_late",
-    "P_split_part1_late_part2_ontime"
+    "P_split_part1_late_part2_early",
+    "P_split_part1_late_part2_ontime",
+    "P_split_both_late"
 ]
 
 FEATURE_COLUMNS = [
@@ -73,12 +79,13 @@ FEATURE_COLUMNS = [
 def extract_customer_history(df_payments: pd.DataFrame) -> Dict[str, Dict[str, float]]:
     """Compute historical behavior profiles per customer from payment history."""
     df = df_payments.copy()
+    inv_col = "invoice_id" if "invoice_id" in df.columns else "invoice_number"
     df["payment_date"] = pd.to_datetime(df["payment_date"], errors="coerce")
     cust_stats = {}
 
     for cid, g in df.groupby("customer_id"):
-        unique_invs = g["invoice_number"].nunique()
-        split_invs = g[g["is_split_payment"] == True]["invoice_number"].nunique()
+        unique_invs = g[inv_col].nunique()
+        split_invs = g[g["is_split_payment"] == True][inv_col].nunique()
         split_rate = float(split_invs / unique_invs) if unique_invs > 0 else 0.0
         avg_delay = float(g["days_past_due"].mean())
         median_delay = float(g["days_past_due"].median())
@@ -87,7 +94,7 @@ def extract_customer_history(df_payments: pd.DataFrame) -> Dict[str, Dict[str, f
 
         # Gap between parts for divided invoices
         gaps = []
-        for inv, ig in g.groupby("invoice_number"):
+        for inv, ig in g.groupby(inv_col):
             if len(ig) > 1:
                 ig_s = ig.sort_values("installment_number")
                 d1 = ig_s.iloc[0]["payment_date"]
@@ -109,7 +116,12 @@ def extract_customer_history(df_payments: pd.DataFrame) -> Dict[str, Dict[str, f
 
 
 def label_invoice_payment_class(g: pd.DataFrame) -> str:
-    """Label an invoice into one of the 6 payment classes based on payment dates."""
+    """Label an invoice into one of the 12 payment classes based on payment dates."""
+    if "target_class" in g.columns and pd.notna(g["target_class"].iloc[0]):
+        val = str(g["target_class"].iloc[0])
+        if val in PAYMENT_CLASSES:
+            return val
+
     is_split = bool(g["is_split_payment"].any() or len(g) > 1)
 
     if not is_split:
@@ -124,26 +136,38 @@ def label_invoice_payment_class(g: pd.DataFrame) -> str:
         g_s = g.sort_values("installment_number")
         dpd1 = float(g_s.iloc[0]["days_past_due"])
         dpd2 = float(g_s.iloc[1]["days_past_due"]) if len(g_s) > 1 else dpd1
-        p1_on = dpd1 <= 2
-        p2_on = dpd2 <= 2
 
-        if p1_on and p2_on:
+        # Classify Part 1 (Early: <= -3, On-Time: -2 to +2, Late: > 2)
+        p1_state = "early" if dpd1 <= -3 else ("ontime" if dpd1 <= 2 else "late")
+        p2_state = "early" if dpd2 <= -3 else ("ontime" if dpd2 <= 2 else "late")
+
+        if p1_state == "early" and p2_state == "early":
+            return "P_split_both_early"
+        elif p1_state == "early" and p2_state == "ontime":
+            return "P_split_part1_early_part2_ontime"
+        elif p1_state == "early" and p2_state == "late":
+            return "P_split_part1_early_part2_late"
+        elif p1_state == "ontime" and p2_state == "early":
+            return "P_split_part1_ontime_part2_early"
+        elif p1_state == "ontime" and p2_state == "ontime":
             return "P_split_both_ontime"
-        elif p1_on and not p2_on:
+        elif p1_state == "ontime" and p2_state == "late":
             return "P_split_part1_ontime_part2_late"
-        elif not p1_on and p2_on:
+        elif p1_state == "late" and p2_state == "early":
+            return "P_split_part1_late_part2_early"
+        elif p1_state == "late" and p2_state == "ontime":
             return "P_split_part1_late_part2_ontime"
         else:
-            # Both late: map to Part 1 on-time / Part 2 late cohort
-            return "P_split_part1_ontime_part2_late"
+            return "P_split_both_late"
 
 
 def prepare_classification_dataset(df_payments: pd.DataFrame) -> Tuple[pd.DataFrame, Dict[str, Dict[str, float]]]:
     """Build feature table where each row is a distinct invoice."""
     cust_stats = extract_customer_history(df_payments)
+    inv_col = "invoice_id" if "invoice_id" in df_payments.columns else "invoice_number"
     rows = []
 
-    for inv_num, g in df_payments.groupby("invoice_number"):
+    for inv_num, g in df_payments.groupby(inv_col):
         cid = str(g["customer_id"].iloc[0])
         inv_amt = float(g["invoice_amount"].iloc[0])
         c_prof = cust_stats.get(cid, {

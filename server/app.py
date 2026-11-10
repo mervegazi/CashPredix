@@ -77,15 +77,6 @@ class InvoicePredictionRequest(BaseModel):
     due_date: Optional[str] = Field(None, description="Invoice maturity due date (YYYY-MM-DD)")
 
 
-class Step1Probabilities(BaseModel):
-    P_single_early: float
-    P_single_ontime: float
-    P_single_late: float
-    P_split_both_ontime: float
-    P_split_part1_ontime_part2_late: float
-    P_split_part1_late_part2_ontime: float
-
-
 class Step2ScoreDetails(BaseModel):
     base_score: float
     invoice_split_penalty: float
@@ -113,13 +104,14 @@ class InvoicePredictionResponse(BaseModel):
     invoice_amount: float
     days_until_due: int
     is_cold_start: bool
-    step1_probabilities: Step1Probabilities
+    step1_probabilities: Dict[str, float]
     predicted_class: str
     is_divided_invoice: bool
     step2_customer_score: int
     step2_score_details: Step2ScoreDetails
     step3_schedule: Step3Schedule
     step4_scenario_text: str
+    step6_risk_action: Optional[Dict[str, Any]] = None
     predicted_installments: List[Dict[str, Any]]
 
 
@@ -208,13 +200,14 @@ def predict_invoice(payload: InvoicePredictionRequest):
             invoice_amount=res["invoice_amount"],
             days_until_due=res["days_until_due"],
             is_cold_start=is_cold_start,
-            step1_probabilities=Step1Probabilities(**res["step1_probabilities"]),
+            step1_probabilities=res["step1_probabilities"],
             predicted_class=res["predicted_class"],
             is_divided_invoice=res["is_divided_invoice"],
             step2_customer_score=res["step2_customer_score"],
             step2_score_details=Step2ScoreDetails(**res["step2_score_details"]),
             step3_schedule=Step3Schedule(**schedule),
             step4_scenario_text=res["step4_scenario_text"],
+            step6_risk_action=res.get("step6_risk_action"),
             predicted_installments=installments
         )
     except Exception as e:

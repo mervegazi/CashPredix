@@ -50,7 +50,7 @@ def test_predict_invoice_endpoint_single():
     assert data["invoice_amount"] == 10000.0
     assert "step1_probabilities" in data
     probs = data["step1_probabilities"]
-    assert len(probs) == 6
+    assert len(probs) == 12
     assert abs(sum(probs.values()) - 1.0) < 1e-4
 
     # Step 2 verification
@@ -66,6 +66,12 @@ def test_predict_invoice_endpoint_single():
     # Step 4 verification
     assert isinstance(data["step4_scenario_text"], str)
     assert len(data["step4_scenario_text"]) > 10
+
+    # Step 6 verification
+    assert "step6_risk_action" in data
+    risk_action = data["step6_risk_action"]
+    assert "action_flag" in risk_action
+    assert "estimated_working_capital_carry_cost" in risk_action
 
     # Installment breakdown verification
     assert len(data["predicted_installments"]) >= 1

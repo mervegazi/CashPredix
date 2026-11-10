@@ -49,22 +49,33 @@ def calculate_customer_score(
             - tier: String tier description
             - badge_color: Hex or CSS color
     """
-    p_early = float(probabilities.get("P_single_early", 0.0))
-    p_ontime = float(probabilities.get("P_single_ontime", 0.0))
-    p_late = float(probabilities.get("P_single_late", 0.0))
-    p_split_both_on = float(probabilities.get("P_split_both_ontime", 0.0))
-    p_split_p1_late_p2_on = float(probabilities.get("P_split_part1_late_part2_ontime", 0.0))
-    p_split_p1_on_p2_late = float(probabilities.get("P_split_part1_ontime_part2_late", 0.0))
+    p_single_early = float(probabilities.get("P_single_early", 0.0))
+    p_single_ontime = float(probabilities.get("P_single_ontime", 0.0))
+    p_single_late = float(probabilities.get("P_single_late", 0.0))
+
+    p_split_both_early = float(probabilities.get("P_split_both_early", 0.0))
+    p_split_p1_early_p2_ontime = float(probabilities.get("P_split_part1_early_part2_ontime", 0.0))
+    p_split_p1_early_p2_late = float(probabilities.get("P_split_part1_early_part2_late", 0.0))
+    p_split_p1_ontime_p2_early = float(probabilities.get("P_split_part1_ontime_part2_early", 0.0))
+    p_split_both_ontime = float(probabilities.get("P_split_both_ontime", 0.0))
+    p_split_p1_ontime_part2_late = float(probabilities.get("P_split_part1_ontime_part2_late", 0.0))
+    p_split_p1_late_p2_early = float(probabilities.get("P_split_part1_late_part2_early", 0.0))
+    p_split_p1_late_part2_ontime = float(probabilities.get("P_split_part1_late_part2_ontime", 0.0))
+    p_split_both_late = float(probabilities.get("P_split_both_late", 0.0))
 
     split_rate = max(0.0, min(1.0, float(historical_invoice_split_rate)))
 
-    # Exact Formula from Document:
+    # Comprehensive Formula covering all 12 payment/split outcomes:
     base_score = 100.0 * (
-        1.00 * (p_early + p_ontime)
-        + 0.88 * p_split_both_on
-        + 0.65 * p_split_p1_late_p2_on
-        + 0.50 * p_split_p1_on_p2_late
-        + 0.00 * p_late
+        1.00 * (p_single_early + p_single_ontime)
+        + 0.95 * p_split_both_early
+        + 0.90 * p_split_p1_early_p2_ontime
+        + 0.88 * (p_split_both_ontime + p_split_p1_ontime_p2_early)
+        + 0.65 * (p_split_p1_late_part2_ontime + p_split_p1_late_p2_early)
+        + 0.55 * p_split_p1_early_p2_late
+        + 0.50 * p_split_p1_ontime_part2_late
+        + 0.10 * p_split_both_late
+        + 0.00 * p_single_late
     )
 
     invoice_split_penalty = 5.0 * split_rate

@@ -69,8 +69,19 @@ def generate_scenario_text(
         p1_week = format_days_to_calendar_week(p1_days)
         p2_week = format_days_to_calendar_week(p2_days)
 
-        p1_status = "On-Time" if p1_days <= (days_until_due + 2) else "Late"
-        p2_status = "On-Time" if p2_days <= (days_until_due + 2) else "Late"
+        if p1_days <= (days_until_due - 3):
+            p1_status = "Early"
+        elif p1_days <= (days_until_due + 2):
+            p1_status = "On-Time"
+        else:
+            p1_status = "Late"
+
+        if p2_days <= (days_until_due - 3):
+            p2_status = "Early"
+        elif p2_days <= (days_until_due + 2):
+            p2_status = "On-Time"
+        else:
+            p2_status = "Late"
 
         sentence = (
             f"This customer's score is {customer_score}. They will likely divide this {amt_formatted} "
@@ -80,7 +91,12 @@ def generate_scenario_text(
     else:
         p1_days = schedule_data.get("part1_days_from_today", 5)
         p1_week = format_days_to_calendar_week(p1_days)
-        p1_status = "On-Time" if p1_days <= (days_until_due + 2) else "Late"
+        if p1_days <= (days_until_due - 3):
+            p1_status = "Early"
+        elif p1_days <= (days_until_due + 2):
+            p1_status = "On-Time"
+        else:
+            p1_status = "Late"
 
         sentence = (
             f"This customer's score is {customer_score}. They will likely pay this {amt_formatted} "

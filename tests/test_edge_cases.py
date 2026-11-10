@@ -108,6 +108,56 @@ def test_overdue_due_days():
     print("✓ test_overdue_due_days passed")
 
 
+def test_all_12_behavioral_classes_probabilities():
+    """Verify prediction returns all 12 behavioral payment & split timing classes."""
+    res = pipeline.predict_invoice(
+        customer_id="cust_002",
+        invoice_amount=35000.0,
+        days_until_due=30,
+        invoice_number="INV-12-CLASSES-TEST"
+    )
+    probs = res["step1_probabilities"]
+    assert len(probs) == 12
+    assert abs(sum(probs.values()) - 1.0) < 1e-4
+
+    expected_classes = [
+        "P_single_early",
+        "P_single_ontime",
+        "P_single_late",
+        "P_split_both_early",
+        "P_split_part1_early_part2_ontime",
+        "P_split_part1_early_part2_late",
+        "P_split_part1_ontime_part2_early",
+        "P_split_both_ontime",
+        "P_split_part1_ontime_part2_late",
+        "P_split_part1_late_part2_early",
+        "P_split_part1_late_part2_ontime",
+        "P_split_both_late"
+    ]
+    for cls_name in expected_classes:
+        assert cls_name in probs
+        assert 0.0 <= probs[cls_name] <= 1.0
+    print("✓ test_all_12_behavioral_classes_probabilities passed")
+
+
+def test_step6_risk_action_optimizer():
+    """Verify Step 6 generates actionable credit triggers and working capital carry cost."""
+    res = pipeline.predict_invoice(
+        customer_id="cust_003",
+        invoice_amount=100000.0,
+        days_until_due=25,
+        invoice_number="INV-STEP6-TEST"
+    )
+    assert "step6_risk_action" in res
+    step6 = res["step6_risk_action"]
+    assert "action_flag" in step6
+    assert "estimated_working_capital_carry_cost" in step6
+    assert "recommendation" in step6
+    assert isinstance(step6["recommendation"], str)
+    assert step6["estimated_working_capital_carry_cost"] >= 0.0
+    print("✓ test_step6_risk_action_optimizer passed")
+
+
 if __name__ == "__main__":
     print("\nRunning CashPredix Week 6 Edge Cases Test Suite...")
     test_cold_start_unseen_customer()
@@ -115,4 +165,6 @@ if __name__ == "__main__":
     test_split_invoice_bounds()
     test_extreme_amounts()
     test_overdue_due_days()
-    print("\nAll 5 Edge Case tests PASSED successfully!\n")
+    test_all_12_behavioral_classes_probabilities()
+    test_step6_risk_action_optimizer()
+    print("\nAll 7 Edge Case tests PASSED successfully!\n")

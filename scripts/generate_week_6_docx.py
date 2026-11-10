@@ -159,11 +159,12 @@ def create_report():
 
     p_exec = doc.add_paragraph(
         "During Week 6 of the CashPredix development cycle, the engineering milestone achieved seamless full-stack integration "
-        "of the 5-Step Hybrid Machine Learning Architecture. A high-performance REST API backend was engineered using FastAPI and Pydantic "
-        "validation, exposing endpoints for individual invoice predictions, multi-horizon portfolio cash flow projections, and counterparty reliability scoring. "
-        "The React frontend was augmented with an interactive prediction sandbox, live ledger prediction triggers, visual probability distribution bars, "
-        "and resilient client-side calculation fallbacks that guarantee zero runtime interruption even in offline states. "
-        "All edge cases (cold-start counterparties, single payment zero suppression, floating-point sum consistency) were systematically verified."
+        "of the 6-Step Hybrid Machine Learning Architecture, trained on the expanded 3,000,000 synthetic invoice dataset (3,960,442 installment records). "
+        "A high-performance REST API backend was engineered using FastAPI and Pydantic validation, exposing endpoints for individual invoice predictions "
+        "predicting all 12 behavioral payment/split timing classes, multi-horizon portfolio cash flow projections, counterparty reliability scoring, "
+        "and Step 6 Counterparty Risk Alert & Working Capital Optimization (evaluating credit action triggers and 8% APR liquidity carry cost). "
+        "The React frontend was augmented with an interactive prediction sandbox, live ledger prediction triggers, visual probability distribution bars "
+        "with 12-class filter tabs (All 12, Single 3, Split 9), and resilient client-side calculation fallbacks that guarantee zero runtime interruption even in offline states."
     )
     p_exec.paragraph_format.line_spacing = 1.15
     p_exec.paragraph_format.space_after = Pt(8)
@@ -171,7 +172,8 @@ def create_report():
     add_callout(
         doc,
         "All Week 6 GitHub Project tasks (#24, #25, #26, #53) were completed with 100% test pass rates across both backend API test suites "
-        "(tests/test_api_endpoints.py) and edge-case suites (tests/test_edge_cases.py). The React production build compiles cleanly in under 400ms.",
+        "(tests/test_api_endpoints.py) and edge-case suites (tests/test_edge_cases.py), validating all 12 payment classes, 6-step processing pipeline, "
+        "and Step 6 credit actions. The React production build compiles cleanly in under 400ms.",
         title="WEEK 6 SPRINT MILESTONE ACCOMPLISHED"
     )
 
@@ -195,9 +197,9 @@ def create_report():
         r.font.color.rgb = RGBColor(0xFF, 0xFF, 0xFF)
 
     tasks_data = [
-        ("Task #24", "ML Pipeline API Endpoints (FastAPI Backend)", "Engineered FastAPI service (server/app.py) exposing /api/predict/invoice, /api/cashflow/projection, /api/customers/scores, and /api/sync/supabase with strict Pydantic schemas."),
-        ("Task #25", "Frontend Integration & Live Prediction Triggers", "Created client prediction service (src/lib/mlPredictionService.js), visual scenario component (src/components/ScenarioPredictionCard.jsx), ledger action triggers (CustomerLedgerModal.jsx), and interactive sandbox dashboard (CashflowPredictsPlaceholder.jsx)."),
-        ("Task #26", "Edge Cases, Single vs Split & Database Sync", "Implemented Bayesian cold-start priors for new customers, single payment Part 2 zero suppression, mathematical ratio sum enforcement, and edge case test suite (tests/test_edge_cases.py)."),
+        ("Task #24", "ML Pipeline API Endpoints (FastAPI Backend)", "Engineered FastAPI service (server/app.py) exposing /api/predict/invoice, /api/cashflow/projection, /api/customers/scores, and /api/sync/supabase with 12-class distributions and Step 6 risk actions."),
+        ("Task #25", "Frontend Integration & Live Prediction Triggers", "Created client prediction service (src/lib/mlPredictionService.js), visual scenario component with 12-class tabs and Step 6 banner (ScenarioPredictionCard.jsx), ledger action triggers (CustomerLedgerModal.jsx), and interactive sandbox dashboard (CashflowPredictsPlaceholder.jsx)."),
+        ("Task #26", "Edge Cases, Single vs Split & Database Sync", "Implemented Bayesian cold-start priors for new customers, single payment Part 2 zero suppression, 12-class probability sum enforcement, and edge case test suite (tests/test_edge_cases.py)."),
         ("Task #53", "Weekly Progress Report", "Compilation and formal submission of Sprint Week 6 progress report in Markdown and Microsoft Word (.docx) formats.")
     ]
 
@@ -222,15 +224,16 @@ def create_report():
     h1_arch.paragraph_format.space_after = Pt(6)
 
     p_arch = doc.add_paragraph(
-        "The architecture establishes high-throughput communication between the React presentation tier and the Python machine learning service:"
+        "The architecture establishes high-throughput communication between the React presentation tier and the Python machine learning service across all 6 steps:"
     )
     p_arch.paragraph_format.space_after = Pt(4)
 
     steps_info = [
-        ("REST Endpoint POST /api/predict/invoice:", " Ingests customer ID, invoice amount, and due date. Concurrently triggers LightGBM classification, customer penalty scoring, and multi-output regression, returning standardized JSON containing 6 class probabilities, 0-100 penalty score, installment allocation, and the natural language scenario narrative."),
+        ("REST Endpoint POST /api/predict/invoice:", " Ingests customer ID, invoice amount, and due date. Concurrently triggers 12-class LightGBM classification, customer penalty scoring, multi-output regression, and Step 6 risk action optimization, returning standardized JSON containing 12 class probabilities, 0-100 penalty score, installment allocation, natural language scenario narrative, and working capital carry cost."),
         ("REST Endpoint GET /api/cashflow/projection:", " Runs the Step 5 Cash Flow Aggregation Engine over the active counterparty portfolio, returning projected inflows across 6 discrete intervals (this week, next week, in 2 weeks, in 3 weeks, monthly total, and annual projection)."),
-        ("Client Resilient Fallback Engine:", " Designed an isomorphic JavaScript calculation engine in src/lib/mlPredictionService.js that calculates identical mathematical results when the backend service is offline, ensuring reliable offline demonstrations."),
-        ("Interactive React Visualizer:", " ScenarioPredictionCard renders animated probability distribution bars, score badges with formula transparency (Base Score - 5 * Split Rate), and installment cards showing exact dates and amounts.")
+        ("Step 6 Counterparty Risk Alert & Working Capital Optimizer:", " Automatically diagnoses timing friction between installment parts, prescribes mitigation triggers (UPFRONT_RETAINER, FACTORING_ALERT, PROACTIVE_REMINDER), and computes annual working capital cost at 8% cost of capital."),
+        ("Client Resilient Fallback Engine:", " Designed an isomorphic JavaScript calculation engine in src/lib/mlPredictionService.js that calculates identical mathematical results for all 12 classes and Step 6 when the backend service is offline, ensuring reliable offline demonstrations."),
+        ("Interactive React Visualizer:", " ScenarioPredictionCard renders 12 probability distribution bars with filter tabs (All 12, Single 3, Split 9), score badges with formula transparency (Base Score - 5 * Split Rate), Step 6 Credit Action Banners, and installment cards.")
     ]
 
     for s_title, s_desc in steps_info:

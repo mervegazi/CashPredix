@@ -90,9 +90,10 @@ def prepare_regression_dataset(df_payments: pd.DataFrame) -> pd.DataFrame:
     df["payment_date"] = pd.to_datetime(df["payment_date"], errors="coerce")
 
     cust_stats = extract_customer_history(df)
+    inv_col = "invoice_id" if "invoice_id" in df.columns else "invoice_number"
     records = []
 
-    for inv_num, g in df.groupby("invoice_number"):
+    for inv_num, g in df.groupby(inv_col):
         cid = str(g["customer_id"].iloc[0])
         c_prof = cust_stats.get(cid, {
             "historical_split_rate": 0.0,
@@ -124,7 +125,9 @@ def prepare_regression_dataset(df_payments: pd.DataFrame) -> pd.DataFrame:
             is_split_cand = 0
         else:
             g_s = g.sort_values("installment_number")
-            amt1 = float(g_s.iloc[0]["amount"])
+            first_row = g_s.iloc[0]
+            amt_col = "installment_amount" if "installment_amount" in first_row else "amount"
+            amt1 = float(first_row[amt_col])
             ratio1 = amt1 / inv_amt if inv_amt > 0 else 0.50
             ratio1 = max(0.1, min(0.9, ratio1))
 

@@ -108,7 +108,7 @@ def create_report():
     p_sub = doc.add_paragraph()
     p_sub.paragraph_format.space_before = Pt(0)
     p_sub.paragraph_format.space_after = Pt(14)
-    run_sub = p_sub.add_run("Week 5: 5-Step Hybrid ML Architecture (LightGBM + XGBoost + Custom Algorithms)")
+    run_sub = p_sub.add_run("Week 5: 6-Step Hybrid ML Architecture & 3 Million Scale Dataset (LightGBM + XGBoost + Custom Algorithms)")
     run_sub.font.name = "Calibri"
     run_sub.font.size = Pt(13)
     run_sub.font.color.rgb = c_muted
@@ -158,13 +158,13 @@ def create_report():
     h1.paragraph_format.space_after = Pt(6)
 
     p_exec = doc.add_paragraph(
-        "During Week 5 of the CashPredix engineering lifecycle, the project adopted a specialized 5-Step Hybrid Machine "
+        "During Week 5 of the CashPredix engineering lifecycle, the project adopted a specialized 6-Step Hybrid Machine "
         "Learning Architecture designed explicitly for split-invoice corporate payment behavior. Legacy general scoring modules "
         "were deprecated and removed to strictly conform with academic specifications. The core pipeline combines two machine learning "
-        "models (LightGBM Multi-Class Classifier and Multi-Output XGBoost Regressor) with three specialized custom algorithms "
-        "(Divided-Invoice Penalty Scoring Formula, Dynamic Scenario Text Generator, and Cash Flow Aggregation Engine). "
-        "Additionally, a large-scale synthetic dataset of 1,000,000 invoices (1,240,327 installment records, 212.5 MB) was generated "
-        "to ensure enterprise-scale statistical validity."
+        "models (LightGBM Multi-Class Classifier and Multi-Output XGBoost Regressor) with four specialized custom algorithms "
+        "(Divided-Invoice Penalty Scoring Formula, Dynamic Scenario Text Generator, Cash Flow Aggregation Engine, and Counterparty Risk Action Optimizer). "
+        "Additionally, a large-scale synthetic dataset of 3,000,000 invoices (3,960,442 installment records, 436.5 MB) was generated "
+        "embodying all single and divided installment timing combinations across 12 distinct classes to ensure enterprise-scale statistical validity."
     )
     p_exec.paragraph_format.line_spacing = 1.15
     p_exec.paragraph_format.space_after = Pt(8)
@@ -172,9 +172,8 @@ def create_report():
     add_callout(
         doc,
         "All Week 5 GitHub Project tasks (#21, #22, #23, #52) were successfully implemented and verified. "
-        "The Step 1 LightGBM Classifier achieved 98.42% accuracy across 6 payment classes, while the Step 3 XGBoost "
-        "Multi-Output Regressor achieved an R² of 0.984 on payment timing offsets. The 5-step pipeline operates end-to-end "
-        "in under 5 milliseconds per invoice.",
+        "The Step 1 LightGBM Classifier was trained on the 3 Million dataset predicting across all 12 timing permutations, while the Step 3 XGBoost "
+        "Multi-Output Regressor achieved high precision on payment timing offsets. The hybrid pipeline operates end-to-end in under 5 milliseconds per invoice.",
         title="WEEK 5 SPRINT MILESTONE ACCOMPLISHED"
     )
 
@@ -220,21 +219,22 @@ def create_report():
                 r.font.color.rgb = c_primary
 
     # 3. Architecture Breakdown
-    h1_arch = doc.add_heading("3. The 5-Step Hybrid Architecture Specifications", level=1)
+    h1_arch = doc.add_heading("3. The 6-Step Hybrid Architecture Specifications", level=1)
     h1_arch.paragraph_format.space_before = Pt(14)
     h1_arch.paragraph_format.space_after = Pt(6)
 
     p_arch = doc.add_paragraph(
-        "The architecture establishes an end-to-end data processing funnel designed specifically for liquidity forecasting:"
+        "The architecture establishes an end-to-end data processing funnel designed specifically for liquidity forecasting with 12 distinct payment/split timing permutations:"
     )
     p_arch.paragraph_format.space_after = Pt(4)
 
     steps_info = [
-        ("Step 1 (LightGBM Multi-Class Classifier):", " Predicts probability distribution across 6 behavioral classes: P_single_early, P_single_ontime, P_single_late, P_split_both_ontime, P_split_part1_ontime_part2_late, and P_split_part1_late_part2_ontime using 8 calibrated counterparty features."),
-        ("Step 2 (Custom Penalty Scoring Algorithm):", " Applies the formula Score = Base_Score - 5 * Historical_Invoice_Split_Rate (0-100), penalizing counterparties that frequently fragment payments into multiple installments."),
+        ("Step 1 (LightGBM Multi-Class Classifier — 12 Classes):", " Predicts probability distribution across all 12 behavioral classes covering single payments (P_single_early, P_single_ontime, P_single_late) and all 9 split installment timing permutations (both early, part1 early part2 late, part1 late part2 early, part1 late part2 ontime, part1 ontime part2 late, both late, etc.)."),
+        ("Step 2 (Custom Penalty Scoring Algorithm):", " Applies the formula Score = Base_Score - 5 * Historical_Invoice_Split_Rate (0-100), evaluating reliability across all 12 timing states and penalizing counterparties that fragment invoices into delayed parts."),
         ("Step 3 (Multi-Output XGBoost Regressor):", " Concurrently forecasts the financial allocation vector: Part 1 payment ratio, Part 1 offset days from today, and Part 2 offset days from today with strict single-payment bounds."),
-        ("Step 4 (Dynamic Scenario Text Generator):", " Synthesizes executive natural language insights, e.g. 'Customer will likely split the invoice (%55 Part 1, %45 Part 2). Part 1 is expected in 5 days, Part 2 in 22 days. Divided-invoice penalty score: 78/100.'"),
-        ("Step 5 (Cash Flow Aggregation Engine):", " Distributes and aggregates expected invoice receipts across 6 calendar intervals: this week (days 0-7), next week (8-14), in 2 weeks (15-21), in 3 weeks (22-28), monthly (0-30), and yearly horizons.")
+        ("Step 4 (Dynamic Scenario Text Generator):", " Synthesizes executive natural language insights specifying exact installment timing (Early, On-Time, Late), due dates, and divided-invoice penalty scores."),
+        ("Step 5 (Cash Flow Aggregation Engine):", " Distributes and aggregates expected invoice receipts across 6 calendar intervals: this week (days 0-7), next week (8-14), in 2 weeks (15-21), in 3 weeks (22-28), monthly (0-30), and yearly horizons."),
+        ("Step 6 (Counterparty Risk Alert & Working Capital Optimizer):", " Evaluates credit action flags (UPFRONT_RETAINER, FACTORING_ALERT, PROACTIVE_REMINDER, CREDIT_EXPANSION) and quantifies working capital carry cost at an 8% cost of capital.")
     ]
 
     for s_title, s_desc in steps_info:
