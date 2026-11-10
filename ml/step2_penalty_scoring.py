@@ -1,19 +1,25 @@
 #!/usr/bin/env python3
 """
 CashPredix - Step 2: Divided-Invoice Penalty Scoring Formula
-5-Step Hybrid Architecture: Step 2 (Custom Algorithm)
+6-Step Hybrid Architecture: Step 2 (Custom Algorithm)
 
 Calculates the Customer Reliability Score (0–100) with a penalty for dividing invoices:
 - A customer who divides an invoice into 2 parts creates extra tracking work and splits cash inflow.
+- Each permutation of payment timing (Early, On-Time, Late) across both single and split invoices
+  is weighted based on corporate counterparty risk.
 - Even if both parts are on time, a divided-invoice payer receives weight 0.88 (instead of 1.00),
   plus a split-frequency penalty.
 
-Formula from Plan:
+Formula from Plan (Expanded 12-Class Behavioral Permutations):
     Base_Score = 100 * (
         1.00 * (P_single_early + P_single_ontime)
-        + 0.88 * P_split_both_ontime
-        + 0.65 * P_split_part1_late_part2_ontime
+        + 0.95 * P_split_both_early
+        + 0.90 * P_split_part1_early_part2_ontime
+        + 0.88 * (P_split_both_ontime + P_split_part1_ontime_part2_early)
+        + 0.65 * (P_split_part1_late_part2_ontime + P_split_part1_late_part2_early)
+        + 0.55 * P_split_part1_early_part2_late
         + 0.50 * P_split_part1_ontime_part2_late
+        + 0.10 * P_split_both_late
         + 0.00 * P_single_late
     )
     Invoice_Split_Penalty = 5 * Historical_Invoice_Split_Rate
@@ -32,21 +38,29 @@ def calculate_customer_score(
     and historical split rate using the Divided-Invoice Penalty Scoring Formula.
 
     Args:
-        probabilities: Dictionary containing 6 float probabilities:
-            - P_single_early
-            - P_single_ontime
-            - P_single_late
-            - P_split_both_ontime
-            - P_split_part1_ontime_part2_late
-            - P_split_part1_late_part2_ontime
+        probabilities: Dictionary containing 12 float probabilities:
+            - P_single_early: Single payment paid early (Weight: 1.00)
+            - P_single_ontime: Single payment paid on time (Weight: 1.00)
+            - P_single_late: Single payment paid late (Weight: 0.00)
+            - P_split_both_early: Both installments paid early (Weight: 0.95)
+            - P_split_part1_early_part2_ontime: Part 1 early, Part 2 on-time (Weight: 0.90)
+            - P_split_part1_early_part2_late: Part 1 early, Part 2 late (Weight: 0.55)
+            - P_split_part1_ontime_part2_early: Part 1 on-time, Part 2 early (Weight: 0.88)
+            - P_split_both_ontime: Both installments paid on-time (Weight: 0.88)
+            - P_split_part1_ontime_part2_late: Part 1 on-time, Part 2 late (Weight: 0.50)
+            - P_split_part1_late_part2_early: Part 1 late, Part 2 early (Weight: 0.65)
+            - P_split_part1_late_part2_ontime: Part 1 late, Part 2 on-time (Weight: 0.65)
+            - P_split_both_late: Both installments paid late (Weight: 0.10)
         historical_invoice_split_rate: Float (0.0 to 1.0) of customer's historical split rate.
 
     Returns:
         Dictionary with:
             - customer_score: Integer (0 to 100)
             - base_score: Float
-            - split_penalty: Float
+            - invoice_split_penalty: Float
+            - historical_split_rate: Float
             - tier: String tier description
+            - risk_level: String risk level
             - badge_color: Hex or CSS color
     """
     p_single_early = float(probabilities.get("P_single_early", 0.0))
@@ -115,20 +129,25 @@ def calculate_customer_score(
 
 
 if __name__ == "__main__":
-    # Test case from PDF Example:
-    # A customer with high split probability (P_split_both_ontime = 0.84)
+    # Test case demonstrating 12-Class probability distribution:
     example_probs = {
-        "P_single_early": 0.02,
-        "P_single_ontime": 0.06,
-        "P_single_late": 0.01,
-        "P_split_both_ontime": 0.84,
+        "P_single_early": 0.05,
+        "P_single_ontime": 0.10,
+        "P_single_late": 0.02,
+        "P_split_both_early": 0.15,
+        "P_split_part1_early_part2_ontime": 0.10,
+        "P_split_part1_early_part2_late": 0.03,
+        "P_split_part1_ontime_part2_early": 0.05,
+        "P_split_both_ontime": 0.40,
         "P_split_part1_ontime_part2_late": 0.04,
-        "P_split_part1_late_part2_ontime": 0.03
+        "P_split_part1_late_part2_early": 0.02,
+        "P_split_part1_late_part2_ontime": 0.03,
+        "P_split_both_late": 0.01
     }
     # With historical split rate ~ 0.20
     res = calculate_customer_score(example_probs, historical_invoice_split_rate=0.20)
     print("\n" + "=" * 65)
-    print(" STEP 2: DIVIDED-INVOICE PENALTY SCORING ALGORITHM")
+    print(" STEP 2: DIVIDED-INVOICE PENALTY SCORING ALGORITHM (12 CLASSES)")
     print("=" * 65)
     print(f" Calculated Customer Score:    {res['customer_score']} / 100")
     print(f" Base Score (Probabilities):   {res['base_score']}")
