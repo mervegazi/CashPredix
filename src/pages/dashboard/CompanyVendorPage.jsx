@@ -34,6 +34,7 @@ import {
   DEMO_ANONYMIZED_CUSTOMERS,
 } from '../../data/seedData';
 import { isTestCompany, getUserScope } from '../../config/authWhitelist';
+import { notifyCashflowUpdated } from '../../lib/cashflowService';
 
 const DEFAULT_INDUSTRIES = [
   'Technology & SaaS',
@@ -69,35 +70,79 @@ const CUSTOMER_CATEGORIES = [
   'Commercial Client',
 ];
 
-// Helper to calculate score details for Accounts Receivable & Customer reliability
-function getScoreInsight(score) {
-  if (score >= 90) {
+// Helper to calculate score details for Accounts Receivable & Customer reliability (Step 2 Integration)
+function getScoreInsight(score, customer) {
+  const numScore = Number(score) || 85;
+  const splitRate =
+    customer?.split_rate !== undefined
+      ? Number(customer.split_rate)
+      : numScore >= 88
+      ? 0.08
+      : numScore >= 72
+      ? 0.22
+      : numScore >= 50
+      ? 0.38
+      : 0.65;
+  const penaltyDeduction = (5 * splitRate).toFixed(1);
+  const baseScore = Math.min(100, Math.round(numScore + Number(penaltyDeduction)));
+
+  if (numScore >= 88) {
     return {
-      tier: 'Prime / Benchmark',
+      tier: 'Prime Tier',
+      tierShort: 'Prime',
       color: 'text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800/60',
       badge: 'bg-emerald-500',
-      onTimeRate: `${score}%`,
+      dot: 'bg-emerald-500',
+      onTimeRate: `${numScore}%`,
       avgDelay: '-2.4 days (Early settlement)',
-      action: 'High payment reliability; predictable incoming cash inflow.',
+      splitFrequency: `${(splitRate * 100).toFixed(1)}%`,
+      penaltyDeduction: `-${penaltyDeduction} pts`,
+      baseScore: baseScore,
+      action: 'Prime benchmark counterparty (Score >= 88). Minimal divided invoice penalty; highly predictable incoming cash flow.',
     };
   }
-  if (score >= 75) {
+  if (numScore >= 72) {
     return {
-      tier: 'Standard Operational',
+      tier: 'Stable Tier',
+      tierShort: 'Stable',
       color: 'text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/40 border-blue-200 dark:border-blue-800/60',
       badge: 'bg-blue-500',
-      onTimeRate: `${score}%`,
-      avgDelay: '+3.1 days (Within grace)',
-      action: 'Consistent settlement; standard Net 30 accounts receivable flow.',
+      dot: 'bg-blue-500',
+      onTimeRate: `${numScore}%`,
+      avgDelay: '+2.8 days (Within grace)',
+      splitFrequency: `${(splitRate * 100).toFixed(1)}%`,
+      penaltyDeduction: `-${penaltyDeduction} pts`,
+      baseScore: baseScore,
+      action: 'Stable operational counterparty (Score 72-87). Consistent settlement conformed to standard B2B terms.',
+    };
+  }
+  if (numScore >= 50) {
+    return {
+      tier: 'Watchlist Tier',
+      tierShort: 'Watchlist',
+      color: 'text-amber-800 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-800/60',
+      badge: 'bg-amber-500',
+      dot: 'bg-amber-500',
+      onTimeRate: `${numScore}%`,
+      avgDelay: '+8.5 days (Delayed split drag)',
+      splitFrequency: `${(splitRate * 100).toFixed(1)}%`,
+      penaltyDeduction: `-${penaltyDeduction} pts`,
+      baseScore: baseScore,
+      action: 'Watchlist exposure (Score 50-71). Divided-Invoice penalty applied due to split installment delay; recommend prompt follow-up.',
     };
   }
   return {
-    tier: 'High Default Risk',
-    color: 'text-amber-800 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-800/60',
-    badge: 'bg-amber-500',
-    onTimeRate: `${score}%`,
-    avgDelay: '+16.8 days (Frequent friction)',
-    action: 'Payment collection friction; recommend stricter credit terms or upfront retainer.',
+    tier: 'High Risk Tier',
+    tierShort: 'High Risk',
+    color: 'text-rose-800 dark:text-rose-300 bg-rose-50 dark:bg-rose-950/40 border-rose-200 dark:border-rose-800/60',
+    badge: 'bg-rose-500',
+    dot: 'bg-rose-500',
+    onTimeRate: `${numScore}%`,
+    avgDelay: '+18.2 days (Severe collection drag)',
+    splitFrequency: `${(splitRate * 100).toFixed(1)}%`,
+    penaltyDeduction: `-${penaltyDeduction} pts`,
+    baseScore: baseScore,
+    action: 'High default risk (Score < 50). Critical divided installment drag; require upfront retainer or post-dated check.',
   };
 }
 
@@ -319,6 +364,7 @@ export default function CompanyVendorPage() {
         localStorage.setItem('cashpredix_customers_v2', JSON.stringify(customers));
         localStorage.setItem('cashpredix_vendors_v2', JSON.stringify(customers));
       }
+      notifyCashflowUpdated();
     } catch (e) {
       console.warn('Failed to save customers locally', e);
     }
@@ -927,7 +973,7 @@ export default function CompanyVendorPage() {
                                     <tbody className="divide-y divide-gray-100 dark:divide-gray-800 text-gray-700 dark:text-gray-300">
                                       {pagedCustomers.map((customer) => {
                                         const score = customer.reliability_score || 88;
-                                        const insight = getScoreInsight(score);
+                                        const insight = getScoreInsight(score, customer);
 
                                         return (
                                           <tr key={customer.id} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/40 transition-colors">
@@ -942,11 +988,11 @@ export default function CompanyVendorPage() {
                                               {customer.category || 'Commercial Client'}
                                             </td>
                                             <td className="py-3 px-3.5">
-                                              {/* Informative Tooltip for Customer Reliability Score */}
+                                              {/* Informative Tooltip for Customer Reliability Score & Step 2 Penalty */}
                                               <Tooltip
                                                 position="top"
                                                 content={
-                                                  <div className="space-y-2 text-left">
+                                                  <div className="space-y-2 text-left w-64">
                                                     <div className="flex items-start justify-between gap-2 pb-2 border-b border-gray-100 dark:border-gray-800">
                                                       <span className="font-bold text-gray-900 dark:text-white leading-snug break-words">
                                                         {customer.name}
@@ -957,22 +1003,29 @@ export default function CompanyVendorPage() {
                                                     </div>
                                                     <div className="text-[11px] space-y-1.5">
                                                       <div className="flex items-center justify-between gap-2">
-                                                        <span className="text-gray-500 dark:text-gray-400">Risk Tier:</span>
-                                                        <span className="font-semibold text-gray-900 dark:text-gray-100">{insight.tier}</span>
+                                                        <span className="text-gray-500 dark:text-gray-400">Score Tier:</span>
+                                                        <span className="font-bold text-gray-900 dark:text-gray-100">{insight.tier}</span>
                                                       </div>
                                                       <div className="flex items-center justify-between gap-2">
-                                                        <span className="text-gray-500 dark:text-gray-400">On-Time Settlement:</span>
-                                                        <span className="font-semibold text-gray-900 dark:text-gray-100">{insight.onTimeRate}</span>
+                                                        <span className="text-gray-500 dark:text-gray-400">Base Behavioral Score:</span>
+                                                        <span className="font-mono text-gray-700 dark:text-gray-300 font-semibold">{insight.baseScore} pts</span>
                                                       </div>
                                                       <div className="flex items-center justify-between gap-2">
-                                                        <span className="text-gray-500 dark:text-gray-400">Avg Settlement:</span>
+                                                        <span className="text-gray-500 dark:text-gray-400">Historical Split Rate:</span>
+                                                        <span className="font-mono text-purple-600 dark:text-purple-400 font-semibold">{insight.splitFrequency}</span>
+                                                      </div>
+                                                      <div className="flex items-center justify-between gap-2">
+                                                        <span className="text-gray-500 dark:text-gray-400">Divided-Invoice Penalty:</span>
+                                                        <span className="font-mono text-rose-600 dark:text-rose-400 font-bold">{insight.penaltyDeduction}</span>
+                                                      </div>
+                                                      <div className="flex items-center justify-between gap-2">
+                                                        <span className="text-gray-500 dark:text-gray-400">Avg Settlement Delay:</span>
                                                         <span className="font-semibold text-gray-900 dark:text-gray-100">{insight.avgDelay}</span>
                                                       </div>
                                                     </div>
                                                     <div className="pt-2 border-t border-gray-100 dark:border-gray-800">
-                                                      <p className="text-[11px] text-blue-700 dark:text-blue-300 bg-blue-50/80 dark:bg-blue-950/40 p-2.5 rounded-xl border border-blue-200/60 dark:border-blue-900/40 leading-relaxed flex items-start gap-1.5">
-                                                        <span className="shrink-0 mt-0.5">💡</span>
-                                                        <span>{insight.action}</span>
+                                                      <p className="text-[10px] text-blue-700 dark:text-blue-300 bg-blue-50/80 dark:bg-blue-950/40 p-2 rounded-xl border border-blue-200/60 dark:border-blue-900/40 leading-relaxed">
+                                                        {insight.action}
                                                       </p>
                                                     </div>
                                                   </div>
@@ -980,7 +1033,7 @@ export default function CompanyVendorPage() {
                                               >
                                                 <div className={`cursor-help inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border ${insight.color} transition-transform hover:scale-105`}>
                                                   <span className={`w-1.5 h-1.5 rounded-full ${insight.badge}`} />
-                                                  <span>{score}% ({insight.tier.split('/')[0].trim()})</span>
+                                                  <span>{score}% ({insight.tierShort})</span>
                                                   <Info className="w-3 h-3 opacity-70" />
                                                 </div>
                                               </Tooltip>

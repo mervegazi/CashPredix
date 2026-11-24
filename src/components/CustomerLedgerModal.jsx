@@ -8,10 +8,16 @@ import {
   Download,
   Sparkles,
   BrainCircuit,
+  ChevronLeft,
+  ChevronRight,
+  DollarSign,
+  TrendingUp,
+  Layers,
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import ScenarioPredictionCard from './ScenarioPredictionCard';
 import { predictInvoice } from '../lib/mlPredictionService';
+import { calculateCustomerCashflow, getScoreTier } from '../lib/cashflowService';
 
 // Deterministic pseudorandom number generator for consistent ledger simulation per customer
 function pseudoRandom(seed) {
@@ -288,10 +294,17 @@ function generateCustomerLedger(customer) {
 }
 
 export default function CustomerLedgerModal({ isOpen, customer, company, onClose }) {
-  const [activeFilter, setActiveFilter] = useState('all'); // 'all' | 'split' | 'checks' | 'open'
+  const [activeFilter, setActiveFilter] = useState('all'); // 'all' | 'split' | 'ontime' | 'delayed' | 'checks' | 'open'
   const [selectedPrediction, setSelectedPrediction] = useState(null);
   const [isPredicting, setIsPredicting] = useState(false);
   const [predictedInvoiceId, setPredictedInvoiceId] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 8;
+
+  // Individual Customer Predictive Cash Flow Calculation
+  const customerCashflow = useMemo(() => {
+    return calculateCustomerCashflow(customer);
+  }, [customer]);
 
   const handlePredictInvoice = async (invoice) => {
     if (predictedInvoiceId === invoice.id) {
@@ -313,7 +326,7 @@ export default function CustomerLedgerModal({ isOpen, customer, company, onClose
         customer: customer,
       });
       setSelectedPrediction(res);
-      toast.success(`5-Step ML Prediction calculated for ${invoice.invoice_number}!`);
+      toast.success(`6-Step ML Prediction calculated for ${invoice.invoice_number}!`);
     } catch (e) {
       toast.error('Prediction failed: ' + e.message);
     } finally {
@@ -356,13 +369,21 @@ export default function CustomerLedgerModal({ isOpen, customer, company, onClose
     };
   }, [transactions]);
 
-  // Filtered rows
+  // Filtered rows with On-time / Delayed prediction status (Issue #29)
   const filteredRows = useMemo(() => {
     if (activeFilter === 'split') return transactions.filter((t) => t.is_split_payment);
+    if (activeFilter === 'ontime') return transactions.filter((t) => t.days_past_due <= 3 && t.status !== 'OVERDUE');
+    if (activeFilter === 'delayed') return transactions.filter((t) => t.days_past_due > 3 || t.status === 'LATE' || t.status === 'OVERDUE');
     if (activeFilter === 'checks') return transactions.filter((t) => t.payment_method === 'check');
     if (activeFilter === 'open') return transactions.filter((t) => t.remaining_balance > 0 || t.status === 'PENDING' || t.status === 'PARTIAL');
     return transactions;
   }, [transactions, activeFilter]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredRows.length / pageSize));
+  const pagedRows = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredRows.slice(start, start + pageSize);
+  }, [filteredRows, currentPage, pageSize]);
 
   const handleExportCSV = () => {
     if (!transactions.length) return;
@@ -469,60 +490,107 @@ export default function CustomerLedgerModal({ isOpen, customer, company, onClose
           </div>
         </div>
 
-        {/* Top Financial KPI Strip */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-6 bg-gray-50/70 dark:bg-gray-900/60 border-b border-gray-100 dark:border-gray-800 text-xs">
-          <div className="p-3.5 rounded-2xl bg-white dark:bg-gray-800/80 border border-gray-200/80 dark:border-gray-700/80 shadow-sm">
-            <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider block">
-              Total Invoiced
-            </span>
-            <span className="text-base font-bold text-gray-900 dark:text-white font-mono mt-1 block">
-              ${metrics.totalInvoiced.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-            </span>
-            <span className="text-[10px] text-gray-400 mt-0.5 block">Historical gross billings</span>
-          </div>
-
-          <div className="p-3.5 rounded-2xl bg-white dark:bg-gray-800/80 border border-gray-200/80 dark:border-gray-700/80 shadow-sm">
-            <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider block">
-              Cash Collected
-            </span>
-            <span className="text-base font-bold text-emerald-600 dark:text-emerald-400 font-mono mt-1 block">
-              ${metrics.totalPaid.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-            </span>
-            <span className="text-[10px] text-gray-400 mt-0.5 block">Settled bank inflows</span>
-          </div>
-
-          <div className="p-3.5 rounded-2xl bg-white dark:bg-gray-800/80 border border-gray-200/80 dark:border-gray-700/80 shadow-sm">
-            <span className="text-[11px] font-semibold text-amber-600 dark:text-amber-400 uppercase tracking-wider block">
-              Open Receivables
-            </span>
-            <span className="text-base font-bold text-amber-600 dark:text-amber-400 font-mono mt-1 block">
-              ${metrics.totalBalance.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-            </span>
-            <span className="text-[10px] text-gray-400 mt-0.5 block">Outstanding customer balance</span>
-          </div>
-
-          <div className="p-3.5 rounded-2xl bg-white dark:bg-gray-800/80 border border-gray-200/80 dark:border-gray-700/80 shadow-sm">
-            <span className="text-[11px] font-semibold text-blue-600 dark:text-blue-400 uppercase tracking-wider block">
-              Instrument Mix
-            </span>
-            <div className="flex items-center gap-2 mt-1 text-xs font-semibold text-gray-900 dark:text-white">
-              <span className="px-1.5 py-0.5 rounded bg-blue-100 dark:bg-blue-950/60 text-blue-600 text-[10px]">
-                {metrics.splitCount} Splits
+        {/* Top Financial KPI Strip & Predictive Cash Flow Horizons */}
+        <div className="p-6 bg-gray-50/70 dark:bg-gray-900/60 border-b border-gray-100 dark:border-gray-800 space-y-3 text-xs">
+          {/* Row 1: Historical Ledger Aggregates */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="p-3 rounded-2xl bg-white dark:bg-gray-800/80 border border-gray-200/80 dark:border-gray-700/80 shadow-sm">
+              <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider block">
+                Total Invoiced
               </span>
-              <span className="px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-950/60 text-amber-600 text-[10px]">
-                {metrics.checkCount} Checks
+              <span className="text-base font-bold text-gray-900 dark:text-white font-mono mt-0.5 block">
+                ${metrics.totalInvoiced.toLocaleString(undefined, { minimumFractionDigits: 2 })}
               </span>
+              <span className="text-[10px] text-gray-400 mt-0.5 block">Historical gross billings</span>
             </div>
-            <span className="text-[10px] text-gray-400 mt-0.5 block">Multi-part & post-dated terms</span>
+
+            <div className="p-3 rounded-2xl bg-white dark:bg-gray-800/80 border border-gray-200/80 dark:border-gray-700/80 shadow-sm">
+              <span className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider block">
+                Cash Collected
+              </span>
+              <span className="text-base font-bold text-emerald-600 dark:text-emerald-400 font-mono mt-0.5 block">
+                ${metrics.totalPaid.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+              </span>
+              <span className="text-[10px] text-gray-400 mt-0.5 block">Settled bank inflows</span>
+            </div>
+
+            <div className="p-3 rounded-2xl bg-white dark:bg-gray-800/80 border border-gray-200/80 dark:border-gray-700/80 shadow-sm">
+              <span className="text-[10px] font-semibold text-amber-600 dark:text-amber-400 uppercase tracking-wider block">
+                Open Receivables
+              </span>
+              <span className="text-base font-bold text-amber-600 dark:text-amber-400 font-mono mt-0.5 block">
+                ${metrics.totalBalance.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+              </span>
+              <span className="text-[10px] text-gray-400 mt-0.5 block">Outstanding customer balance</span>
+            </div>
+
+            <div className="p-3 rounded-2xl bg-white dark:bg-gray-800/80 border border-gray-200/80 dark:border-gray-700/80 shadow-sm">
+              <span className="text-[10px] font-semibold text-blue-600 dark:text-blue-400 uppercase tracking-wider block">
+                Instrument Mix
+              </span>
+              <div className="flex items-center gap-2 mt-0.5 text-xs font-semibold text-gray-900 dark:text-white">
+                <span className="px-1.5 py-0.5 rounded bg-blue-100 dark:bg-blue-950/60 text-blue-600 text-[10px]">
+                  {metrics.splitCount} Splits
+                </span>
+                <span className="px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-950/60 text-amber-600 text-[10px]">
+                  {metrics.checkCount} Checks
+                </span>
+              </div>
+              <span className="text-[10px] text-gray-400 mt-0.5 block">Multi-part terms</span>
+            </div>
           </div>
+
+          {/* Row 2: Customer Predictive Cash Flow Horizons */}
+          {customerCashflow && (
+            <div className="p-3 rounded-2xl bg-gradient-to-r from-blue-50/60 via-indigo-50/40 to-emerald-50/40 dark:from-blue-950/30 dark:via-indigo-950/20 dark:to-emerald-950/20 border border-blue-200/60 dark:border-blue-800/40 flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <TrendingUp className="w-4 h-4 text-emerald-500 shrink-0" />
+                <span className="text-[11px] font-bold text-gray-900 dark:text-white">
+                  Customer Projected Cash Inflow:
+                </span>
+              </div>
+              <div className="flex flex-wrap items-center gap-4 text-xs font-mono font-semibold">
+                <div>
+                  <span className="text-[10px] font-sans text-gray-400 block">This Week:</span>
+                  <span className="text-emerald-600 dark:text-emerald-400 font-bold">
+                    ${customerCashflow.this_week.toLocaleString()}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-[10px] font-sans text-gray-400 block">Next Week:</span>
+                  <span className="text-blue-600 dark:text-blue-400 font-bold">
+                    ${customerCashflow.next_week.toLocaleString()}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-[10px] font-sans text-gray-400 block">In 2 Weeks:</span>
+                  <span className="text-purple-600 dark:text-purple-400 font-bold">
+                    ${customerCashflow.in_2_weeks.toLocaleString()}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-[10px] font-sans text-gray-400 block">Month Total:</span>
+                  <span className="text-indigo-600 dark:text-indigo-400 font-bold">
+                    ${customerCashflow.month_total.toLocaleString()}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-[10px] font-sans text-gray-400 block">Yearly:</span>
+                  <span className="text-gray-900 dark:text-white font-bold">
+                    ${customerCashflow.yearly_total.toLocaleString()}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* Filter Navigation Tabs */}
+        {/* Filter Navigation Tabs (Issue #29) */}
         <div className="px-6 pt-3 pb-2 border-b border-gray-100 dark:border-gray-800 flex flex-wrap items-center justify-between gap-3 bg-white dark:bg-gray-900">
-          <div className="flex items-center gap-1.5 p-1 rounded-xl bg-gray-100 dark:bg-gray-800 text-xs">
+          <div className="flex flex-wrap items-center gap-1.5 p-1 rounded-xl bg-gray-100 dark:bg-gray-800 text-xs">
             <button
               type="button"
-              onClick={() => setActiveFilter('all')}
+              onClick={() => { setActiveFilter('all'); setCurrentPage(1); }}
               className={`px-3 py-1.5 rounded-lg font-semibold transition-all ${
                 activeFilter === 'all'
                   ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
@@ -533,7 +601,7 @@ export default function CustomerLedgerModal({ isOpen, customer, company, onClose
             </button>
             <button
               type="button"
-              onClick={() => setActiveFilter('split')}
+              onClick={() => { setActiveFilter('split'); setCurrentPage(1); }}
               className={`px-3 py-1.5 rounded-lg font-semibold transition-all ${
                 activeFilter === 'split'
                   ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
@@ -544,18 +612,40 @@ export default function CustomerLedgerModal({ isOpen, customer, company, onClose
             </button>
             <button
               type="button"
-              onClick={() => setActiveFilter('checks')}
+              onClick={() => { setActiveFilter('ontime'); setCurrentPage(1); }}
+              className={`px-3 py-1.5 rounded-lg font-semibold transition-all ${
+                activeFilter === 'ontime'
+                  ? 'bg-emerald-600 text-white shadow-sm'
+                  : 'text-gray-500 hover:text-gray-900 dark:hover:text-white'
+              }`}
+            >
+              On-Time ({transactions.filter((t) => t.days_past_due <= 3 && t.status !== 'OVERDUE').length})
+            </button>
+            <button
+              type="button"
+              onClick={() => { setActiveFilter('delayed'); setCurrentPage(1); }}
+              className={`px-3 py-1.5 rounded-lg font-semibold transition-all ${
+                activeFilter === 'delayed'
+                  ? 'bg-rose-600 text-white shadow-sm'
+                  : 'text-gray-500 hover:text-gray-900 dark:hover:text-white'
+              }`}
+            >
+              Delayed ({transactions.filter((t) => t.days_past_due > 3 || t.status === 'LATE' || t.status === 'OVERDUE').length})
+            </button>
+            <button
+              type="button"
+              onClick={() => { setActiveFilter('checks'); setCurrentPage(1); }}
               className={`px-3 py-1.5 rounded-lg font-semibold transition-all ${
                 activeFilter === 'checks'
                   ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
                   : 'text-gray-500 hover:text-gray-900 dark:hover:text-white'
               }`}
             >
-              Post-Dated Checks ({transactions.filter((t) => t.payment_method === 'check').length})
+              Checks ({transactions.filter((t) => t.payment_method === 'check').length})
             </button>
             <button
               type="button"
-              onClick={() => setActiveFilter('open')}
+              onClick={() => { setActiveFilter('open'); setCurrentPage(1); }}
               className={`px-3 py-1.5 rounded-lg font-semibold transition-all ${
                 activeFilter === 'open'
                   ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
@@ -567,7 +657,7 @@ export default function CustomerLedgerModal({ isOpen, customer, company, onClose
           </div>
 
           <div className="text-[11px] text-gray-400">
-            Showing {filteredRows.length} financial transactions
+            Showing {filteredRows.length} transactions
           </div>
         </div>
 
@@ -610,7 +700,7 @@ export default function CustomerLedgerModal({ isOpen, customer, company, onClose
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 dark:divide-gray-800 text-gray-700 dark:text-gray-300">
-                {filteredRows.map((t) => {
+                {pagedRows.map((t) => {
                   const isFactored = t.is_factored;
 
                   return (
@@ -773,6 +863,35 @@ export default function CustomerLedgerModal({ isOpen, customer, company, onClose
                 })}
               </tbody>
             </table>
+          </div>
+
+          {/* Table Pagination Controls (Issue #29) */}
+          <div className="pt-2 flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+            <div>
+              Showing {(currentPage - 1) * pageSize + 1} to{' '}
+              {Math.min(currentPage * pageSize, filteredRows.length)} of {filteredRows.length} records
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="p-1 rounded-lg border border-gray-200 dark:border-gray-700 disabled:opacity-30 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              >
+                <ChevronLeft className="w-3.5 h-3.5" />
+              </button>
+              <span className="font-semibold text-gray-700 dark:text-gray-300">
+                Page {currentPage} of {totalPages}
+              </span>
+              <button
+                type="button"
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                className="p-1 rounded-lg border border-gray-200 dark:border-gray-700 disabled:opacity-30 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              >
+                <ChevronRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
           </div>
         </div>
 

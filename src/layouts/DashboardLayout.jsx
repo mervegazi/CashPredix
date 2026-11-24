@@ -42,7 +42,7 @@ const NAV_ITEMS = [
     name: 'Cashflow Predicts',
     path: '/dashboard/cashflow-predicts',
     icon: TrendingUp,
-    badge: 'AI ML',
+    badge: null,
   },
   {
     name: 'Profile',
