@@ -663,13 +663,13 @@ export default function CustomerLedgerModal({ isOpen, customer, company, onClose
 
         {/* Financial Transactions Table */}
         <div className="flex-1 overflow-y-auto p-6 space-y-4">
-          {/* 5-Step ML Prediction Panel */}
+          {/* Predictive Invoice Forecast Panel */}
           {selectedPrediction && (
             <div className="mb-4">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs font-bold text-gray-800 dark:text-gray-200 flex items-center gap-1.5">
                   <BrainCircuit className="w-4 h-4 text-purple-500" />
-                  Active 5-Step ML Forecast: {selectedPrediction.invoice_number} (${selectedPrediction.invoice_amount?.toLocaleString()})
+                  Active Invoice Forecast: {selectedPrediction.invoice_number} (${selectedPrediction.invoice_amount?.toLocaleString()})
                 </span>
                 <button
                   type="button"
@@ -696,7 +696,7 @@ export default function CustomerLedgerModal({ isOpen, customer, company, onClose
                   <th className="py-3 px-3.5 font-semibold">Method & Instrument Details</th>
                   <th className="py-3 px-3.5 font-semibold">Settlement & Delay (DSO)</th>
                   <th className="py-3 px-3.5 font-semibold">Status</th>
-                  <th className="py-3 px-3.5 font-semibold text-right">5-Step ML</th>
+                  <th className="py-3 px-3.5 font-semibold text-right">AI Forecast</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 dark:divide-gray-800 text-gray-700 dark:text-gray-300">

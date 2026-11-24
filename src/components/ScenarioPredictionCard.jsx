@@ -102,9 +102,6 @@ export default function ScenarioPredictionCard({ prediction, isLoading = false }
             <h3 className="text-sm font-bold tracking-wide">
               Hybrid ML & Cash Flow Architecture
             </h3>
-            <span className="text-[11px] text-blue-100/90 font-medium">
-              12 Timing Classes • Divided Penalty • Multi-Output XGBoost • Working Capital Optimizer
-            </span>
           </div>
         </div>
 
@@ -121,14 +118,14 @@ export default function ScenarioPredictionCard({ prediction, isLoading = false }
       </div>
 
       <div className="p-6 space-y-6">
-        {/* Step 4: Scenario Text Highlight Card */}
+        {/* Scenario Narrative Highlight Card */}
         <div className="relative p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-blue-50/80 via-indigo-50/40 to-purple-50/30 dark:from-blue-950/30 dark:via-indigo-950/20 dark:to-purple-950/10 border border-blue-200/60 dark:border-blue-800/40">
           <div className="flex items-center gap-2 mb-2">
             <span className="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-blue-600 text-white shadow-xs">
-              Step 4: Scenario Narrative
+              Payment Scenario Forecast
             </span>
             <span className="text-[11px] text-gray-500 dark:text-gray-400">
-              Natural Language Synthesis
+              Predicted Settlement Narrative
             </span>
           </div>
           <p className="text-sm sm:text-base font-semibold text-gray-900 dark:text-gray-100 leading-relaxed italic">
@@ -136,7 +133,7 @@ export default function ScenarioPredictionCard({ prediction, isLoading = false }
           </p>
         </div>
 
-        {/* Step 6: Counterparty Risk Alert & Working Capital Optimizer Banner */}
+        {/* Counterparty Risk Alert & Working Capital Strategy Banner */}
         {riskAction && (
           <div className={`p-4 rounded-2xl border ${
             riskAction.color_code === 'rose'
@@ -148,7 +145,7 @@ export default function ScenarioPredictionCard({ prediction, isLoading = false }
             <div className="flex items-center justify-between mb-1.5">
               <span className="text-[11px] font-bold uppercase tracking-wider flex items-center gap-1.5">
                 <Zap className="w-3.5 h-3.5" />
-                Step 6: Credit Action & Working Capital Optimizer
+                Credit Risk Action & Liquidity Strategy
               </span>
               <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/70 dark:bg-black/30 border border-current">
                 {riskAction.step6_risk_level}
@@ -166,14 +163,14 @@ export default function ScenarioPredictionCard({ prediction, isLoading = false }
           </div>
         )}
 
-        {/* Step 2 & Step 3 Split Grid */}
+        {/* Reliability Score & Installment Schedule Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Step 2: Divided-Invoice Penalty Scoring Card */}
+          {/* Customer Reliability Score Card */}
           <div className="p-4 rounded-2xl bg-gray-50 dark:bg-gray-800/50 border border-gray-200/80 dark:border-gray-700/80">
             <div className="flex items-center justify-between mb-3">
               <span className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
                 <ShieldCheck className="w-3.5 h-3.5 text-blue-500" />
-                Step 2: Reliability Score
+                Customer Reliability Score
               </span>
               <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${scoreTierColor}`}>
                 {scoreDetails.tier || 'Standard'}
@@ -194,20 +191,20 @@ export default function ScenarioPredictionCard({ prediction, isLoading = false }
                 <span className="font-semibold text-gray-800 dark:text-gray-200 font-mono">{scoreDetails.base_score}</span>
               </div>
               <div className="flex justify-between text-rose-600 dark:text-rose-400">
-                <span>Divided Penalty (-5 × {scoreDetails.historical_split_rate}):</span>
+                <span>Divided Invoice Penalty (-5 × {scoreDetails.historical_split_rate}):</span>
                 <span className="font-semibold font-mono">-{scoreDetails.invoice_split_penalty}</span>
               </div>
               <div className="text-[10px] text-gray-400 italic pt-0.5">
-                Formula: Base_Score (12 Classes) - 5 * Split_Rate
+                Adjusted for historical divided invoice frequency
               </div>
             </div>
           </div>
 
-          {/* Step 3: Cash Allocation & Installments */}
+          {/* Cash Allocation & Installments */}
           <div className="p-4 rounded-2xl bg-gray-50 dark:bg-gray-800/50 border border-gray-200/80 dark:border-gray-700/80">
             <span className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider flex items-center gap-1.5 mb-3">
               <Calendar className="w-3.5 h-3.5 text-indigo-500" />
-              Step 3: Multi-Output Forecast
+              Payment Schedule & Installments
             </span>
 
             <div className="space-y-2.5">
@@ -250,12 +247,12 @@ export default function ScenarioPredictionCard({ prediction, isLoading = false }
           </div>
         </div>
 
-        {/* Step 1: 12-Class Probability Distribution Bars */}
+        {/* 12-Class Probability Distribution Bars */}
         <div className="space-y-3 pt-2">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <span className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
               <Layers className="w-3.5 h-3.5 text-purple-500" />
-              Step 1: LightGBM 12-Class Probability Distribution
+              Payment Timing & Behavior Probabilities
             </span>
 
             {/* Filter Pills */}
