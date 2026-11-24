@@ -3,6 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth, formatAuthError } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import { toast } from 'react-hot-toast';
+import CashPredixLogo from '../../components/CashPredixLogo';
 import { 
   Lock, 
   Mail, 
@@ -138,11 +139,11 @@ export default function LoginPage() {
       <div className="relative z-10 sm:mx-auto sm:w-full sm:max-w-md">
         {/* Brand Header */}
         <div className="text-center mb-8">
-          <Link to="/" className="inline-flex items-center gap-2 mb-3 group">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-emerald-500 flex items-center justify-center shadow-lg shadow-blue-500/20 group-hover:scale-105 transition-transform">
-              <ShieldCheck className="w-6 h-6 text-white" />
+          <Link to="/" className="inline-flex items-center gap-2.5 mb-3 group">
+            <div className="w-11 h-11 rounded-2xl bg-purple-500/10 dark:bg-purple-900/30 border border-purple-200/80 dark:border-purple-800/60 flex items-center justify-center shadow-lg shadow-purple-500/15 group-hover:scale-105 transition-transform p-2">
+              <CashPredixLogo className="w-full h-full" glow />
             </div>
-            <span className="text-3xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-blue-600 via-indigo-600 to-emerald-600 dark:from-blue-400 dark:via-indigo-300 dark:to-emerald-400">
+            <span className="text-3xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 dark:from-blue-400 dark:via-indigo-300 dark:to-purple-400">
               CashPredix
             </span>
           </Link>

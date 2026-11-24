@@ -3,6 +3,7 @@ import { NavLink, Outlet, useNavigate, useLocation, Link } from 'react-router-do
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { toast } from 'react-hot-toast';
+import CashPredixLogo from '../components/CashPredixLogo';
 import {
   LayoutDashboard,
   Building2,
@@ -126,12 +127,12 @@ export default function DashboardLayout() {
             to="/dashboard"
             className={`flex items-center gap-3 overflow-hidden ${isCollapsed ? 'justify-center w-full' : ''}`}
           >
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-blue-600 to-emerald-500 flex items-center justify-center shadow-md shadow-blue-500/20 shrink-0">
-              <ShieldCheck className="w-5 h-5 text-white" />
+            <div className="w-9 h-9 rounded-xl bg-purple-500/10 dark:bg-purple-900/30 border border-purple-200/80 dark:border-purple-800/60 flex items-center justify-center shadow-md shadow-purple-500/10 shrink-0 p-1.5">
+              <CashPredixLogo className="w-full h-full" glow />
             </div>
             {!isCollapsed && (
               <div className="flex flex-col">
-                <span className="text-lg font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-blue-600 via-indigo-600 to-emerald-600 dark:from-blue-400 dark:via-indigo-300 dark:to-emerald-400">
+                <span className="text-lg font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 dark:from-blue-400 dark:via-indigo-300 dark:to-purple-400">
                   CashPredix
                 </span>
                 <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest -mt-1">

@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import CashPredixLogo from '../components/CashPredixLogo';
 
 export default function LandingPage() {
   return (
@@ -6,8 +7,11 @@ export default function LandingPage() {
       {/* Navbar */}
       <nav className="flex items-center justify-between p-6 lg:px-8">
         <div className="flex lg:flex-1">
-          <a href="#" className="-m-1.5 p-1.5 flex items-center gap-2">
-            <span className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-emerald-400">CashPredix</span>
+          <a href="#" className="-m-1.5 p-1.5 flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-purple-500/20 border border-purple-400/30 flex items-center justify-center p-1.5 shadow-md shadow-purple-500/20">
+              <CashPredixLogo className="w-full h-full" glow />
+            </div>
+            <span className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-indigo-300 to-purple-400">CashPredix</span>
           </a>
         </div>
         <div className="flex flex-1 justify-end items-center gap-x-4">
