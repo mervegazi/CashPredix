@@ -722,7 +722,7 @@ export default function CashflowPredictsPlaceholder() {
                     Live Prediction Sandbox
                   </h2>
                   <p className="text-xs text-gray-400">
-                    Test customer payment behavior in the 6-Step pipeline
+                    Test customer payment behavior in the ML pipeline
                   </p>
                 </div>
               </div>

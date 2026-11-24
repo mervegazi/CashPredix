@@ -326,7 +326,7 @@ export default function CustomerLedgerModal({ isOpen, customer, company, onClose
         customer: customer,
       });
       setSelectedPrediction(res);
-      toast.success(`6-Step ML Prediction calculated for ${invoice.invoice_number}!`);
+      toast.success(`ML Prediction calculated for ${invoice.invoice_number}!`);
     } catch (e) {
       toast.error('Prediction failed: ' + e.message);
     } finally {

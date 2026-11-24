@@ -60,7 +60,7 @@ export default function ScenarioPredictionCard({ prediction, isLoading = false }
           No Invoice Selected for Prediction
         </p>
         <p className="text-xs text-gray-400 mt-1">
-          Select an invoice from the ledger or run a live forecast to execute the 6-Step Hybrid ML engine.
+          Select an invoice from the ledger or run a live forecast to execute the Hybrid ML engine.
         </p>
       </div>
     );
@@ -100,7 +100,7 @@ export default function ScenarioPredictionCard({ prediction, isLoading = false }
           </div>
           <div>
             <h3 className="text-sm font-bold tracking-wide">
-              6-Step Hybrid ML & Cash Flow Architecture
+              Hybrid ML & Cash Flow Architecture
             </h3>
             <span className="text-[11px] text-blue-100/90 font-medium">
               12 Timing Classes • Divided Penalty • Multi-Output XGBoost • Working Capital Optimizer

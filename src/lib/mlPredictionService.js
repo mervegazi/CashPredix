@@ -1,13 +1,13 @@
 /**
- * CashPredix - 6-Step Hybrid ML Prediction Service
+ * CashPredix - Hybrid ML Prediction Service
  * Bridges React frontend with FastAPI backend (/api/predict/invoice, /api/cashflow/projection)
- * Includes resilient offline fallback client implementing all 12 classes & 6-step architecture.
+ * Includes resilient offline fallback client implementing all 12 classes & hybrid architecture.
  */
 
 const API_BASE = ''; // Uses Vite proxy or relative path
 
 /**
- * Predict invoice payment behavior across the 6-Step Architecture.
+ * Predict invoice payment behavior across the Hybrid Architecture.
  *
  * @param {Object} params
  * @param {string} params.customerId - Customer ID
@@ -15,7 +15,7 @@ const API_BASE = ''; // Uses Vite proxy or relative path
  * @param {number} params.daysUntilDue - Days until payment maturity
  * @param {string} [params.invoiceNumber] - Optional invoice ID
  * @param {Object} [params.customer] - Customer metadata (for local client fallback)
- * @returns {Promise<Object>} 6-Step prediction result
+ * @returns {Promise<Object>} Hybrid prediction result
  */
 export async function predictInvoice({
   customerId,
@@ -49,11 +49,11 @@ export async function predictInvoice({
     }
   } catch (err) {
     // Backend offline or unreachable; fall back to resilient client computation
-    console.warn('FastAPI backend offline; using client-side 6-step fallback engine:', err.message);
+    console.warn('FastAPI backend offline; using client-side fallback engine:', err.message);
   }
 
   // -------------------------------------------------------------------------
-  // Resilient Client-Side Fallback Engine (All 12 Classes & 6-Step Architecture)
+  // Resilient Client-Side Fallback Engine (All 12 Classes & Hybrid Architecture)
   // -------------------------------------------------------------------------
   const splitRate = (customer && customer.split_rate) || 0.22;
   const avgDelay = (customer && customer.avg_delay_days) || 1.5;
@@ -138,14 +138,24 @@ export async function predictInvoice({
   const part2Amount = isSplit ? Math.round((payload.invoice_amount - part1Amount) * 100) / 100 : 0.0;
 
   // Step 4: Scenario Text Generation
+  function formatDaysToCalendarWeek(days) {
+    if (days <= 7) return 'this week';
+    if (days <= 14) return 'next week';
+    if (days <= 21) return 'in 2 weeks';
+    if (days <= 28) return 'in 3 weeks';
+    return `in ${Math.floor(days / 7)} weeks`;
+  }
+
   let scenarioText = '';
   const p1Status = part1Days <= daysUntilDue - 3 ? 'Early' : part1Days <= daysUntilDue + 2 ? 'On-Time' : 'Late';
   const p2Status = part2Days <= daysUntilDue - 3 ? 'Early' : part2Days <= daysUntilDue + 2 ? 'On-Time' : 'Late';
+  const p1Week = formatDaysToCalendarWeek(part1Days);
+  const p2Week = formatDaysToCalendarWeek(part2Days);
 
   if (isSplit) {
-    scenarioText = `This customer's score is ${customerScore}. They will likely divide this $${payload.invoice_amount.toLocaleString()} invoice into 2 parts: Part 1 ($${part1Amount.toLocaleString()}) will be paid in ${part1Days} days (${p1Status}), and Part 2 ($${part2Amount.toLocaleString()}) will be paid in ${part2Days} days (${p2Status}).`;
+    scenarioText = `This customer's score is ${customerScore}. They will likely divide this $${payload.invoice_amount.toLocaleString()} invoice into 2 parts: Part 1 ($${part1Amount.toLocaleString()}) will be paid ${p1Week} (${p1Status}), and Part 2 ($${part2Amount.toLocaleString()}) will be paid ${p2Week} (${p2Status}).`;
   } else {
-    scenarioText = `This customer's score is ${customerScore}. They will likely pay this $${payload.invoice_amount.toLocaleString()} invoice in a single payment: 100% ($${part1Amount.toLocaleString()}) will be paid in ${part1Days} days (${p1Status}).`;
+    scenarioText = `This customer's score is ${customerScore}. They will likely pay this $${payload.invoice_amount.toLocaleString()} invoice in a single payment: 100% ($${part1Amount.toLocaleString()}) will be paid ${p1Week} (${p1Status}).`;
   }
 
   // Step 6: Counterparty Risk Alert & Working Capital Optimizer
