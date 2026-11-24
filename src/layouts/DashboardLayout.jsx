@@ -237,6 +237,16 @@ export default function DashboardLayout() {
               <Menu className="w-5 h-5" />
             </button>
 
+            {/* Mobile Brand Logo */}
+            <Link to="/dashboard" className="flex items-center gap-2 lg:hidden">
+              <div className="w-7 h-7 rounded-lg bg-purple-500/10 dark:bg-purple-900/30 border border-purple-200/80 dark:border-purple-800/60 flex items-center justify-center p-1 shadow-xs">
+                <CashPredixLogo className="w-full h-full" glow />
+              </div>
+              <span className="font-bold text-sm bg-clip-text text-transparent bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 dark:from-blue-400 dark:via-indigo-300 dark:to-purple-400">
+                CashPredix
+              </span>
+            </Link>
+
             {/* Breadcrumb Navigation */}
             <nav className="flex items-center space-x-2 text-sm text-gray-500 dark:text-gray-400" aria-label="Breadcrumb">
               <Link
